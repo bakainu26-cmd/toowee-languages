@@ -94,11 +94,11 @@ function renderWords() {
   const folder = byId('filterFolder').value;
   byId('wordRows').innerHTML = activeWords().filter(w => (!folder || w.folder_id === folder) &&
     [w.word,w.reading,w.translation,w.lang].some(v => String(v).toLocaleLowerCase().includes(q))).map(w =>
-    '<tr><td>' + safe(w.lang) + '</td><td><strong>' + safe(w.word) + '</strong></td><td>' + safe(w.reading) +
+    '<tr><td><strong>' + safe(w.word) + '</strong></td><td>' + safe(w.reading) +
     '</td><td>' + safe(w.translation) + '</td><td>' + safe(library.folders.find(f => f.id === w.folder_id)?.name || '—') +
     '</td><td><div class="actions"><button class="alt" data-edit="' + safe(w.id) + '">Edytuj</button>' +
     '<button class="danger" data-delete="' + safe(w.id) + '">Usuń</button></div></td></tr>').join('') ||
-    '<tr><td colspan="6">' + (ready ? 'Brak słówek dla tego wyszukiwania.' : 'Zaloguj się i wczytaj bibliotekę.') + '</td></tr>';
+    '<tr><td colspan="5">' + (ready ? 'Brak słówek dla tego wyszukiwania.' : 'Zaloguj się i wczytaj bibliotekę.') + '</td></tr>';
   controls();
 }
 function dbError(error) {
