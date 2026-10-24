@@ -75,6 +75,8 @@ function tab(id) {
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + navId));
   byId('learningBreadcrumb').hidden = !learningNames[id];
   byId('learningViewName').textContent = learningNames[id] || '';
+  if (id !== 'study' && window.pauseStudySession) window.pauseStudySession();
+  if (id === 'progress' && window.loadProgressDashboard) void window.loadProgressDashboard();
 }
 function renderLibrary() {
   byId('stats').textContent = activeWords().length + ' słówek • ' + activeFolders().length + ' folderów';
@@ -90,6 +92,7 @@ function renderLibrary() {
   if (window.updateStudyFolders) window.updateStudyFolders();
   if (window.updateGameFolders) window.updateGameFolders();
   if (window.updateImportFolders) window.updateImportFolders();
+  if (window.renderMemoryStats) window.renderMemoryStats();
   renderWords();
   controls();
 }
@@ -146,6 +149,7 @@ window.addEventListener('toowee-account', event => {
   byId('learningWorkspace').hidden = true;
   byId('languagePicker').hidden = !account.userId;
   if (window.resetImport) window.resetImport();
+  if (window.resetProgressDashboard) window.resetProgressDashboard();
   const version = ++libraryRevision;
   ready = false; saving = false;
   library = {words:[],folders:[]};
