@@ -18,7 +18,7 @@ function activeFolders() {
 function showLanguagePicker() {
   if (!account?.userId || saving) return;
   activeLanguage = null;
-  cancelEdit();clearQuiz();
+  cancelEdit();clearQuiz();if (window.resetImport) window.resetImport();
   byId('learningWorkspace').hidden = true;
   byId('languagePicker').hidden = false;
   controls();
@@ -26,7 +26,7 @@ function showLanguagePicker() {
 function chooseLanguage(language) {
   if (!account?.userId || saving || !Object.hasOwn(languageInfo,language)) return;
   activeLanguage = language;
-  cancelEdit();clearQuiz();
+  cancelEdit();clearQuiz();if (window.resetImport) window.resetImport();
   byId('folderForm').reset();byId('search').value = '';byId('filterFolder').value = '';
   byId('studyFolder').value = '';
   byId('wordForm').elements.lang.value = language;
@@ -58,6 +58,7 @@ function controls() {
   byId('changeLanguage').disabled = saving;
   if (window.updateStudyControls) window.updateStudyControls();
   if (window.updateGameControls) window.updateGameControls();
+  if (window.updateImportControls) window.updateImportControls();
 }
 function cancelEdit() {
   editId = null;
@@ -69,7 +70,7 @@ function cancelEdit() {
 function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); if (window.resetGame) window.resetGame(); }
 function tab(id) {
   document.querySelectorAll('main section').forEach(x => x.hidden = x.id !== id);
-  const learningNames = {words:'Lista słówek',study:'Fiszki',games:'Gry',tests:'Szybki test'};
+  const learningNames = {words:'Lista słówek',study:'Fiszki',games:'Gry',tests:'Szybki test',imports:'Importuj słownictwo'};
   const navId = learningNames[id] ? 'learning' : id;
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + navId));
   byId('learningBreadcrumb').hidden = !learningNames[id];
@@ -88,6 +89,7 @@ function renderLibrary() {
     ' <span class="tag">' + activeWords().filter(w => w.folder_id === f.id).length + ' słówek</span></div>').join('') || '<p>Brak folderów. Dodaj pierwszy folder powyżej.</p>';
   if (window.updateStudyFolders) window.updateStudyFolders();
   if (window.updateGameFolders) window.updateGameFolders();
+  if (window.updateImportFolders) window.updateImportFolders();
   renderWords();
   controls();
 }
@@ -143,6 +145,7 @@ window.addEventListener('toowee-account', event => {
   activeLanguage = null;
   byId('learningWorkspace').hidden = true;
   byId('languagePicker').hidden = !account.userId;
+  if (window.resetImport) window.resetImport();
   const version = ++libraryRevision;
   ready = false; saving = false;
   library = {words:[],folders:[]};
