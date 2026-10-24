@@ -34,7 +34,7 @@ function chooseLanguage(language) {
   byId('currentLanguage').textContent = language === 'Japanese' ? 'Uczysz się japońskiego' : 'Uczysz się angielskiego';
   byId('languagePicker').hidden = true;
   byId('learningWorkspace').hidden = false;
-  tab('dashboard');renderLibrary();
+  tab('learning');renderLibrary();
   if (window.resetStudy) window.resetStudy();
 }
 byId('chooseEnglish').onclick = () => chooseLanguage('English');
@@ -55,6 +55,7 @@ function controls() {
   byId('generateTest').disabled = disabled;
   byId('changeLanguage').disabled = saving;
   if (window.updateStudyControls) window.updateStudyControls();
+  if (window.updateGameControls) window.updateGameControls();
 }
 function cancelEdit() {
   editId = null;
@@ -63,10 +64,14 @@ function cancelEdit() {
   byId('saveWord').textContent = '+ Dodaj słówko';
   byId('cancelEdit').hidden = true;
 }
-function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); }
+function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); if (window.resetGame) window.resetGame(); }
 function tab(id) {
   document.querySelectorAll('main section').forEach(x => x.hidden = x.id !== id);
-  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + id));
+  const learningNames = {words:'Lista słówek',study:'Fiszki',games:'Gry',tests:'Szybki test'};
+  const navId = learningNames[id] ? 'learning' : id;
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + navId));
+  byId('learningBreadcrumb').hidden = !learningNames[id];
+  byId('learningViewName').textContent = learningNames[id] || '';
 }
 function renderLibrary() {
   byId('stats').textContent = activeWords().length + ' słówek • ' + activeFolders().length + ' folderów';
@@ -80,6 +85,7 @@ function renderLibrary() {
   byId('folderRows').innerHTML = activeFolders().map(f => '<div class="question">' + safe(f.name) +
     ' <span class="tag">' + activeWords().filter(w => w.folder_id === f.id).length + ' słówek</span></div>').join('') || '<p>Brak folderów. Dodaj pierwszy folder powyżej.</p>';
   if (window.updateStudyFolders) window.updateStudyFolders();
+  if (window.updateGameFolders) window.updateGameFolders();
   renderWords();
   controls();
 }
