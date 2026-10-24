@@ -51,6 +51,10 @@
     const id = session?.user?.id || null;
     const changed = id !== userId;
     userId = id;
+    if (changed || !window.tooweeAccount) {
+      window.tooweeAccount = { client, userId: id };
+      window.dispatchEvent(new CustomEvent('toowee-account', { detail: window.tooweeAccount }));
+    }
     el('signedOut').hidden = Boolean(id);
     el('signedIn').hidden = !id;
     if (id) {
