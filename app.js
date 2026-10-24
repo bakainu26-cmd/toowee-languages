@@ -20,6 +20,7 @@ function controls() {
   byId('refreshLibrary').disabled = !account?.userId || saving;
   byId('exportWords').disabled = disabled;
   byId('generateTest').disabled = disabled;
+  if (window.updateStudyControls) window.updateStudyControls();
 }
 function cancelEdit() {
   editId = null;
@@ -27,7 +28,7 @@ function cancelEdit() {
   byId('saveWord').textContent = '+ Dodaj słówko';
   byId('cancelEdit').hidden = true;
 }
-function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); }
+function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); }
 function tab(id) {
   document.querySelectorAll('main section').forEach(x => x.hidden = x.id !== id);
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + id));
@@ -43,6 +44,7 @@ function renderLibrary() {
   byId('filterFolder').value = filter;
   byId('folderRows').innerHTML = library.folders.map(f => '<div class="question">' + safe(f.name) +
     ' <span class="tag">' + library.words.filter(w => w.folder_id === f.id).length + ' słówek</span></div>').join('') || '<p>Brak folderów. Dodaj pierwszy folder powyżej.</p>';
+  if (window.updateStudyFolders) window.updateStudyFolders();
   renderWords();
   controls();
 }
