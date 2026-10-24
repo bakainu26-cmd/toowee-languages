@@ -83,6 +83,13 @@
     if(ok) {el('importText').value='';el('importFile').value='';refreshPreview();status('Gotowe! Zaimportowano '+payload.length+' słówek do języka '+languageInfo[language].name+'. Znajdziesz je na liście słówek i w fiszkach.');}
     else {status('Import nie został potwierdzony. '+el('libraryStatus').textContent,true);updateImportControls();}
   };
+  window.openVocabularyImport=()=>{
+    if(!canImport() || importBusy) return;
+    const chosen=el('filterFolder').value || el('wordFolder').value;
+    updateImportFolders();
+    el('importFolder').value=activeFolders().some(f=>f.id===chosen) ? chosen : '';
+    refreshPreview();tab('imports');
+  };
   window.updateImportControls=updateImportControls;window.updateImportFolders=updateImportFolders;window.resetImport=resetImport;
   updateImportFolders();
 })();
