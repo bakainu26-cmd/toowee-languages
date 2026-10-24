@@ -8,6 +8,7 @@ let saving = false;
 let editId = null;
 let quiz = [];
 let activeLanguage = null;
+const languageInfo = Object.freeze({English:{name:'Angielski',genitive:'angielskiego',target:'angielski',code:'en'},Japanese:{name:'Japoński',genitive:'japońskiego',target:'japoński',code:'ja'},Spanish:{name:'Hiszpański',genitive:'hiszpańskiego',target:'hiszpański',code:'es'}});
 function activeWords() { return library.words.filter(w => w.lang === activeLanguage); }
 function activeFolders() {
   const selectedIds = new Set(activeWords().map(w=>w.folder_id));
@@ -23,7 +24,7 @@ function showLanguagePicker() {
   controls();
 }
 function chooseLanguage(language) {
-  if (!account?.userId || saving || !['English','Japanese'].includes(language)) return;
+  if (!account?.userId || saving || !Object.hasOwn(languageInfo,language)) return;
   activeLanguage = language;
   cancelEdit();clearQuiz();
   byId('folderForm').reset();byId('search').value = '';byId('filterFolder').value = '';
@@ -31,7 +32,7 @@ function chooseLanguage(language) {
   byId('wordForm').elements.lang.value = language;
   byId('testLang').value = language;
   byId('studyLanguage').value = language;
-  byId('currentLanguage').textContent = language === 'Japanese' ? 'Uczysz się japońskiego' : 'Uczysz się angielskiego';
+  byId('currentLanguage').textContent = 'Uczysz się ' + languageInfo[language].genitive;
   byId('languagePicker').hidden = true;
   byId('learningWorkspace').hidden = false;
   tab('learning');renderLibrary();
@@ -39,6 +40,7 @@ function chooseLanguage(language) {
 }
 byId('chooseEnglish').onclick = () => chooseLanguage('English');
 byId('chooseJapanese').onclick = () => chooseLanguage('Japanese');
+byId('chooseSpanish').onclick = () => chooseLanguage('Spanish');
 byId('changeLanguage').onclick = showLanguagePicker;
 function safe(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -222,7 +224,7 @@ function makeTest() {
   quiz = library.words.filter(w=>w.lang===lang);
   for (let i=quiz.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [quiz[i],quiz[j]]=[quiz[j],quiz[i]]; }
   quiz = quiz.slice(0,10);
-  byId('testArea').innerHTML = quiz.length ? quiz.map((w,i)=>'<div class="question"><strong>'+(i+1)+'. '+safe(w.translation)+'</strong><label for="answer'+i+'">Przetłumacz na '+safe(lang)+'</label><input id="answer'+i+'" autocomplete="off"></div>').join('')+'<button onclick="checkTest()">Sprawdź odpowiedzi</button>' : '<p>Dodaj słówka w tym języku.</p>';
+  byId('testArea').innerHTML = quiz.length ? quiz.map((w,i)=>'<div class="question"><strong>'+(i+1)+'. '+safe(w.translation)+'</strong><label for="answer'+i+'">Przetłumacz na '+safe(languageInfo[lang]?.target || lang)+'</label><input id="answer'+i+'" autocomplete="off"></div>').join('')+'<button onclick="checkTest()">Sprawdź odpowiedzi</button>' : '<p>Dodaj słówka w tym języku.</p>';
 }
 function checkTest() {
   if (!ready || !quiz.length || !byId('answer0')) return;

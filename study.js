@@ -41,9 +41,9 @@
     el('studyCustomTimeField').hidden=el('studyMinutes').value!=='custom';
     const hints={all:'Wszystkie słówka w wybranym języku.',today:'Słówka, dla których nadszedł termin powtórki. Nowe, niećwiczone słówka nie należą do tego zakresu.',week:'Słówka dodane od poniedziałku tego tygodnia.',dates:'Wybierz daty dodania słówek. Obie daty są wliczone do zakresu.',sets:'Wybierz zestaw dostępny na Twoim koncie.'};
     el('studyScopeHint').textContent=hints[value]+(el('studyMode').value==='due' ? ' Tryb „Na dziś + nowe” dodatkowo pomija słówka zaplanowane na później.' : '');
-    const foreign=activeLanguage==='Japanese' ? 'japoński' : 'angielski';
+    const foreign=languageInfo[activeLanguage]?.target || 'język obcy';
     const select=el('studyDirection');
-    if(select.options?.length>=2) {select.options[0].textContent='Polski → '+foreign;select.options[1].textContent=(activeLanguage==='Japanese' ? 'Japoński' : 'Angielski')+' → polski';}
+    if(select.options?.length>=2) {select.options[0].textContent='Polski → '+foreign;select.options[1].textContent=(languageInfo[activeLanguage]?.name || 'Język obcy')+' → polski';}
   }
   function resetStudy() {
     ++version;busy=false;active=false;paused=false;expired=false;stopTicker();elapsedMs=0;runningSince=null;
@@ -106,10 +106,10 @@
     el('studyAnswer').hidden=true;el('revealStudy').hidden=false;el('knowStudyCard').hidden=true;el('retryStudyCard').hidden=true;
     const toTarget=direction==='toTarget';
     el('studyPrompt').textContent=toTarget ? card.translation : card.word;
-    el('studyPrompt').lang=toTarget ? 'pl' : card.lang==='Japanese' ? 'ja' : 'en';
+    el('studyPrompt').lang=toTarget ? 'pl' : languageInfo[card.lang]?.code || 'en';
     el('studyAnswerText').textContent=toTarget ? card.word : card.translation;
-    el('studyAnswerText').lang=toTarget ? card.lang==='Japanese' ? 'ja' : 'en' : 'pl';
-    el('studyPromptLabel').textContent=toTarget ? 'Przetłumacz na '+(card.lang==='Japanese' ? 'japoński' : 'angielski') : 'Przetłumacz na polski';
+    el('studyAnswerText').lang=toTarget ? languageInfo[card.lang]?.code || 'en' : 'pl';
+    el('studyPromptLabel').textContent=toTarget ? 'Przetłumacz na '+(languageInfo[card.lang]?.target || 'język obcy') : 'Przetłumacz na polski';
     el('studyPromptReading').textContent=card.reading || '';el('studyPromptReading').hidden=toTarget || card.lang!=='Japanese' || !card.reading || !el('studyReading').checked;
     el('studyAnswerReading').textContent=card.reading || '';el('studyAnswerReading').hidden=!toTarget || card.lang!=='Japanese' || !card.reading;
     el('studyProgress').textContent='Umiem: '+known+' z '+sessionWords.length+' • Pozostało: '+queue.length+' • Próby: '+attempts;

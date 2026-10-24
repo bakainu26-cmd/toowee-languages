@@ -30,7 +30,7 @@
       button.dataset.id=word.id;button.setAttribute('aria-pressed','false');
       button.textContent=side==='left' ? word.word : word.translation;
       if(side==='left' && word.reading) {const reading=document.createElement('small');reading.textContent=word.reading;button.append(reading);}
-      button.lang=side==='right' ? 'pl' : activeLanguage==='Japanese' ? 'ja' : 'en';
+      button.lang=side==='right' ? 'pl' : languageInfo[activeLanguage]?.code || 'en';
       button.addEventListener('click',()=>choose(side,word.id));el(id).append(button);
     }
   }
