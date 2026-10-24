@@ -5,7 +5,7 @@
   let progress = new Map();
   let progressLoaded = false;
   const el = id => document.getElementById(id);
-  const available = () => ready && !saving && Boolean(account?.userId);
+  const available = () => ready && !saving && Boolean(activeLanguage) && Boolean(account?.userId);
   const settings = ['studyFolder','studyLanguage','studyDirection','studyCount','studyReading','studyMode'];
   function setNotice(text) { el('studyNotice').textContent = text; }
   function resetStudy() {
@@ -27,8 +27,8 @@
   function updateStudyFolders() {
     const chosen = el('studyFolder').value;
     el('studyFolder').replaceChildren(new Option('Wszystkie foldery',''));
-    for (const folder of library.folders) el('studyFolder').add(new Option(folder.name,folder.id));
-    el('studyFolder').value = library.folders.some(f=>f.id === chosen) ? chosen : '';
+    for (const folder of activeFolders()) el('studyFolder').add(new Option(folder.name,folder.id));
+    el('studyFolder').value = activeFolders().some(f=>f.id === chosen) ? chosen : '';
     renderPiles();
   }
   function shuffle(rows) {

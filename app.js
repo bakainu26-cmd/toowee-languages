@@ -7,6 +7,39 @@ let ready = false;
 let saving = false;
 let editId = null;
 let quiz = [];
+let activeLanguage = null;
+function activeWords() { return library.words.filter(w => w.lang === activeLanguage); }
+function activeFolders() {
+  const selectedIds = new Set(activeWords().map(w=>w.folder_id));
+  const usedIds = new Set(library.words.map(w=>w.folder_id));
+  return library.folders.filter(f=>selectedIds.has(f.id) || !usedIds.has(f.id));
+}
+function showLanguagePicker() {
+  if (!account?.userId || saving) return;
+  activeLanguage = null;
+  cancelEdit();clearQuiz();
+  byId('learningWorkspace').hidden = true;
+  byId('languagePicker').hidden = false;
+  controls();
+}
+function chooseLanguage(language) {
+  if (!account?.userId || saving || !['English','Japanese'].includes(language)) return;
+  activeLanguage = language;
+  cancelEdit();clearQuiz();
+  byId('folderForm').reset();byId('search').value = '';byId('filterFolder').value = '';
+  byId('studyFolder').value = '';
+  byId('wordForm').elements.lang.value = language;
+  byId('testLang').value = language;
+  byId('studyLanguage').value = language;
+  byId('currentLanguage').textContent = language === 'Japanese' ? 'Uczysz się japońskiego' : 'Uczysz się angielskiego';
+  byId('languagePicker').hidden = true;
+  byId('learningWorkspace').hidden = false;
+  tab('dashboard');renderLibrary();
+  if (window.resetStudy) window.resetStudy();
+}
+byId('chooseEnglish').onclick = () => chooseLanguage('English');
+byId('chooseJapanese').onclick = () => chooseLanguage('Japanese');
+byId('changeLanguage').onclick = showLanguagePicker;
 function safe(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -15,16 +48,18 @@ function libraryStatus(text, error = false) {
   byId('libraryStatus').style.color = error ? '#a12743' : '';
 }
 function controls() {
-  const disabled = !ready || saving;
+  const disabled = !ready || saving || !activeLanguage;
   document.querySelectorAll('#wordForm button,#folderForm button,#wordRows button').forEach(b => b.disabled = disabled);
   byId('refreshLibrary').disabled = !account?.userId || saving;
   byId('exportWords').disabled = disabled;
   byId('generateTest').disabled = disabled;
+  byId('changeLanguage').disabled = saving;
   if (window.updateStudyControls) window.updateStudyControls();
 }
 function cancelEdit() {
   editId = null;
   byId('wordForm').reset();
+  byId('wordForm').elements.lang.value = activeLanguage || '';
   byId('saveWord').textContent = '+ Dodaj słówko';
   byId('cancelEdit').hidden = true;
 }
@@ -34,16 +69,16 @@ function tab(id) {
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + id));
 }
 function renderLibrary() {
-  byId('stats').textContent = library.words.length + ' słówek • ' + library.folders.length + ' folderów';
-  const options = library.folders.map(f => '<option value="' + safe(f.id) + '">' + safe(f.name) + '</option>').join('');
+  byId('stats').textContent = activeWords().length + ' słówek • ' + activeFolders().length + ' folderów';
+  const options = activeFolders().map(f => '<option value="' + safe(f.id) + '">' + safe(f.name) + '</option>').join('');
   const selected = byId('wordFolder').value;
   const filter = byId('filterFolder').value;
   byId('wordFolder').innerHTML = '<option value="">Bez folderu</option>' + options;
   byId('wordFolder').value = selected;
   byId('filterFolder').innerHTML = '<option value="">Wszystkie foldery</option>' + options;
   byId('filterFolder').value = filter;
-  byId('folderRows').innerHTML = library.folders.map(f => '<div class="question">' + safe(f.name) +
-    ' <span class="tag">' + library.words.filter(w => w.folder_id === f.id).length + ' słówek</span></div>').join('') || '<p>Brak folderów. Dodaj pierwszy folder powyżej.</p>';
+  byId('folderRows').innerHTML = activeFolders().map(f => '<div class="question">' + safe(f.name) +
+    ' <span class="tag">' + activeWords().filter(w => w.folder_id === f.id).length + ' słówek</span></div>').join('') || '<p>Brak folderów. Dodaj pierwszy folder powyżej.</p>';
   if (window.updateStudyFolders) window.updateStudyFolders();
   renderWords();
   controls();
@@ -51,7 +86,7 @@ function renderLibrary() {
 function renderWords() {
   const q = byId('search').value.toLocaleLowerCase().trim();
   const folder = byId('filterFolder').value;
-  byId('wordRows').innerHTML = library.words.filter(w => (!folder || w.folder_id === folder) &&
+  byId('wordRows').innerHTML = activeWords().filter(w => (!folder || w.folder_id === folder) &&
     [w.word,w.reading,w.translation,w.lang].some(v => String(v).toLocaleLowerCase().includes(q))).map(w =>
     '<tr><td>' + safe(w.lang) + '</td><td><strong>' + safe(w.word) + '</strong></td><td>' + safe(w.reading) +
     '</td><td>' + safe(w.translation) + '</td><td>' + safe(library.folders.find(f => f.id === w.folder_id)?.name || '—') +
@@ -97,6 +132,9 @@ async function loadLibrary() {
 }
 window.addEventListener('toowee-account', event => {
   account = event.detail;
+  activeLanguage = null;
+  byId('learningWorkspace').hidden = true;
+  byId('languagePicker').hidden = !account.userId;
   const version = ++libraryRevision;
   ready = false; saving = false;
   library = {words:[],folders:[]};
@@ -107,7 +145,7 @@ window.addEventListener('toowee-account', event => {
   if (account.userId) setTimeout(() => { if (version === libraryRevision) void loadLibrary(); },0);
 });
 async function writeLibrary(operation, success) {
-  if (!ready || saving || !account?.userId) return false;
+  if (!ready || saving || !account?.userId || !activeLanguage) return false;
   const version = libraryRevision;
   const snapshot = {...account};
   saving = true; controls(); libraryStatus('Zapisywanie w Supabase…');
@@ -130,7 +168,8 @@ async function writeLibrary(operation, success) {
 byId('wordForm').onsubmit = async event => {
   event.preventDefault();
   const f = event.target.elements;
-  const word = {lang:f.lang.value,word:f.word.value.trim(),reading:f.reading.value.trim(),translation:f.translation.value.trim(),folder_id:f.folder.value || null};
+  if (!activeLanguage) return;
+  const word = {lang:activeLanguage,word:f.word.value.trim(),reading:f.reading.value.trim(),translation:f.translation.value.trim(),folder_id:f.folder.value || null};
   if (!word.word || !word.translation) { libraryStatus('Wpisz słówko i tłumaczenie.',true); return; }
   const id = editId;
   const success = await writeLibrary(({client,userId}) => id
@@ -167,12 +206,12 @@ byId('refreshLibrary').onclick = () => { if (!saving) { cancelEdit();clearQuiz()
 byId('filterFolder').onchange = renderWords;
 byId('exportWords').onclick = () => {
   if (!ready) return;
-  const blob = new Blob([JSON.stringify({version:1,exported_at:new Date().toISOString(),...library},null,2)],{type:'application/json'});
+  const blob = new Blob([JSON.stringify({version:1,exported_at:new Date().toISOString(),language:activeLanguage,words:activeWords(),folders:activeFolders()},null,2)],{type:'application/json'});
   const url = URL.createObjectURL(blob); const a = document.createElement('a');
   a.href = url; a.download = 'toowee-vocabulary-' + new Date().toISOString().slice(0,10) + '.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 function makeTest() {
-  if (!ready || saving) return;
+  if (!ready || saving || !activeLanguage) return;
   const lang = byId('testLang').value;
   quiz = library.words.filter(w=>w.lang===lang);
   for (let i=quiz.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [quiz[i],quiz[j]]=[quiz[j],quiz[i]]; }
