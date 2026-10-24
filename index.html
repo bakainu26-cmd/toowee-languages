@@ -3,10 +3,38 @@
 <title>TooWee Languages</title>
 <style>
 :root{font-family:Inter,system-ui,Arial,sans-serif;color:#27213c;background:#f7f4ff}*{box-sizing:border-box}body{margin:0}header{background:#fff;border-bottom:1px solid #e5ddf5;padding:20px max(20px,calc((100% - 1100px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}h1{font-size:25px;margin:0;color:#7751bd}header small{color:#746987}main{max-width:1100px;margin:26px auto;padding:0 18px}nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}button{border:0;background:#7b58c5;color:white;border-radius:10px;padding:11px 15px;cursor:pointer;font-weight:600}button.alt{background:#eee8fa;color:#51368d}button.active{background:#3c2966}button.danger{background:#fce8ea;color:#a12743}.panel{background:white;border:1px solid #e8e0f3;border-radius:16px;padding:24px;margin-bottom:18px;box-shadow:0 4px 18px #3420550b}h2{margin:0 0 12px;font-size:21px}p{color:#6d6480}label{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #d8cce9;border-radius:9px;font:inherit}textarea{min-height:100px}form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-items:end}form>div{min-width:0}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px;border-bottom:1px solid #eee9f6}th{color:#716487;font-size:13px}section[hidden]{display:none}.hint{background:#f2ecfc;padding:12px;border-radius:10px}.tag{background:#eee8fa;border-radius:7px;padding:4px 8px;font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.question{border:1px solid #e6dff0;border-radius:12px;padding:15px;margin:12px 0}@media(max-width:600px){header{padding:15px}table{font-size:13px}th,td{padding:8px 4px}.panel{padding:16px}}
+[hidden]{display:none!important}button:disabled{opacity:.55;cursor:wait}.account-panel{border-top:4px solid #7b58c5}.account-forms{display:grid;grid-template-columns:1fr 1fr;gap:28px}.account-forms form{display:block}.account-forms button{margin-top:14px}.account-status{white-space:pre-wrap;overflow-wrap:anywhere}.account-status.error{color:#a12743}.account-status.success{color:#286040}input:focus-visible,button:focus-visible{outline:3px solid #bca5ec;outline-offset:2px}@media(max-width:650px){.account-forms{grid-template-columns:1fr}}
 </style></head><body>
 <header><div><h1>TooWee Languages</h1><small>by Magdalena Tułacz</small></div><span class="tag">Wersja demonstracyjna</span></header>
-<main><nav><button onclick="tab('dashboard')" id="nav-dashboard">Dashboard</button><button onclick="tab('words')" id="nav-words">Vocabulary</button><button onclick="tab('folders')" id="nav-folders">Folders</button><button onclick="tab('tests')" id="nav-tests">Test Preview</button></nav>
-<section id="dashboard" class="panel"><h2>Welcome to TooWee Languages ✨</h2><p>Twój panel do organizowania słownictwa angielskiego i japońskiego.</p><div class="hint">To demonstracja działająca lokalnie w przeglądarce. Nie ma jeszcze kont uczniów ani wspólnej bazy danych. Nie wpisuj prawdziwych danych uczniów.</div><p id="stats"></p><div class="actions"><button onclick="tab('words')">Dodaj słówka</button><button class="alt" onclick="tab('tests')">Zobacz test</button></div></section>
+<main>
+<div class="panel account-panel" id="accountPanel">
+<h2>Twoje konto</h2>
+<p id="authStatus" class="account-status" role="status" aria-live="polite">Ładowanie logowania…</p>
+<div id="signedOut" hidden>
+<div class="account-forms">
+<form id="loginForm">
+<h3>Zaloguj się</h3>
+<label for="loginEmail">E-mail</label><input id="loginEmail" name="email" type="email" autocomplete="username" required>
+<label for="loginPassword">Hasło</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+<button type="submit" disabled>Zaloguj się</button>
+</form>
+<form id="signupForm">
+<h3>Utwórz konto</h3>
+<label for="signupName">Imię lub nazwa</label><input id="signupName" name="display_name" autocomplete="nickname" maxlength="100" required>
+<label for="signupEmail">E-mail</label><input id="signupEmail" name="email" type="email" autocomplete="username" required>
+<label for="signupPassword">Hasło (minimum 8 znaków)</label><input id="signupPassword" name="password" type="password" minlength="8" autocomplete="new-password" required>
+<button type="submit" disabled>Utwórz konto</button>
+</form>
+</div>
+<p>Po rejestracji sprawdź pocztę i potwierdź adres e-mail, jeśli otrzymasz wiadomość z potwierdzeniem.</p>
+</div>
+<div id="signedIn" hidden>
+<p id="accountIdentity"></p><p id="profileStatus" role="status" aria-live="polite"></p>
+<div class="actions"><button id="logoutButton" type="button">Wyloguj się</button><button id="reloadProfile" class="alt" type="button">Odśwież profil</button></div>
+</div>
+</div>
+<nav><button onclick="tab('dashboard')" id="nav-dashboard">Dashboard</button><button onclick="tab('words')" id="nav-words">Vocabulary</button><button onclick="tab('folders')" id="nav-folders">Folders</button><button onclick="tab('tests')" id="nav-tests">Test Preview</button></nav>
+<section id="dashboard" class="panel"><h2>Welcome to TooWee Languages ✨</h2><p>Twój panel do organizowania słownictwa angielskiego i japońskiego.</p><div class="hint">Logowanie i profil są połączone z Supabase. Słówka, foldery i test poniżej nadal należą do osobnej demonstracji: zapisują się tylko w tej przeglądarce i są wspólne dla jej użytkowników. Nie wpisuj tu prywatnych materiałów ani danych uczniów.</div><p id="stats"></p><div class="actions"><button onclick="tab('words')">Dodaj słówka</button><button class="alt" onclick="tab('tests')">Zobacz test</button></div></section>
 <section id="words" class="panel" hidden><h2>Vocabulary Library</h2><form id="wordForm"><div><label>Język</label><select name="lang"><option value="English">English</option><option value="Japanese">Japanese</option></select></div><div><label>Słówko (kanji lub angielski)</label><input name="word" required placeholder="np. 食べる / commute"></div><div><label>Czytanie (japoński)</label><input name="reading" placeholder="np. たべる"></div><div><label>Tłumaczenie (polski)</label><input name="translation" required placeholder="np. jeść"></div><div><label>Folder</label><select name="folder" id="wordFolder"></select></div><div><button type="submit">+ Dodaj słówko</button></div></form><hr style="border:0;border-top:1px solid #eee8f6;margin:25px 0"><label>Filtruj</label><input id="search" oninput="renderWords()" placeholder="Szukaj słówka lub tłumaczenia"><div style="overflow-x:auto"><table><thead><tr><th>Język</th><th>Słówko</th><th>Czytanie</th><th>Tłumaczenie</th><th>Folder</th><th></th></tr></thead><tbody id="wordRows"></tbody></table></div></section>
 <section id="folders" class="panel" hidden><h2>Folders</h2><form id="folderForm"><div><label>Nazwa folderu</label><input name="name" required placeholder="np. JLPT N5"></div><div><button type="submit">+ Dodaj folder</button></div></form><div id="folderRows" style="margin-top:20px"></div></section>
 <section id="tests" class="panel" hidden><h2>Test Preview</h2><p>Przećwicz tłumaczenia słówek ze swojej biblioteki. Ten test nie zapisuje ocen ani nie ogranicza liczby prób.</p><div class="actions"><select id="testLang" style="max-width:200px"><option value="English">English</option><option value="Japanese">Japanese</option></select><button onclick="makeTest()">Wygeneruj test</button></div><div id="testArea"></div></section></main>
@@ -26,4 +54,5 @@ let quiz=[];
 function makeTest(){const lang=document.getElementById('testLang').value;quiz=[...data.words.filter(w=>w.lang===lang)].sort(()=>Math.random()-.5).slice(0,10);document.getElementById('testArea').innerHTML=quiz.length?quiz.map((w,i)=>'<div class="question"><strong>'+(i+1)+'. '+safe(w.translation)+'</strong><label>Przetłumacz na '+safe(lang)+'</label><input id="answer'+i+'" autocomplete="off" placeholder="Twoja odpowiedź"></div>').join('')+'<button onclick="checkTest()">Sprawdź odpowiedzi</button>':'<p>Dodaj najpierw słówka w wybranym języku.</p>'}
 function checkTest(){let n=0;const out=quiz.map((w,i)=>{const a=document.getElementById('answer'+i).value.trim().toLocaleLowerCase();const valid=[w.word,w.reading].filter(Boolean).map(v=>v.toLocaleLowerCase());const ok=valid.includes(a);if(ok)n++;return '<p>'+(ok?'✅':'❌')+' '+safe(w.translation)+' → '+safe(w.word)+(w.reading?' ('+safe(w.reading)+')':'')+'</p>'}).join('');document.getElementById('testArea').innerHTML='<h3>Wynik: '+n+' / '+quiz.length+'</h3>'+out+'<button onclick="makeTest()">Spróbuj ponownie</button>'}
 tab('dashboard');
-</script></body></html>
+</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
+<script src="auth.js"></script></body></html>
