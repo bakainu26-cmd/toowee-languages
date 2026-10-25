@@ -41,7 +41,7 @@
     el('fallAnswers').replaceChildren();
     const choices=shuffle([word,...shuffle(state.words.filter(w=>w.id!==word.id)).slice(0,3)]);
     choices.forEach((option,i)=>{const button=document.createElement('button');button.type='button';button.className='fall-answer';button.dataset.id=option.id;button.textContent=(i+1)+'. '+(toTarget?target(option):option.translation);button.addEventListener('click',()=>choose(option.id));el('fallAnswers').append(button);});
-    stats();draw();controls();if(!state.paused)frame=requestAnimationFrame(loop);
+    stats();draw();controls();el('fallSky').focus?.({preventScroll:true});if(!state.paused)frame=requestAnimationFrame(loop);
   }
   function finish(manual=false){
     if(!current())return;
@@ -60,7 +60,7 @@
     const word=state.words[state.index];el('fallWord').classList.add(correct?'fall-hit':'fall-miss');
     el('fallFeedback').textContent=(correct?'✓ Trafione! ':timeout?'⌛ Słówko spadło. '+(state.unlimitedLives?'':'Tracisz serduszko. '):'✗ To nie ta odpowiedź. '+(state.unlimitedLives?'':'Tracisz serduszko. '))+target(word)+' — '+word.translation;
     for(const button of el('fallAnswers').children)button.classList.toggle('correct',button.dataset.id===word.id);
-    stats();controls();
+    stats();controls();el('fallSky').focus?.({preventScroll:true});
     if(state.lives===0 || (!state.endless && state.index===state.words.length-1)){finish();return;}
     if(!state.endless && state.index+1===state.roundEnds[state.round]){
       state.roundEnd=true;el('fallNext').hidden=true;el('fallRoundEnd').hidden=false;
@@ -85,7 +85,7 @@
   }
   function togglePause(){
     if(!current())return;if(!state.paused){pause();return;}
-    if(document.hidden)return;state.paused=false;state.since=Date.now();controls();if(!state.feedback)frame=requestAnimationFrame(loop);
+    if(document.hidden)return;state.paused=false;state.since=Date.now();controls();el('fallSky').focus?.({preventScroll:true});if(!state.feedback)frame=requestAnimationFrame(loop);
   }
   function start(words,{owner,language,direction='toPolish',speed='normal',mode='rounds',onFinish}){
     reset();if(words.length<2)return false;
@@ -95,14 +95,24 @@
     el('fallingGame').hidden=false;nextWord();el('fallingGame').scrollIntoView?.({block:'start'});return true;
   }
   el('fallPause').onclick=togglePause;el('fallStop').onclick=()=>finish(true);
-  el('fallNext').onclick=()=>{if(!current() || state.paused || !state.feedback || state.roundEnd)return;state.index++;
+  function advance(){if(!current() || state.paused || !state.feedback || state.roundEnd)return;state.index++;
     if(state.endless && state.index>=state.words.length){const last=state.words[state.words.length-1].id;state.words=shuffle(state.words);if(state.words[0].id===last)[state.words[0],state.words[1]]=[state.words[1],state.words[0]];state.index=0;state.cycle++;}
-    nextWord();};
-  el('fallNextRound').onclick=()=>{if(!current() || state.paused || !state.roundEnd)return;state.round++;state.roundPoints=state.points;state.roundCorrect=state.correct;state.index++;nextWord();};
+    nextWord();}
+  function advanceRound(){if(!current() || state.paused || !state.roundEnd)return;state.round++;state.roundPoints=state.points;state.roundCorrect=state.correct;state.index++;nextWord();}
+  el('fallNext').onclick=advance;el('fallNextRound').onclick=advanceRound;
   el('fallEndGame').onclick=()=>{if(window.openGamesLobby)window.openGamesLobby();};
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
   document.addEventListener('keydown',event=>{
-    if(!current() || el('games').hidden || event.repeat || event.ctrlKey || event.metaKey || event.altKey || ['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName))return;
+    if(!current() || el('games').hidden || event.repeat || event.isComposing || event.target?.isContentEditable || event.ctrlKey || event.metaKey || event.altKey || ['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName))return;
+    if(['Enter',' ','Spacebar'].includes(event.key)){
+      // Keep native keyboard activation for Pause, End game and other controls.
+      const target=event.target;
+      if(target?.tagName==='BUTTON' && !Array.from(el('fallAnswers').children).includes(target) && !['fallNext','fallNextRound'].includes(target.id))return;
+      if(state.paused)return;
+      event.preventDefault();
+      if(state.feedback){if(state.roundEnd)advanceRound();else advance();}
+      return;
+    }
     if(/^[1-4]$/.test(event.key) && !state.feedback && !state.paused){const button=el('fallAnswers').children[Number(event.key)-1];if(button){event.preventDefault();choose(button.dataset.id);}}
   });
   window.TooweeFalling=Object.freeze({start,reset,pause,updateControls:controls});window.pauseFallingGame=pause;reset();
