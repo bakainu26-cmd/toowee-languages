@@ -73,9 +73,9 @@ function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); if (window
 function tab(id) {
   document.querySelectorAll('main section').forEach(x => x.hidden = x.id !== id);
   const learningNames = {words:'Lista słówek',study:'Fiszki',games:'Gry',tests:'Szybki test',imports:'Importuj słownictwo'};
-  const navId = learningNames[id] ? 'learning' : id;
+  const navId = id==='games' ? 'games' : learningNames[id] ? 'learning' : id;
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + navId));
-  byId('learningBreadcrumb').hidden = !learningNames[id];
+  byId('learningBreadcrumb').hidden = !learningNames[id] || (id==='games' && !window.getLearningContext?.());
   const selectedSet=window.getLearningContext?.();
   const setName=selectedSet ? library.folders.find(f=>f.id===selectedSet.folder)?.name || 'Bez zestawu' : '';
   byId('learningViewName').textContent = (learningNames[id] || '')+(setName ? ' · '+setName : '');
