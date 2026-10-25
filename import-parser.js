@@ -28,14 +28,18 @@ window.TooweeImport = Object.freeze({
     }
     for(let i=0;i<records.length;i++) {
       const record=records[i].trim();if(!record) continue;
+      // Markdown section headings are labels, not vocabulary entries.
+      if(options.language==='Japanese' && /^#{1,6}\s+\S/.test(record)) continue;
       if(options.threeColumns && options.dash) {errors.push({line:i+1,message:'Dla trzech kolumn wybierz tabulator lub własny separator.'});continue;}
       const parts=splitRecord(record);
       if(!parts) {errors.push({line:i+1,message:options.threeColumns ? 'Nie znaleziono trzech kolumn.' : 'Nie znaleziono separatora słówka i tłumaczenia.'});continue;}
       let word=parts[0].trim(),reading=options.threeColumns ? parts[1].trim() : '',translation=parts[parts.length-1].trim();
       if(options.reverse && !options.threeColumns) [word,translation]=[translation,word];
       if(options.language==='Japanese' && !options.threeColumns) {
-        const match=/^(.*?)\s*[（(]([ぁ-ゖァ-ヺー・\s〜～]+)[）)]$/.exec(word);
-        if(match) {word=match[1].trim();reading=match[2].trim();}
+        // Japanese notes may wrap the term in inline code or bold.
+        word=word.replace(/^(`+|\*\*|__)([\s\S]+?)\1$/, '$2').trim();
+        const match=/^(.*?)\s*(?:（([ぁ-ゖァ-ヺー・\s〜～]+)）|\(([ぁ-ゖァ-ヺー・\s〜～]+)\))$/.exec(word);
+        if(match) {word=match[1].trim();reading=(match[2] || match[3]).trim();}
       }
       if(!word || !translation) {errors.push({line:i+1,message:'Brakuje słówka lub tłumaczenia.'});continue;}
       if(word.length>500 || reading.length>500 || translation.length>1000) {errors.push({line:i+1,message:'Wpis jest za długi (słówko/czytanie: 500 znaków, tłumaczenie: 1000).'});continue;}

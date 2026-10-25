@@ -20,6 +20,7 @@
   function refreshPreview() {
     el('importCustomDelimiterField').hidden=el('importDelimiter').value!=='custom';
     el('importCustomRecordField').hidden=el('importRecordDelimiter').value!=='custom';
+    el('importJapaneseHint').hidden=activeLanguage!=='Japanese';
     el('importLanguageLabel').textContent=activeLanguage ? 'Import do języka: '+languageInfo[activeLanguage].name+'.' : 'Najpierw wybierz język nauki.';
     el('importErrors').replaceChildren();el('importPreview').replaceChildren();
     preview={rows:[],errors:[],duplicates:0};
