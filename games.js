@@ -124,7 +124,7 @@
     const words=shuffle((window.filterLearningWords?window.filterLearningWords(activeWords()):activeWords()).filter(w=>!folder || w.folder_id===folder)).filter(w=>{
       const term=normalize(w.word),meaning=normalize(w.translation);if(!term || !meaning || seenWords.has(term) || seenTranslations.has(meaning))return false;seenWords.add(term);seenTranslations.add(meaning);return true;
     });
-    const count=Number(el('gameCount').value);pairs=words.slice(0,[6,10,15].includes(count)?count:6);
+    const count=Number(el('gameCount').value);pairs=words.slice(0,[6,10,15,20,25].includes(count)?count:6);
     if(pairs.length<2){pairs=[];status('Do gry potrzeba co najmniej 2 różnych słówek i tłumaczeń w wybranym zestawie i kategorii.');return;}
     sessionOwner=account.userId;sessionLanguage=activeLanguage;startedAt=Date.now();
     status('Grasz: '+names[kind]+'. W tej rundzie: '+pairs.length+' słówek'+(pairs.length<count?' (tyle jest dostępnych)':'')+'.');
