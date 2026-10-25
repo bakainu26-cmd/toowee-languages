@@ -67,7 +67,7 @@
     const folder=el('gameFolder').value;
     // Keep both columns unambiguous when several entries share the same label.
     const seenWords=new Set(),seenTranslations=new Set();
-    const words=shuffle(activeWords().filter(w=>!folder || w.folder_id===folder)).filter(w=>{
+    const words=shuffle((window.filterLearningWords ? window.filterLearningWords(activeWords()) : activeWords()).filter(w=>!folder || w.folder_id===folder)).filter(w=>{
       if(seenWords.has(w.word) || seenTranslations.has(w.translation)) return false;
       seenWords.add(w.word);seenTranslations.add(w.translation);return true;
     });

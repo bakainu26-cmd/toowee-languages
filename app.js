@@ -18,6 +18,7 @@ function activeFolders() {
 function showLanguagePicker() {
   if (!account?.userId || saving) return;
   activeLanguage = null;
+  if(window.resetLearningSets)window.resetLearningSets();
   cancelEdit();clearQuiz();if (window.resetImport) window.resetImport();
   byId('learningWorkspace').hidden = true;
   byId('languagePicker').hidden = false;
@@ -26,6 +27,7 @@ function showLanguagePicker() {
 function chooseLanguage(language) {
   if (!account?.userId || saving || !Object.hasOwn(languageInfo,language)) return;
   activeLanguage = language;
+  if(window.resetLearningSets)window.resetLearningSets();
   cancelEdit();clearQuiz();if (window.resetImport) window.resetImport();
   byId('folderForm').reset();byId('search').value = '';byId('filterFolder').value = '';
   byId('studyFolder').value = '';
@@ -74,8 +76,11 @@ function tab(id) {
   const navId = learningNames[id] ? 'learning' : id;
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + navId));
   byId('learningBreadcrumb').hidden = !learningNames[id];
-  byId('learningViewName').textContent = learningNames[id] || '';
+  const selectedSet=window.getLearningContext?.();
+  const setName=selectedSet ? library.folders.find(f=>f.id===selectedSet.folder)?.name || 'Bez zestawu' : '';
+  byId('learningViewName').textContent = (learningNames[id] || '')+(setName ? ' · '+setName : '');
   if (id !== 'study' && window.pauseStudySession) window.pauseStudySession();
+  if (id === 'learning' && window.refreshLearningSets) void window.refreshLearningSets();
   if (id === 'progress' && window.loadProgressDashboard) void window.loadProgressDashboard();
 }
 function renderLibrary() {
@@ -94,12 +99,13 @@ function renderLibrary() {
   if (window.updateImportFolders) window.updateImportFolders();
   if (window.renderMemoryStats) window.renderMemoryStats();
   renderWords();
+  if(ready && window.refreshLearningSets)void window.refreshLearningSets();
   controls();
 }
 function renderWords() {
   const q = byId('search').value.toLocaleLowerCase().trim();
   const folder = byId('filterFolder').value;
-  byId('wordRows').innerHTML = activeWords().filter(w => (!folder || w.folder_id === folder) &&
+  byId('wordRows').innerHTML = (window.filterLearningWords ? window.filterLearningWords(activeWords()) : activeWords()).filter(w => (!folder || w.folder_id === folder) &&
     [w.word,w.reading,w.translation,w.lang].some(v => String(v).toLocaleLowerCase().includes(q))).map(w =>
     '<tr><td><strong>' + safe(w.word) + '</strong></td><td>' + safe(w.reading) +
     '</td><td>' + safe(w.translation) + '</td><td>' + safe(library.folders.find(f => f.id === w.folder_id)?.name || '—') +
@@ -148,6 +154,7 @@ window.addEventListener('toowee-account', event => {
   activeLanguage = null;
   byId('learningWorkspace').hidden = true;
   byId('languagePicker').hidden = !account.userId;
+  if(window.resetLearningSets)window.resetLearningSets();
   if (window.resetImport) window.resetImport();
   if (window.resetProgressDashboard) window.resetProgressDashboard();
   const version = ++libraryRevision;
@@ -228,7 +235,7 @@ byId('exportWords').onclick = () => {
 function makeTest() {
   if (!ready || saving || !activeLanguage) return;
   const lang = byId('testLang').value;
-  quiz = library.words.filter(w=>w.lang===lang);
+  quiz = window.filterLearningWords ? window.filterLearningWords(activeWords()) : library.words.filter(w=>w.lang===lang);
   for (let i=quiz.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [quiz[i],quiz[j]]=[quiz[j],quiz[i]]; }
   quiz = quiz.slice(0,10);
   byId('testArea').innerHTML = quiz.length ? quiz.map((w,i)=>'<div class="question"><strong>'+(i+1)+'. '+safe(w.translation)+'</strong><label for="answer'+i+'">Przetłumacz na '+safe(languageInfo[lang]?.target || lang)+'</label><input id="answer'+i+'" autocomplete="off"></div>').join('')+'<button onclick="checkTest()">Sprawdź odpowiedzi</button>' : '<p>Dodaj słówka w tym języku.</p>';

@@ -11,7 +11,7 @@
     if(!memoryLoaded || dataOwner!==account?.userId) {for(const id of ['memoryTodo','memoryShort','memoryLong'])el(id).textContent='—';return;}
     const counts=math.memory(activeWords(),records);
     el('memoryTodo').textContent=counts.todo;el('memoryShort').textContent=counts.short;el('memoryLong').textContent=counts.long;
-    el('memoryStatus').textContent='Łącznie '+counts.total+' słówek. Dane na podstawie zapisanych wyników końcowej weryfikacji.';
+    el('memoryStatus').textContent='Łącznie '+counts.total+' słówek. Dane na podstawie zapisanych wyników nauki i powtórek.';
   }
   function renderCalendar() {
     const today=math.dateKey(),set=new Set(days.map(d=>d.challenge_date));
@@ -29,7 +29,7 @@
     if(daysLoaded) {
       const streak=math.streaks(days.map(d=>d.challenge_date),today);
       el('currentStreak').textContent=streak.current;el('bestStreak').textContent=streak.best;el('challengeTotal').textContent=streak.total;
-      el('todayChallenge').textContent=streak.todayDone ? '✓ Dzisiejszy challenge zaliczony!' : 'Dzisiejszy challenge czeka. Ukończ sesję fiszek wraz z weryfikacją.';
+      el('todayChallenge').textContent=streak.todayDone ? '✓ Dzisiejszy challenge zaliczony!' : 'Dzisiejszy challenge czeka. Ukończ naukę z weryfikacją lub porcję powtórek.';
     } else {for(const id of ['currentStreak','bestStreak','challengeTotal'])el(id).textContent='—';el('todayChallenge').textContent='';}
     el('retryChallenge').hidden=!pending || pending.userId!==account?.userId;
     el('retryChallenge').disabled=recording;
