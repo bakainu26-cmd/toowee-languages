@@ -47,7 +47,7 @@
   }
   function finish(text){
     finished=true;el('gameResult').hidden=false;el('gameResultText').textContent=text+' Czas: '+Math.max(0,Math.floor((Date.now()-startedAt)/1000))+' s.';
-    status('Runda ukończona! Możesz zagrać ponownie albo wybrać inną grę.');updateGameControls();
+    status('Gra zakończona! Zagraj ponownie lub kliknij „Koniec gry”, aby wrócić do wyboru gier.');updateGameControls();el('gameResult').scrollIntoView?.({block:'nearest'});
   }
   function renderColumn(id,items,side){
     el(id).replaceChildren();
@@ -140,10 +140,10 @@
   }
   for(const key of Object.keys(names))el('gameType-'+key).onclick=()=>{kind=key;resetGame();};
   for(const id of ['gameFolder','gameCount','gameDirection','gameReading','fallSpeed'])el(id).onchange=resetGame;
-  el('startGame').onclick=startGame;el('replayGame').onclick=startGame;
+  el('startGame').onclick=startGame;el('replayGame').onclick=startGame;el('endGame').onclick=()=>window.openGamesLobby();
   el('nextGameQuestion').onclick=()=>{if(['quiz','write'].includes(kind) && inSession() && answered && questionIndex<questions.length-1){questionIndex++;renderQuestion();}};
   el('gameWriteForm').onsubmit=checkWritten;
-  window.openGamesLobby=()=>{if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab('games');};
+  window.openGamesLobby=()=>{if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab('games');el('games').scrollIntoView?.({block:'start'});};
   window.updateGameControls=updateGameControls;window.updateGameFolders=updateGameFolders;window.resetGame=resetGame;
   updateGameFolders();resetGame();
 })();

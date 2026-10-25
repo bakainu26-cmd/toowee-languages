@@ -7,17 +7,19 @@
   function shuffle(items){const out=[...items];for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
   function target(word){return word.word+(state.language==='Japanese' && word.reading?' ('+word.reading+')':'');}
   function controls(){
-    const enabled=Boolean(current());el('fallPause').disabled=!enabled;el('fallNext').disabled=!enabled || state.paused || !state.feedback;
+    const enabled=Boolean(current());el('fallPause').disabled=!enabled;el('fallNext').disabled=!enabled || state.paused || !state.feedback || state.roundEnd;
+    el('fallNextRound').disabled=!enabled || state.paused || !state.roundEnd;
     for(const button of el('fallAnswers').children)button.disabled=!enabled || state.paused || state.feedback;
     el('fallPause').textContent=state?.paused?'▶ Wznów':'Ⅱ Pauza';
     el('fallOverlay').hidden=!state?.paused;el('fallWord').hidden=Boolean(state?.paused);el('fallAnswers').hidden=Boolean(state?.paused);
   }
-  function reset(){stop();state=null;el('fallingGame').hidden=true;el('fallAnswers').replaceChildren();el('fallWord').textContent='';el('fallFeedback').textContent='';el('fallNext').hidden=true;el('fallOverlay').hidden=true;}
+  function reset(){stop();state=null;el('fallingGame').hidden=true;el('fallAnswers').replaceChildren();el('fallWord').textContent='';el('fallFeedback').textContent='';el('fallNext').hidden=true;el('fallOverlay').hidden=true;el('fallRoundEnd').hidden=true;}
   function stats(){
     el('fallPoints').textContent=state.points;el('fallLives').textContent='♥'.repeat(state.lives)+'♡'.repeat(3-state.lives);
     el('fallLives').setAttribute('aria-label','Pozostałe życia: '+state.lives+' z 3');
     el('fallLevel').textContent=1+Math.floor(state.correct/3);el('fallCounter').textContent=Math.min(state.index+1,state.words.length)+' / '+state.words.length;
-    el('fallCombo').textContent='Seria: '+state.combo+' · Rekord rundy: '+state.best;
+    el('fallRoundCounter').textContent='Runda '+(state.round+1)+' / '+state.roundEnds.length;
+    el('fallCombo').textContent='Seria: '+state.combo+' · Rekord gry: '+state.best;
   }
   function duration(){const base={slow:16000,normal:12000,fast:9000}[state.speed] || 12000;return Math.max(5000,base-Math.floor(state.correct/3)*900);}
   function draw(){
@@ -32,7 +34,7 @@
     if(!state.paused && !state.feedback)frame=requestAnimationFrame(loop);
   }
   function nextWord(){
-    if(!current())return;stop();state.feedback=false;state.paused=Boolean(document.hidden);state.used=0;state.duration=duration();state.since=Date.now();
+    if(!current())return;stop();state.feedback=false;state.roundEnd=false;el('fallRoundEnd').hidden=true;state.paused=Boolean(document.hidden);state.used=0;state.duration=duration();state.since=Date.now();
     el('fallFeedback').textContent='';el('fallNext').hidden=true;el('fallWord').classList.remove('fall-hit','fall-miss');
     const word=state.words[state.index],toTarget=state.direction==='toTarget';
     el('fallWord').textContent=toTarget?word.translation:target(word);el('fallWord').lang=toTarget?'pl':languageInfo[state.language]?.code || 'en';
@@ -42,10 +44,10 @@
     stats();draw();controls();if(!state.paused)frame=requestAnimationFrame(loop);
   }
   function finish(){
-    stop();state.finished=true;state.paused=false;controls();el('fallNext').hidden=true;
+    stop();state.finished=true;state.paused=false;state.roundEnd=false;el('fallRoundEnd').hidden=true;controls();el('fallNext').hidden=true;
     const won=state.lives>0;
-    el('fallFeedback').textContent+=' '+(won?'✦ Runda ukończona! Wszystkie słówka przeszły przez niebo.':'Koniec rundy — zabrakło serduszek. Spróbuj ponownie lub wybierz wolniejsze tempo.');
-    state.onFinish((won?'Runda ukończona! ':'Koniec rundy. ')+'Punkty: '+state.points+'. Trafienia: '+state.correct+' / '+state.words.length+'. Najlepsza seria: '+state.best+'.');
+    el('fallFeedback').textContent+=' '+(won?'✦ Gra ukończona! Wszystkie rundy za Tobą.':'Koniec gry — zabrakło serduszek. Spróbuj ponownie lub wybierz wolniejsze tempo.');
+    state.onFinish((won?'Gra ukończona! ':'Koniec gry. ')+'Rundy ukończone: '+(won?state.roundEnds.length:state.round)+' / '+state.roundEnds.length+'. Punkty: '+state.points+'. Trafienia: '+state.correct+' / '+state.words.length+'. Najlepsza seria: '+state.best+'.');
   }
   function resolve(correct,timeout=false){
     if(!current() || state.paused || state.feedback)return;
@@ -57,6 +59,13 @@
     for(const button of el('fallAnswers').children)button.classList.toggle('correct',button.dataset.id===word.id);
     stats();controls();
     if(state.lives===0 || state.index===state.words.length-1){finish();return;}
+    if(state.index+1===state.roundEnds[state.round]){
+      state.roundEnd=true;el('fallNext').hidden=true;el('fallRoundEnd').hidden=false;
+      const start=state.round===0?0:state.roundEnds[state.round-1];
+      el('fallRoundTitle').textContent='Runda '+(state.round+1)+' ukończona!';
+      el('fallRoundSummary').textContent='Trafienia: '+(state.correct-state.roundCorrect)+' / '+(state.roundEnds[state.round]-start)+'. Punkty w rundzie: '+(state.points-state.roundPoints)+'. Pozostałe życia: '+state.lives+'.';
+      controls();el('fallRoundEnd').scrollIntoView?.({block:'nearest'});return;
+    }
     el('fallNext').hidden=false;el('fallNext').textContent='Kolejne słówko →';
   }
   function choose(id){
@@ -77,11 +86,15 @@
   }
   function start(words,{owner,language,direction='toPolish',speed='normal',onFinish}){
     reset();if(words.length<2)return false;
-    state={words:shuffle(words),owner,language,direction,speed,onFinish,index:0,points:0,correct:0,lives:3,combo:0,best:0,paused:false,feedback:false,finished:false,used:0,duration:0,since:Date.now()};
+    const roundCount=Math.ceil(words.length/5),base=Math.floor(words.length/roundCount),extra=words.length%roundCount;
+    let total=0;const roundEnds=Array.from({length:roundCount},(_,i)=>total+=base+(i<extra?1:0));
+    state={round:0,roundEnds,roundEnd:false,roundPoints:0,roundCorrect:0,words:shuffle(words),owner,language,direction,speed,onFinish,index:0,points:0,correct:0,lives:3,combo:0,best:0,paused:false,feedback:false,finished:false,used:0,duration:0,since:Date.now()};
     el('fallingGame').hidden=false;nextWord();el('fallingGame').scrollIntoView?.({block:'start'});return true;
   }
   el('fallPause').onclick=togglePause;
-  el('fallNext').onclick=()=>{if(!current() || state.paused || !state.feedback)return;state.index++;nextWord();};
+  el('fallNext').onclick=()=>{if(!current() || state.paused || !state.feedback || state.roundEnd)return;state.index++;nextWord();};
+  el('fallNextRound').onclick=()=>{if(!current() || state.paused || !state.roundEnd)return;state.round++;state.roundPoints=state.points;state.roundCorrect=state.correct;state.index++;nextWord();};
+  el('fallEndGame').onclick=()=>{if(window.openGamesLobby)window.openGamesLobby();};
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
   document.addEventListener('keydown',event=>{
     if(!current() || el('games').hidden || event.repeat || event.ctrlKey || event.metaKey || event.altKey || ['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName))return;
