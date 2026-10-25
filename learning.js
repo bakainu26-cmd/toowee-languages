@@ -43,13 +43,14 @@
   }
   function openSet(group,category) {
     if(!available())return;
-    if(window.resetStudy)window.resetStudy();if(window.resetGame)window.resetGame();quiz=[];el('testArea').replaceChildren();
+    if(window.resetStudy)window.resetStudy();if(window.resetGame)window.resetGame();if(window.resetTasks)window.resetTasks();quiz=[];el('testArea').replaceChildren();
     context={folder:group.id,category,language:activeLanguage};
     el('learningSets').hidden=true;el('learningMethods').hidden=false;el('learningSetTitle').textContent=group.name+' — '+(labels[category] || 'W utrwalaniu');
     el('learningSetHint').textContent=category==='review' ? 'Powtórka: przypominasz sobie słówko raz. „Nie umiem” przenosi je do nauki.' : category==='learn' ? 'Nauka: ćwiczysz porcję, a na końcu potwierdzasz wynik w weryfikacji.' : 'Dodatkowe ćwiczenie nie przyspiesza etapów ani terminu powtórki. „Nie umiem” przenosi słówko do nauki.';
     el('studyMode').value=category==='learn' ? 'learn' : category==='review' ? 'review' : 'practice';
     el('search').value='';el('wordFolder').value=group.id || '';
-    el('studyScope').value='all';el('filterFolder').value=group.id || '';el('gameFolder').value=group.id || '';
+    el('studyScope').value='all';el('filterFolder').value=group.id || '';el('gameFolder').value=group.id || '';el('taskFolder').value=group.id || '';
+    if(window.updateTaskControls)window.updateTaskControls();
     if(window.resetStudy)window.resetStudy();renderWords();
   }
   function filter(words, progress=records) {

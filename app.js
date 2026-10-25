@@ -61,6 +61,7 @@ function controls() {
   if (window.updateStudyControls) window.updateStudyControls();
   if (window.updateGameControls) window.updateGameControls();
   if (window.updateImportControls) window.updateImportControls();
+  if(window.updateTaskControls)window.updateTaskControls();
 }
 function cancelEdit() {
   editId = null;
@@ -69,13 +70,13 @@ function cancelEdit() {
   byId('saveWord').textContent = '+ Dodaj słówko';
   byId('cancelEdit').hidden = true;
 }
-function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); if (window.resetGame) window.resetGame(); }
+function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); if (window.resetGame) window.resetGame(); if(window.resetTasks)window.resetTasks(); }
 function tab(id) {
   document.querySelectorAll('main section').forEach(x => x.hidden = x.id !== id);
-  const learningNames = {words:'Lista słówek',study:'Fiszki',games:'Gry',tests:'Szybki test',imports:'Importuj słownictwo'};
-  const navId = id==='games' ? 'games' : learningNames[id] ? 'learning' : id;
+  const learningNames = {words:'Lista słówek',study:'Fiszki',games:'Gry',tests:'Szybki test',imports:'Importuj słownictwo',tasks:'Zadania'};
+  const navId = ['games','tasks'].includes(id) ? id : learningNames[id] ? 'learning' : id;
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + navId));
-  byId('learningBreadcrumb').hidden = !learningNames[id] || (id==='games' && !window.getLearningContext?.());
+  byId('learningBreadcrumb').hidden = !learningNames[id] || (['games','tasks'].includes(id) && !window.getLearningContext?.());
   const selectedSet=window.getLearningContext?.();
   const setName=selectedSet ? library.folders.find(f=>f.id===selectedSet.folder)?.name || 'Bez zestawu' : '';
   byId('learningViewName').textContent = (learningNames[id] || '')+(setName ? ' · '+setName : '');
@@ -97,6 +98,7 @@ function renderLibrary() {
   if (window.updateStudyFolders) window.updateStudyFolders();
   if (window.updateGameFolders) window.updateGameFolders();
   if (window.updateImportFolders) window.updateImportFolders();
+  if(window.updateTaskFolders)window.updateTaskFolders();
   if (window.renderMemoryStats) window.renderMemoryStats();
   renderWords();
   if(ready && window.refreshLearningSets)void window.refreshLearningSets();
