@@ -33,6 +33,7 @@
     const hidden=new Set(shuffle(positions).slice(0,Math.max(1,Math.ceil(positions.length/2))));
     return letters.map((c,i)=>hidden.has(i)?'＿':c).join('');
   }
+  function targetLabel(word){return word.word+(activeLanguage==='Japanese' && word.reading?' ('+word.reading+')':'');}
   function generate(){
     if(!available())return;resetTasks();
     const folder=el('taskFolder').value,kind=el('taskType').value;
@@ -50,13 +51,13 @@
     const toTarget=sessionDirection==='toTarget',choicesForMatch=shuffle(selected);
     selected.forEach((word,index)=>{
       const card=document.createElement('div');card.className='question';const prompt=document.createElement('label');const inputId='taskAnswer-'+index;
-      prompt.setAttribute('for',inputId);prompt.textContent=(index+1)+'. '+(toTarget?word.translation:word.word);card.append(prompt);
+      prompt.setAttribute('for',inputId);prompt.textContent=(index+1)+'. '+(toTarget?word.translation:targetLabel(word));card.append(prompt);
       if(kind==='gaps'){const hint=document.createElement('p');hint.className='task-mask';hint.textContent=mask(activeLanguage==='Japanese' && word.reading?word.reading:word.word);hint.lang=languageInfo[activeLanguage]?.code || 'en';card.append(hint);}
       const input=document.createElement(['choice','match'].includes(kind)?'select':'input');input.id=inputId;
       if(['choice','match'].includes(kind)){
         input.add(new Option('Wybierz odpowiedź',''));
         const choices=kind==='match'?choicesForMatch:shuffle([word,...shuffle(words.filter(w=>w.id!==word.id)).slice(0,3)]);
-        for(const option of choices)input.add(new Option(toTarget?option.word:option.translation,option.id));
+        for(const option of choices)input.add(new Option(toTarget?targetLabel(option):option.translation,option.id));
       }else{input.type='text';input.autocomplete='off';input.spellcheck=false;input.maxLength=1000;input.setAttribute('autocapitalize','off');input.placeholder=kind==='gaps'?'Wpisz całe uzupełnione słówko':'Wpisz tłumaczenie';}
       const feedback=document.createElement('p');feedback.hidden=true;feedback.className='task-feedback';card.append(input,feedback);el('taskQuestions').append(card);rows.push({word,input,feedback});
     });
@@ -72,7 +73,7 @@
       const accepted=toTarget?[word.word,...(japanese && word.reading?[word.reading]:[])]:[word.translation];
       const correct=['choice','match'].includes(sessionKind)?input.value===word.id:accepted.some(answer=>normalize(answer,japanese)===normalize(input.value,japanese));
       if(correct)score++;
-      feedback.hidden=false;feedback.className='task-feedback '+(correct?'task-correct':'task-wrong');feedback.textContent=(correct?'✓ Dobrze. ':'✗ Poprawna odpowiedź: ')+(correct?'':accepted.join(' / '));
+      feedback.hidden=false;feedback.className='task-feedback '+(correct?'task-correct':'task-wrong');feedback.textContent=(correct?'✓ Dobrze. ':'✗ Poprawna odpowiedź: ')+(correct?'':japanese?targetLabel(word):accepted.join(' / '));
     }
     const result=document.createElement('h3');result.textContent='Wynik: '+score+' / '+rows.length+' ('+Math.round(100*score/rows.length)+'%)';el('taskResults').append(result);
     el('taskStatus').textContent='Zadania sprawdzone. Kliknij „Przygotuj zadania”, aby rozpocząć kolejną rundę.';updateTaskControls();
