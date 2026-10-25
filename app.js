@@ -80,6 +80,7 @@ function tab(id) {
   const selectedSet=window.getLearningContext?.();
   const setName=selectedSet ? library.folders.find(f=>f.id===selectedSet.folder)?.name || 'Bez zestawu' : '';
   byId('learningViewName').textContent = (learningNames[id] || '')+(setName ? ' · '+setName : '');
+  if(id!=='games' && window.pauseFallingGame)window.pauseFallingGame();
   if (id !== 'study' && window.pauseStudySession) window.pauseStudySession();
   if (id === 'learning' && window.refreshLearningSets) void window.refreshLearningSets();
   if (id === 'progress' && window.loadProgressDashboard) void window.loadProgressDashboard();

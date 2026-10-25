@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const el=id=>document.getElementById(id);
-  const names={match:'Połącz w pary',memory:'Memory',quiz:'Wybierz tłumaczenie',write:'Wpisz słówko',escape:'Escape room'};
+  const names={match:'Połącz w pary',memory:'Memory',quiz:'Wybierz tłumaczenie',write:'Wpisz słówko',escape:'Escape room',falling:'Spadające słówka'};
   let kind='match',pairs=[],left=null,right=null,attempts=0,deck=[],flipped=[],lock=false,hideTimer=null;
   let questions=[],questionIndex=0,score=0,answered=false,startedAt=null,sessionOwner=null,sessionLanguage=null,finished=false;
   const matched=new Set();
@@ -11,15 +11,17 @@
   function shuffle(rows){const out=[...rows];for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
   function updateGameControls(){
     el('startGame').disabled=!canPlay();
-    for(const id of ['gameCount','gameDirection','gameReading'])el(id).disabled=!canPlay();
+    for(const id of ['gameCount','gameDirection','gameReading','fallSpeed'])el(id).disabled=!canPlay();
     el('gameFolder').disabled=!canPlay() || Boolean(window.getLearningContext?.());
     el('nextGameQuestion').disabled=!inSession() || !answered;
     el('checkGameWrite').disabled=!inSession() || answered;el('gameWriteAnswer').disabled=!inSession() || answered;
     if(window.TooweeEscape)window.TooweeEscape.updateControls();
+    if(window.TooweeFalling)window.TooweeFalling.updateControls();
     if(pairs.length){if(kind==='match')showSelections();else if(kind==='memory')renderMemory();else for(const button of el('gameQuizOptions').children)button.disabled=!inSession() || answered;}
   }
   function resetGame(){
     if(window.TooweeEscape)window.TooweeEscape.reset();
+    if(window.TooweeFalling)window.TooweeFalling.reset();
     if(hideTimer!==null)clearTimeout(hideTimer);hideTimer=null;
     pairs=[];left=null;right=null;attempts=0;matched.clear();deck=[];flipped=[];lock=false;
     questions=[];questionIndex=0;score=0;answered=false;startedAt=null;sessionOwner=null;sessionLanguage=null;finished=false;
@@ -27,9 +29,9 @@
     for(const id of ['gameMatch','gameMemory','gameQuiz','gameResult','nextGameQuestion'])el(id).hidden=true;
     el('gameScore').textContent='';el('gameQuizFeedback').textContent='';el('gameWriteAnswer').value='';
     for(const key of Object.keys(names)){el('gameType-'+key).classList.toggle('active',kind===key);el('gameType-'+key).setAttribute('aria-pressed',String(kind===key));}
-    el('gameDirectionField').hidden=kind!=='quiz';
-    el('gameWriteHint').textContent=activeLanguage==='Japanese' ? 'Możesz wpisać kanji lub czytanie w hiraganie. Używamy czytania zapisanego przy słówku.' : 'Wpisz słówko w języku, którego się uczysz.';el('gameReadingField').hidden=activeLanguage!=='Japanese' || kind==='escape';
-    el('gameInstructions').textContent=kind==='escape' ? 'Zbadaj przedmioty w Bibliotece zaginionych słów. Rozwiązuj zagadki, zbierz trzy pieczęcie z cyframi i otwórz drzwi. Potrzebujesz co najmniej 3 słówek.' : kind==='match' ? 'Wybierz słówko po lewej i jego tłumaczenie po prawej. Dopasuj wszystkie pary.' : kind==='memory' ? 'Odkrywaj po dwie karty. Znajdź pary: słówko w języku obcym i jego polskie tłumaczenie.' : kind==='write' ? 'Przeczytaj polskie znaczenie i wpisz słówko z pamięci. Zatwierdź klawiszem Enter lub przyciskiem.' : 'Wybierz właściwe tłumaczenie spośród podanych odpowiedzi. Po każdej próbie zobaczysz poprawną odpowiedź.';
+    el('gameDirectionField').hidden=!['quiz','falling'].includes(kind);el('fallSpeedField').hidden=kind!=='falling';
+    el('gameWriteHint').textContent=activeLanguage==='Japanese' ? 'Możesz wpisać kanji lub czytanie w hiraganie. Używamy czytania zapisanego przy słówku.' : 'Wpisz słówko w języku, którego się uczysz.';el('gameReadingField').hidden=activeLanguage!=='Japanese' || ['escape','falling'].includes(kind);
+    el('gameInstructions').textContent=kind==='falling' ? 'Wybierz tłumaczenie, zanim słówko dotknie dolnej granicy. Masz trzy życia, a tempo rośnie co trzy trafienia. Możesz wybrać tempo i język pytania.' : kind==='escape' ? 'Zbadaj przedmioty w Bibliotece zaginionych słów. Rozwiązuj zagadki, zbierz trzy pieczęcie z cyframi i otwórz drzwi. Potrzebujesz co najmniej 3 słówek.' : kind==='match' ? 'Wybierz słówko po lewej i jego tłumaczenie po prawej. Dopasuj wszystkie pary.' : kind==='memory' ? 'Odkrywaj po dwie karty. Znajdź pary: słówko w języku obcym i jego polskie tłumaczenie.' : kind==='write' ? 'Przeczytaj polskie znaczenie i wpisz słówko z pamięci. Zatwierdź klawiszem Enter lub przyciskiem.' : 'Wybierz właściwe tłumaczenie spośród podanych odpowiedzi. Po każdej próbie zobaczysz poprawną odpowiedź.';
     status(canPlay() ? 'Wybierz grę i rozpocznij. Gry nie zmieniają harmonogramu powtórek ani nie zaliczają dziennego challenge’u.' : 'Zaloguj się i wczytaj bibliotekę.');
     updateGameControls();
   }
@@ -130,13 +132,14 @@
     if(pairs.length<(kind==='escape'?3:2)){pairs=[];status('Do gry potrzeba co najmniej '+(kind==='escape'?3:2)+' różnych słówek i tłumaczeń w wybranym zestawie i kategorii.');return;}
     sessionOwner=account.userId;sessionLanguage=activeLanguage;startedAt=Date.now();
     status('Grasz: '+names[kind]+'. W tej rundzie: '+pairs.length+' słówek'+(pairs.length<count?' (tyle jest dostępnych)':'')+'.');
-    if(kind==='escape'){if(window.TooweeEscape)window.TooweeEscape.start(pairs,{owner:sessionOwner,language:sessionLanguage,onFinish:finish});else status('Odśwież stronę, aby wczytać escape room.');}
+    if(kind==='falling'){if(window.TooweeFalling)window.TooweeFalling.start(pairs,{owner:sessionOwner,language:sessionLanguage,direction:el('gameDirection').value,speed:el('fallSpeed').value,onFinish:finish});else status('Odśwież stronę, aby wczytać grę.');}
+    else if(kind==='escape'){if(window.TooweeEscape)window.TooweeEscape.start(pairs,{owner:sessionOwner,language:sessionLanguage,onFinish:finish});else status('Odśwież stronę, aby wczytać escape room.');}
     else if(kind==='match'){el('gameMatch').hidden=false;renderColumn('gameWords',shuffle(pairs),'left');renderColumn('gameTranslations',shuffle(pairs),'right');el('gameScore').textContent='Pary: 0 / '+pairs.length;}
     else if(kind==='memory'){el('gameMemory').hidden=false;deck=shuffle(pairs.flatMap(word=>[{word,side:'target'},{word,side:'polish'}]));renderMemory();el('gameScore').textContent='Pary: 0 / '+pairs.length;}
     else {el('gameQuiz').hidden=false;questions=shuffle(pairs);renderQuestion();}
   }
   for(const key of Object.keys(names))el('gameType-'+key).onclick=()=>{kind=key;resetGame();};
-  for(const id of ['gameFolder','gameCount','gameDirection','gameReading'])el(id).onchange=resetGame;
+  for(const id of ['gameFolder','gameCount','gameDirection','gameReading','fallSpeed'])el(id).onchange=resetGame;
   el('startGame').onclick=startGame;el('replayGame').onclick=startGame;
   el('nextGameQuestion').onclick=()=>{if(['quiz','write'].includes(kind) && inSession() && answered && questionIndex<questions.length-1){questionIndex++;renderQuestion();}};
   el('gameWriteForm').onsubmit=checkWritten;

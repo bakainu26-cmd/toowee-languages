@@ -1,0 +1,39 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),path=require('path');
+const root=path.join(__dirname,'../');
+class Element {
+ constructor(){this.children=[];this._text='';this.value='';this.hidden=false;this.disabled=false;this.checked=false;this.dataset={};this.handlers={};this.attrs={};this.classes=new Set();this.style={};this.clientHeight=360;this.offsetHeight=90;this.classList={add:k=>this.classes.add(k),remove:k=>this.classes.delete(k),toggle:(k,on)=>on?this.classes.add(k):this.classes.delete(k)};}
+ set textContent(v){this._text=v;this.children=[]}get textContent(){return this._text}
+ append(...items){this.children.push(...items)}replaceChildren(...items){this.children=items}add(item){this.children.push(item)}
+ setAttribute(k,v){this.attrs[k]=v}addEventListener(k,fn){this.handlers[k]=fn}
+ click(){this.handlers.click?.()}
+}
+function setup(){
+ const ids=[...fs.readFileSync(root+'index.html','utf8').matchAll(/id="([^"]+)"/g)].map(m=>m[1]);const els=Object.fromEntries(ids.map(id=>[id,new Element()]));
+ els.fallSpeed.value='normal';els.gameCount.value='6';els.gameDirection.value='toPolish';els.gameReading.checked=true;
+ let timers=new Map(),sequence=0,context=null,clock=10000,frames=new Map(),events={};
+ class Clock extends Date {static now(){return clock}}
+ const words=Array.from({length:4},(_,i)=>({id:'w'+i,lang:'Japanese',folder_id:'a',word:'語'+i,reading:'ご'+i,translation:'PL '+i}));
+ const c={console,Date:Clock,Math:Object.assign(Object.create(Math),{random:()=>0}),String,Number,Boolean,Object,Array,Set,document:{hidden:false,addEventListener(type,fn){events[type]=fn},getElementById(id){assert(els[id],id);return els[id]},createElement(){return new Element()}},ready:true,saving:false,account:{userId:'owner',client:{from(){throw Error('Games must not write to database')}}},activeLanguage:'Japanese',languageInfo:{Japanese:{code:'ja'}},Option:function(t,v){this.value=v},activeWords:()=>words.filter(w=>w.lang===c.activeLanguage),activeFolders:()=>[{id:'a',name:'A'},{id:'b',name:'B'}],filterLearningWords:rows=>context?rows.filter(w=>context.includes(w.id)):rows,getLearningContext:()=>context,clearLearningContext:()=>{context=null},tab(id){c.tabbed=id},requestAnimationFrame(fn){frames.set(++sequence,fn);return sequence},cancelAnimationFrame(id){frames.delete(id)},setTimeout(fn){timers.set(++sequence,fn);return sequence},clearTimeout(id){timers.delete(id)}};c.window=c;vm.createContext(c);vm.runInContext(fs.readFileSync(root+'falling.js','utf8'),c);vm.runInContext(fs.readFileSync(root+'games.js','utf8'),c);
+ return {c,els,words,events,get frames(){return frames},elapse(ms){clock+=ms},advance(ms){clock+=ms;const pending=[...frames.values()];frames.clear();pending.forEach(fn=>fn())},set context(v){context=v},get timers(){return timers},tick(){const pending=[...timers.values()];timers.clear();pending.forEach(fn=>fn())},choose(kind){els['gameType-'+kind].onclick()},start(){els.startGame.onclick()}};
+}
+function correct(h){const prompt=h.els.fallWord.textContent;const word=h.words.find(w=>prompt===w.translation || prompt===w.word+' ('+w.reading+')');assert(word,prompt);return h.els.fallAnswers.children.find(b=>b.dataset.id===word.id)}
+let h=setup();h.choose('falling');h.start();assert.equal(h.els.fallingGame.hidden,false);assert.equal(h.frames.size,1);assert.equal(h.els.fallSpeedField.hidden,false);assert(h.els.fallWord.textContent.includes('('));assert.equal(h.els.fallTime.max,12000);
+h.advance(4000);assert.equal(h.els.fallTime.value,8000);assert.notEqual(h.els.fallWord.style.top,'0px');correct(h).click();assert.equal(h.els.fallPoints.textContent,100);assert.equal(h.frames.size,0);assert.equal(h.els.fallNext.hidden,false);correct(h).click();assert.equal(h.els.fallPoints.textContent,100);
+// Combo points, level/speed increase and successful completion.
+for(let i=1;i<4;i++){h.els.fallNext.onclick();correct(h).click();}assert.equal(h.els.gameResult.hidden,false);assert(h.els.gameResultText.textContent.includes('Trafienia: 4 / 4'));assert.equal(h.els.fallPoints.textContent,520);assert.equal(h.els.fallLevel.textContent,2);assert.equal(h.els.fallTime.max,11100);
+// Wrong clicks lose one heart once, reset combo and reveal the right answer.
+h=setup();h.choose('falling');h.start();const good=correct(h),bad=h.els.fallAnswers.children.find(b=>b.dataset.id!==good.dataset.id);bad.click();assert.equal(h.els.fallLives.textContent,'♥♥♡');bad.click();assert.equal(h.els.fallLives.textContent,'♥♥♡');assert(good.classes.has('correct'));assert(h.els.fallFeedback.textContent.includes('Tracisz serduszko'));
+// Repeated timeouts finish the round and stop animation.
+for(let i=0;i<2;i++){h.els.fallNext.onclick();h.advance(16000);}assert.equal(h.els.fallLives.textContent,'♡♡♡');assert.equal(h.els.gameResult.hidden,false);assert.equal(h.frames.size,0);h.advance(20000);assert.equal(h.els.fallLives.textContent,'♡♡♡');
+// Pause freezes clock and hides answers; backgrounding and navigation use the same pause.
+h=setup();h.choose('falling');h.start();h.advance(2000);h.els.fallPause.onclick();assert.equal(h.els.fallOverlay.hidden,false);assert.equal(h.els.fallWord.hidden,true);assert.equal(h.frames.size,0);h.advance(60000);h.els.fallPause.onclick();h.advance(1000);assert.equal(h.els.fallTime.value,9000);h.c.document.hidden=true;h.events.visibilitychange();assert.equal(h.frames.size,0);h.advance(60000);h.c.document.hidden=false;h.els.fallPause.onclick();h.advance(1000);assert.equal(h.els.fallTime.value,8000);h.c.pauseFallingGame();assert.equal(h.frames.size,0);
+// Timeout wins over an answer after the deadline, even before a drawing frame.
+h=setup();h.choose('falling');h.start();h.elapse(12000);correct(h).click();assert.equal(h.els.fallLives.textContent,'♥♥♡');assert.equal(h.els.fallPoints.textContent,0);
+// Direction, speed, language and kanji/readings in choice labels.
+h=setup();h.els.gameDirection.value='toTarget';h.els.fallSpeed.value='slow';h.choose('falling');h.start();assert.equal(h.els.fallTime.max,16000);assert(h.els.fallAnswers.children.every(b=>b.textContent.includes('(')));assert(h.words.some(w=>w.translation===h.els.fallWord.textContent));
+// Shortcuts 1–4 answer the active word; repeats and typing fields do not.
+let prevented=false;const goodIndex=h.els.fallAnswers.children.indexOf(correct(h));h.events.keydown({key:String(goodIndex+1),target:{tagName:'INPUT'},preventDefault(){prevented=true}});assert.equal(h.els.fallPoints.textContent,0);h.events.keydown({key:String(goodIndex+1),target:{tagName:'BODY'},preventDefault(){prevented=true}});assert(prevented);assert.equal(h.els.fallPoints.textContent,100);
+// Restart/switch cancels animation; category, folder and account safeguards stay intact.
+h.els.replayGame.onclick();assert.equal(h.els.fallPoints.textContent,0);assert.equal(h.frames.size,1);h.choose('match');assert.equal(h.frames.size,0);assert.equal(h.els.fallingGame.hidden,true);
+h=setup();h.context=['w0','w1'];h.choose('falling');h.start();assert.equal(h.els.fallCounter.textContent,'1 / 2');assert.equal(h.els.gameFolder.disabled,true);h.c.account.userId='other';const points=h.els.fallPoints.textContent;correct(h).click();assert.equal(h.els.fallPoints.textContent,points);h.advance(5000);assert.equal(h.frames.size,0);h.c.resetGame();assert.equal(h.els.fallingGame.hidden,true);
+console.log('PASS: falling animation/timeouts, lives, combo/speed, directions/readings, pause/background/navigation, shortcuts, restart, stale-owner guards and category isolation; no database writes');
