@@ -5,10 +5,52 @@
   let direction='toTarget',busy=false,version=0,progressOwner=null,progress=new Map(),progressLoaded=false;
   let active=false,paused=false,elapsedMs=0,runningSince=null,budgetMs=0,sessionGoalMs=0,learningElapsedMs=0,ticker=null;
   let challengeReported=false,sessionOwner=null,sessionLanguage=null,portionSize=10,sessionKind='learn';
+  let focused=false,pendingRating=null,cardHistory=[],historyIndex=null;
   const el=id=>document.getElementById(id),scope=window.TooweeStudyScope;
   const available=()=>ready && !saving && Boolean(activeLanguage) && Boolean(account?.userId);
   const settings=['studyScope','studyFolder','studyLanguage','studyDirection','studyCount','studyReading','studyMode','studyDateFrom','studyDateTo','studyMinutes','studyCustomMinutes'];
   function setNotice(text) {el('studyNotice').textContent=text;}
+  const hasSession=()=>sessionOwner===account?.userId && phase!=='idle';
+  function route(hash,push=false){if(!window.history || !window.location || window.location.hash===hash)return;window.history[push?'pushState':'replaceState'](null,'',hash);}
+  function setFocus(value){focused=value;document.body?.classList.toggle('study-focus',value);}
+  function openFocus(){if(!hasSession())return;if(active && paused && !document.hidden){paused=false;runningSince=Date.now();}setFocus(true);route('#/fiszki/sesja',true);updateStudyControls();el('studyNext').focus?.({preventScroll:true});}
+  function closeFocus(){pauseStudySession();setFocus(false);route('#/fiszki');updateStudyControls();el('resumeStudy').focus?.({preventScroll:true});}
+  function tabChanged(id){
+    if(id==='study'){route(focused?'#/fiszki/sesja':'#/fiszki');return;}
+    if(focused || window.location?.hash?.startsWith('#/fiszki')){pauseStudySession();setFocus(false);route('#/'+id);}
+  }
+  function syncRoute(){
+    const hash=window.location?.hash || '';
+    if(!available())return;
+    if(hash==='#/fiszki/sesja' && hasSession()){setFocus(true);if(typeof tab==='function')tab('study');updateStudyControls();return;}
+    if(focused || hash.startsWith('#/fiszki')){pauseStudySession();setFocus(false);const id=hash.startsWith('#/fiszki')?'study':['learning','games','tasks','progress','folders','words'].find(id=>hash==='#/'+id) || 'learning';if(typeof tab==='function')tab(id);updateStudyControls();}
+  }
+  function paintCard(card){
+    const toTarget=direction==='toTarget';
+    el('studyPrompt').textContent=toTarget ? card.translation : card.word;el('studyPrompt').lang=toTarget ? 'pl' : languageInfo[card.lang]?.code || 'en';
+    el('studyAnswerText').textContent=toTarget ? card.word : card.translation;el('studyAnswerText').lang=toTarget ? languageInfo[card.lang]?.code || 'en' : 'pl';
+    el('studyPromptReading').textContent=card.reading || '';el('studyPromptReading').hidden=toTarget || card.lang!=='Japanese' || !card.reading || !el('studyReading').checked;
+    el('studyAnswerReading').textContent=card.reading || '';el('studyAnswerReading').hidden=!toTarget || card.lang!=='Japanese' || !card.reading;
+  }
+  function showHistory(){
+    const item=cardHistory[historyIndex];if(!item)return;
+    paintCard(item.card);el('studyAnswer').hidden=false;el('revealStudy').hidden=true;el('knowStudyCard').hidden=true;el('retryStudyCard').hidden=true;
+    el('studyPhaseLabel').textContent='Poprzednia fiszka';el('studyProgress').textContent='Podgląd '+(historyIndex+1)+' / '+cardHistory.length+' · Twoja ocena: '+(item.known?'Umiem':'Nie umiem');
+    el('studyPromptLabel').textContent='Podgląd wcześniejszej fiszki';setNotice('Przeglądasz wcześniejszą fiszkę. „Następny” wróci do bieżącej — podgląd nie zmienia zapisanych ocen.');updateStudyControls();
+  }
+  function previous(){if(!active || busy || paused || !cardHistory.length)return;historyIndex=historyIndex===null?cardHistory.length-1:Math.max(0,historyIndex-1);showHistory();}
+  async function next(){
+    if(!available() || busy || !active || paused)return;
+    if(historyIndex!==null){historyIndex++;if(historyIndex<cardHistory.length)showHistory();else{historyIndex=null;renderCard(true);}return;}
+    if(!revealed){reveal();return;}
+    if(pendingRating===null){setNotice('Wybierz „Umiem” lub „Nie umiem”, a potem kliknij „Następny” albo naciśnij spację lub Enter.');return;}
+    await markCard(pendingRating);
+  }
+  function selectRating(known){
+    if(!available() || busy || !active || paused || historyIndex!==null || !revealed)return;
+    pendingRating=known;updateStudyControls();setNotice('Wybrano „'+(known?'Umiem':'Nie umiem')+'”. Przejdź dalej przyciskiem „Następny”, spacją lub Enterem.');el('studyNext').focus?.({preventScroll:true});
+  }
+
   function stopTicker() {if(ticker!==null) clearInterval(ticker);ticker=null;}
   function elapsed() {return elapsedMs+(runningSince===null ? 0 : Math.max(0,Date.now()-runningSince));}
   function settleClock() {elapsedMs=elapsed();runningSince=null;}
@@ -20,7 +62,7 @@
     el('studyTimerLabel').textContent=phase==='verify' ? 'Czas weryfikacji' : phase==='review' ? 'Czas powtórki' : budgetMs ? 'Pozostały czas nauki' : 'Czas nauki';
     el('studyTimerValue').textContent=formatTime(phase==='verify' ? used-learningElapsedMs : budgetMs ? budgetMs-used : used);
     el('pauseStudy').textContent=paused ? 'Wznów' : 'Pauza';
-    if(active && budgetMs && used>=budgetMs && !busy){if(phase==='learn')beginVerification('Czas nauki minął.');else if(phase==='review')void saveResults();}
+    if(active && budgetMs && used>=budgetMs && !busy){if(pendingRating!==null && revealed)void markCard(pendingRating,false);if(active && phase==='learn')beginVerification('Czas nauki minął.');else if(active && phase==='review' && !busy)void saveResults();}
   }
   function startClock() {
     if(document.hidden) {paused=true;runningSince=null;}else {paused=false;runningSince=Date.now();}
@@ -43,6 +85,8 @@
     if(select.options?.length>=2) {select.options[0].textContent='Polski → '+(languageInfo[activeLanguage]?.target || 'język obcy');select.options[1].textContent=(languageInfo[activeLanguage]?.name || 'Język obcy')+' → polski';}
   }
   function resetStudy() {
+    if(focused){setFocus(false);route('#/fiszki');}
+    pendingRating=null;cardHistory=[];historyIndex=null;
     ++version;busy=false;active=false;paused=false;phase='idle';stopTicker();elapsedMs=0;runningSince=null;budgetMs=0;sessionGoalMs=0;learningElapsedMs=0;
     queue=[];pool=[];sessionWords=[];training.clear();verified.clear();originalProgress.clear();verificationIds.clear();revealed=false;attempts=0;verificationTotal=0;challengeReported=false;sessionOwner=null;sessionLanguage=null;
     if(progressOwner!==account?.userId) {progress.clear();progressLoaded=false;progressOwner=null;}
@@ -59,8 +103,15 @@
     el('studyMode').disabled=busy || Boolean(window.getLearningContext?.());
     el('pauseStudy').disabled=disabled || !active || !['learn','verify','review'].includes(phase);
     el('retryStudySave').disabled=disabled;
+    el('studyPrevious').disabled=disabled || !active || paused || !cardHistory.length || historyIndex===0;
+    el('studyNext').disabled=disabled || !active || paused;
+    el('studyNext').textContent='Następny →';
+    el('closeStudyFocus').disabled=busy;
+    el('resumeStudy').hidden=!hasSession() || focused;el('resumeStudy').disabled=busy;
+    for(const [id,value] of [['knowStudyCard',true],['retryStudyCard',false]]){el(id).classList.toggle('selected-rating',historyIndex===null && pendingRating===value);el(id).setAttribute('aria-pressed',String(historyIndex===null && pendingRating===value));}
+
     el('studyCard').hidden=paused;el('studyActionRow').hidden=paused;
-    el('studyCard').draggable=active && revealed && !paused && !disabled && ['learn','verify','review'].includes(phase);
+    el('studyCard').draggable=historyIndex===null && active && revealed && !paused && !disabled && ['learn','verify','review'].includes(phase);
   }
   function updateStudyFolders() {
     const chosen=el('studyFolder').value;el('studyFolder').replaceChildren(new Option('Wybierz zestaw',''));
@@ -82,16 +133,14 @@
   async function loadProgress(snapshot) {
     const result=new Map();for(let start=0;;start+=500){const {data,error}=await snapshot.client.from('vocabulary_progress').select('*').eq('owner_id',snapshot.userId).order('word_id').range(start,start+499);if(error)throw error;data.forEach(p=>result.set(p.word_id,p));if(data.length<500)return result;}
   }
-  function renderCard() {
-    const card=queue[0];if(!card)return;revealed=false;
+  function renderCard(preserve=false) {
+    const card=queue[0];if(!card)return;if(!preserve){revealed=false;pendingRating=null;}historyIndex=null;
     el('studySummary').hidden=true;el('studySession').hidden=false;el('studyAnswer').hidden=true;el('revealStudy').hidden=false;el('knowStudyCard').hidden=true;el('retryStudyCard').hidden=true;
     const toTarget=direction==='toTarget';
     el('studyPhaseLabel').textContent=phase==='verify' ? 'Końcowa weryfikacja' : phase==='review' ? 'Powtórka' : 'Nauka';
-    el('studyPrompt').textContent=toTarget ? card.translation : card.word;el('studyPrompt').lang=toTarget ? 'pl' : languageInfo[card.lang]?.code || 'en';
-    el('studyAnswerText').textContent=toTarget ? card.word : card.translation;el('studyAnswerText').lang=toTarget ? languageInfo[card.lang]?.code || 'en' : 'pl';
+    paintCard(card);
     el('studyPromptLabel').textContent=phase==='verify' ? 'Sprawdź, czy nadal pamiętasz' : toTarget ? 'Przetłumacz na '+(languageInfo[card.lang]?.target || 'język obcy') : 'Przetłumacz na polski';
-    el('studyPromptReading').textContent=card.reading || '';el('studyPromptReading').hidden=toTarget || card.lang!=='Japanese' || !card.reading || !el('studyReading').checked;
-    el('studyAnswerReading').textContent=card.reading || '';el('studyAnswerReading').hidden=!toTarget || card.lang!=='Japanese' || !card.reading;
+    el('studyAnswer').hidden=!revealed;el('revealStudy').hidden=revealed;el('knowStudyCard').hidden=!revealed;el('retryStudyCard').hidden=!revealed;
     el('studyProgress').textContent=['verify','review'].includes(phase) ? 'Sprawdzono: '+verified.size+' z '+verificationTotal+' • Potwierdzone „Umiem”: '+confirmedCount()+' • Pozostało: '+queue.length : 'Wstępnie umiem: '+learnedCount()+' z '+sessionWords.length+' • W tej porcji pozostało: '+queue.length+' • Próby: '+attempts;
     el('studyProgressBar').max=phase==='verify' ? verificationTotal : sessionWords.length;el('studyProgressBar').value=['verify','review'].includes(phase) ? verified.size : learnedCount();
     updateStudyControls();setNotice(paused ? 'Nauka wstrzymana. Kliknij „Wznów”.' : phase==='review' ? 'Przypomnij sobie odpowiedź samodzielnie. Jedna ocena wystarczy; trudne słówka wrócą do nauki.' : phase==='verify' ? 'To druga próba. Oceń szczerze, czy samodzielnie przypominasz sobie odpowiedź. Wynik tej rundy zapisze się w systemie.' : 'Uczysz się. „Nie umiem” wróci w tej samej sesji; „Umiem” sprawdzimy jeszcze na koniec.');
@@ -115,12 +164,13 @@
       if(!rows.length){renderPiles();setNotice('Brak słówek pasujących do zakresu i trybu nauki.');return;}
       direction=el('studyDirection').value;portionSize=Number(el('studyCount').value);if(![10,15,20,25].includes(portionSize))portionSize=10;
       pool=[...rows];sessionOwner=snapshot.userId;sessionLanguage=activeLanguage;phase=sessionKind==='review' ? 'review' : 'learn';active=true;addPortion();if(phase==='review')verificationTotal=sessionWords.length;
-      startClock();el('studyTimer').hidden=false;renderCard();
+      startClock();el('studyTimer').hidden=false;renderCard();openFocus();
     }catch(error){if(current===version)setNotice(['PGRST205','42P01'].includes(error.code)?'Uruchom spaced_repetition_setup.sql w Supabase.':'Nie udało się wczytać powtórek. '+(error.message||''));}
     finally{if(current===version){busy=false;updateStudyControls();}}
   }
   function beginVerification(reason='Część do nauki ukończona.') {
     if(!active||phase!=='learn'||busy)return;
+    pendingRating=null;cardHistory=[];historyIndex=null;
     settleClock();learningElapsedMs=elapsedMs;stopTicker();budgetMs=0;paused=false;phase='verify';
     queue=shuffle(sessionWords.filter(w=>training.get(w.id)===true));verificationTotal=queue.length;verificationIds=new Set(queue.map(w=>w.id));revealed=false;
     el('studyTimeUp').hidden=true;
@@ -128,15 +178,15 @@
     startClock();renderCard();setNotice(reason+' Teraz od początku sprawdzisz '+verificationTotal+' słówek oznaczonych „Umiem”. Weryfikacja nie ma limitu czasu.');
   }
   function reveal() {
-    if(!available()||busy||!active||paused||!queue.length||revealed)return;
+    if(!available()||busy||!active||paused||!queue.length||revealed||historyIndex!==null)return;
     const currentPhase=phase;updateTimer();if(phase!==currentPhase||!queue.length)return;
     revealed=true;el('studyAnswer').hidden=false;el('revealStudy').hidden=true;el('knowStudyCard').hidden=false;el('retryStudyCard').hidden=false;updateStudyControls();
     setNotice(['verify','review'].includes(phase)?'Czy pamiętasz bez podpowiedzi? Ta ocena trafi do harmonogramu powtórek.':'Przeciągnij do wybranej przegródki lub użyj przycisków.');
   }
-  async function markCard(isKnown) {
-    if(!available()||busy||!active||paused||!revealed||!queue.length||!['learn','verify','review'].includes(phase))return;
-    const oldPhase=phase;updateTimer();if(oldPhase!==phase)return;
-    const card=queue.shift();revealed=false;attempts++;
+  async function markCard(isKnown,checkTime=true) {
+    if(!available()||busy||!active||(paused && checkTime)||!revealed||!queue.length||!['learn','verify','review'].includes(phase))return;
+    const oldPhase=phase;if(checkTime)updateTimer();if(oldPhase!==phase)return;
+    const card=queue.shift();cardHistory.push({card,known:isKnown,phase});historyIndex=null;pendingRating=null;revealed=false;attempts++;
     if(phase==='review'){
       training.set(card.id,isKnown);verified.set(card.id,isKnown);renderPiles();
       if(queue.length)renderCard();
@@ -179,16 +229,25 @@
     finally{if(current===version){busy=false;updateStudyControls();}}
   }
   function pauseStudySession() {
-    if(!active||paused||busy)return;settleClock();paused=true;updateTimer();updateStudyControls();setNotice('Sesja wstrzymana. Kliknij „Wznów”, aby kontynuować.');
+    if(!active||paused||busy)return;settleClock();paused=true;updateTimer();if(active && !paused){settleClock();paused=true;}updateStudyControls();setNotice('Sesja wstrzymana. Kliknij „Wznów”, aby kontynuować.');
   }
-  el('startStudy').onclick=startStudy;el('revealStudy').onclick=reveal;el('knowStudyCard').onclick=()=>markCard(true);el('retryStudyCard').onclick=()=>markCard(false);
+  el('startStudy').onclick=startStudy;el('revealStudy').onclick=reveal;el('knowStudyCard').onclick=()=>selectRating(true);el('retryStudyCard').onclick=()=>selectRating(false);
+  el('studyPrevious').onclick=previous;el('studyNext').onclick=next;el('closeStudyFocus').onclick=closeFocus;el('resumeStudy').onclick=openFocus;
   el('retryStudySave').onclick=()=>{if(phase==='save-error')void saveResults();};
   el('pauseStudy').onclick=()=>{if(!active||busy)return;if(paused){paused=false;runningSince=Date.now();updateTimer();updateStudyControls();setNotice('Sesja wznowiona.');}else pauseStudySession();};
   el('continueStudy').onclick=()=>{};el('finishStudy').onclick=()=>{};
-  el('studyCard').addEventListener('dragstart',event=>{if(!active||!revealed||busy||paused||!available()||!queue.length){event.preventDefault();return;}event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',queue[0].id);});
-  for(const id of ['unknownPile','knownPile']){const pile=el(id);pile.addEventListener('dragover',event=>{if(active&&revealed&&!busy&&!paused&&available()){event.preventDefault();pile.classList.add('drag-over');}});pile.addEventListener('dragleave',()=>pile.classList.remove('drag-over'));pile.addEventListener('drop',event=>{event.preventDefault();pile.classList.remove('drag-over');if(event.dataTransfer.getData('text/plain')===queue[0]?.id)void markCard(id==='knownPile');});}
+  el('studyCard').addEventListener('dragstart',event=>{if(!active||!revealed||busy||paused||historyIndex!==null||!available()||!queue.length){event.preventDefault();return;}event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',queue[0].id);});
+  for(const id of ['unknownPile','knownPile']){const pile=el(id);pile.addEventListener('dragover',event=>{if(active&&revealed&&!busy&&!paused&&available()){event.preventDefault();pile.classList.add('drag-over');}});pile.addEventListener('dragleave',()=>pile.classList.remove('drag-over'));pile.addEventListener('drop',event=>{event.preventDefault();pile.classList.remove('drag-over');if(event.dataTransfer.getData('text/plain')===queue[0]?.id)selectRating(id==='knownPile');});}
   el('studyCard').addEventListener('dragend',()=>{for(const id of ['unknownPile','knownPile'])el(id).classList.remove('drag-over');});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseStudySession();});
+  document.addEventListener('keydown',event=>{
+    if(!focused || !active || busy || paused || event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.target?.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName))return;
+    if(!['Enter',' ','Spacebar'].includes(event.key))return;
+    const target=event.target;if(target?.tagName==='BUTTON' && !['studyNext','studyCard'].includes(target.id))return;
+    event.preventDefault();void next();
+  });
+  window.addEventListener?.('popstate',syncRoute);window.addEventListener?.('hashchange',syncRoute);
+  window.onStudyTabChange=tabChanged;window.openStudyFocus=openFocus;window.isStudyFocus=()=>focused;
   for(const id of settings)el(id).onchange=resetStudy;
   window.resetStudy=resetStudy;window.updateStudyControls=updateStudyControls;window.updateStudyFolders=updateStudyFolders;window.pauseStudySession=pauseStudySession;
   updateStudyFolders();resetStudy();
