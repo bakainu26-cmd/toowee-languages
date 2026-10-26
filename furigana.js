@@ -30,7 +30,7 @@
     if(cache.has(text))return cache.get(text);
     const tok=await tokenizer(),parts=[];let offset=0;
     // Manual ruby is plain text syntax, never interpreted as HTML.
-    const regex=/([^\s{}]+)\{([ぁ-ゖァ-ヺー\s]+)\}/g;let match;
+    const regex=/([一-龯々〆ヵヶ]+)\{([ぁ-ゖァ-ヺー\s]+)\}/g;let match;
     function automatic(value){
       let position=0;
       for(const token of tok.tokenize(value)){
