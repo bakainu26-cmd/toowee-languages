@@ -87,14 +87,19 @@ function cancelEdit() {
   byId('cancelEdit').hidden = true;
 }
 function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); if (window.resetGame) window.resetGame(); if(window.resetTasks)window.resetTasks(); }
+function openVocabulary() {
+  if(window.clearLearningContext)window.clearLearningContext();
+  byId('filterFolder').value='';byId('search').value='';
+  renderWords();tab('words');
+}
 function tab(id) {
   if(window.onStudyTabChange)window.onStudyTabChange(id);
   document.querySelectorAll('main section').forEach(x => x.hidden = x.id !== id);
   const learningNames = {words:'Lista słówek',study:'Fiszki',games:'Gry',tests:'Szybki test',imports:'Importuj słownictwo',tasks:'Zadania'};
-  const navId = ['games','tasks'].includes(id) ? id : learningNames[id] ? 'learning' : id;
+  const navId = ['words','folders','imports'].includes(id) ? 'words' : ['games','tasks'].includes(id) ? id : learningNames[id] ? 'learning' : id;
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + navId));
-  byId('learningBreadcrumb').hidden = !learningNames[id] || (['games','tasks'].includes(id) && !window.getLearningContext?.());
   const selectedSet=window.getLearningContext?.();
+  byId('learningBreadcrumb').hidden = !learningNames[id] || (['games','tasks','words','imports'].includes(id) && !selectedSet);
   const setName=selectedSet ? library.folders.find(f=>f.id===selectedSet.folder)?.name || 'Bez zestawu' : '';
   byId('learningViewName').textContent = (learningNames[id] || '')+(setName ? ' · '+setName : '');
   if(id!=='games' && window.pauseFallingGame)window.pauseFallingGame();
