@@ -43,12 +43,12 @@
     if(!available() || busy || !active || paused)return;
     if(historyIndex!==null){historyIndex++;if(historyIndex<cardHistory.length)showHistory();else{historyIndex=null;renderCard(true);}return;}
     if(!revealed){reveal();return;}
-    if(pendingRating===null){setNotice('Wybierz „Umiem” lub „Nie umiem”, a potem kliknij „Następny” albo naciśnij spację lub Enter.');return;}
+    if(pendingRating===null){setNotice('Wybierz „Umiem” lub „Nie umiem” — od razu przejdziesz do kolejnej fiszki.');return;}
     await markCard(pendingRating);
   }
   function selectRating(known){
     if(!available() || busy || !active || paused || historyIndex!==null || !revealed)return;
-    pendingRating=known;updateStudyControls();setNotice('Wybrano „'+(known?'Umiem':'Nie umiem')+'”. Przejdź dalej przyciskiem „Następny”, spacją lub Enterem.');el('studyNext').focus?.({preventScroll:true});
+    pendingRating=known;const result=markCard(known);el('studyNext').focus?.({preventScroll:true});return result;
   }
 
   function stopTicker() {if(ticker!==null) clearInterval(ticker);ticker=null;}

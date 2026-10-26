@@ -76,6 +76,7 @@
     if(!canImport() || loading || importBusy) return;
     refreshPreview();if(preview.errors.length || !preview.rows.length) return;
     const current=generation,owner=account.userId,language=activeLanguage,folder=el('importFolder').value || null;
+    if(folder && !activeFolders().some(f=>f.id===folder)){status('Wybierz zestaw należący do aktualnego języka.',true);return;}
     const payload=preview.rows.map(({word,reading,translation})=>({word,reading,translation,lang:language,folder_id:folder,owner_id:owner}));
     importBusy=true;updateImportControls();status('Zapisywanie '+payload.length+' słówek…');
     const ok=await writeLibrary(({client})=>client.from('vocabulary_words').insert(payload),'Zaimportowano '+payload.length+' słówek.');

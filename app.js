@@ -11,10 +11,26 @@ let activeLanguage = null;
 const languageInfo = Object.freeze({English:{name:'Angielski',genitive:'angielskiego',target:'angielski',code:'en'},Japanese:{name:'Japoński',genitive:'japońskiego',target:'japoński',code:'ja'},Spanish:{name:'Hiszpański',genitive:'hiszpańskiego',target:'hiszpański',code:'es'}});
 function activeWords() { return library.words.filter(w => w.lang === activeLanguage); }
 function activeFolders() {
-  const selectedIds = new Set(activeWords().map(w=>w.folder_id));
-  const usedIds = new Set(library.words.map(w=>w.folder_id));
-  return library.folders.filter(f=>selectedIds.has(f.id) || !usedIds.has(f.id));
+  return library.folders.filter(folder=>{
+    if(folder.lang)return folder.lang===activeLanguage;
+    // Compatibility before the one-time migration: only infer an unambiguous language.
+    const languages=new Set(library.words.filter(w=>w.folder_id===folder.id).map(w=>w.lang));
+    return languages.size===1 && languages.has(activeLanguage);
+  });
 }
+function renderUnassignedFolders() {
+  const folders=library.folders.filter(folder=>!folder.lang && !library.words.some(w=>w.folder_id===folder.id));
+  byId('unassignedFolders').hidden=!folders.length || !activeLanguage;
+  byId('unassignedFolderRows').replaceChildren();
+  if(!activeLanguage)return;
+  for(const folder of folders){
+    const row=document.createElement('div');row.className='question';
+    const name=document.createElement('strong');name.textContent=folder.name;
+    const button=document.createElement('button');button.type='button';button.className='alt';button.style.marginLeft='12px';button.textContent='Przypisz do '+languageInfo[activeLanguage].genitive;
+    button.dataset.assignFolder=folder.id;button.disabled=!ready || saving;row.append(name,button);byId('unassignedFolderRows').append(row);
+  }
+}
+
 function showLanguagePicker() {
   if (!account?.userId || saving) return;
   activeLanguage = null;
@@ -53,7 +69,7 @@ function libraryStatus(text, error = false) {
 }
 function controls() {
   const disabled = !ready || saving || !activeLanguage;
-  document.querySelectorAll('#wordForm button,#folderForm button,#wordRows button').forEach(b => b.disabled = disabled);
+  document.querySelectorAll('#wordForm button,#folderForm button,#wordRows button,#unassignedFolderRows button').forEach(b => b.disabled = disabled);
   byId('refreshLibrary').disabled = !account?.userId || saving;
   byId('exportWords').disabled = disabled;
   byId('generateTest').disabled = disabled;
@@ -97,6 +113,7 @@ function renderLibrary() {
   byId('filterFolder').value = filter;
   byId('folderRows').innerHTML = activeFolders().map(f => '<div class="question">' + safe(f.name) +
     ' <span class="tag">' + activeWords().filter(w => w.folder_id === f.id).length + ' słówek</span></div>').join('') || '<p>Brak folderów. Dodaj pierwszy folder powyżej.</p>';
+  renderUnassignedFolders();
   if (window.updateStudyFolders) window.updateStudyFolders();
   if (window.updateGameFolders) window.updateGameFolders();
   if (window.updateImportFolders) window.updateImportFolders();
@@ -119,6 +136,8 @@ function renderWords() {
   controls();
 }
 function dbError(error) {
+  if(['PGRST204','42703'].includes(error.code) && /lang/i.test(error.message || ''))return 'Włącz języki folderów: uruchom folder_languages.sql w SQL Editor w Supabase, a potem odśwież bibliotekę.';
+  if(error.code==='23503' && /folder_language/.test(error.message || ''))return 'Słówko i folder muszą należeć do tego samego języka. Odśwież bibliotekę i wybierz właściwy folder.';
   if (['PGRST205','42P01'].includes(error.code)) return 'Brakuje tabel biblioteki. Uruchom vocabulary_setup.sql w SQL Editor w Supabase, a potem kliknij „Odśwież bibliotekę”.';
   return 'Operacja nie powiodła się. ' + (error.message || 'Sprawdź połączenie z internetem i spróbuj ponownie.');
 }
@@ -196,6 +215,7 @@ byId('wordForm').onsubmit = async event => {
   const f = event.target.elements;
   if (!activeLanguage) return;
   const word = {lang:activeLanguage,word:f.word.value.trim(),reading:f.reading.value.trim(),translation:f.translation.value.trim(),folder_id:f.folder.value || null};
+  if(word.folder_id && !activeFolders().some(folder=>folder.id===word.folder_id)){libraryStatus('Wybierz folder należący do aktualnego języka.',true);return;}
   if (!word.word || !word.translation) { libraryStatus('Wpisz słówko i tłumaczenie.',true); return; }
   const id = editId;
   const success = await writeLibrary(({client,userId}) => id
@@ -206,9 +226,16 @@ byId('wordForm').onsubmit = async event => {
 byId('folderForm').onsubmit = async event => {
   event.preventDefault();
   const name = event.target.elements.name.value.trim();
+  const language=activeLanguage;if(!language)return;
   if (!name) { libraryStatus('Wpisz nazwę folderu.',true); return; }
-  if (await writeLibrary(({client,userId}) => client.from('vocabulary_folders').insert({name,owner_id:userId}).select('id').single(),'Folder zapisany w Supabase.')) event.target.reset();
+  if (await writeLibrary(({client,userId}) => client.from('vocabulary_folders').insert({name,lang:language,owner_id:userId}).select('id').single(),'Folder zapisany w Supabase.')) event.target.reset();
 };
+byId('unassignedFolderRows').addEventListener('click',async event=>{
+  const button=event.target.closest('button[data-assign-folder]');if(!button || !ready || saving || !activeLanguage)return;
+  const id=button.dataset.assignFolder,language=activeLanguage;
+  if(!library.folders.some(f=>f.id===id && !f.lang) || library.words.some(w=>w.folder_id===id))return;
+  await writeLibrary(({client,userId})=>client.from('vocabulary_folders').update({lang:language}).eq('owner_id',userId).eq('id',id).is('lang',null).select('id').single(),'Folder przypisany do '+languageInfo[language].genitive+'.');
+});
 byId('wordRows').addEventListener('click', async event => {
   const button = event.target.closest('button');
   if (!button || !ready || saving) return;
