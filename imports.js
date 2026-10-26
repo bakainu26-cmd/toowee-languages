@@ -38,7 +38,7 @@
     if(preview.errors.length>10) {const li=document.createElement('li');li.textContent='… i '+(preview.errors.length-10)+' kolejnych błędów.';el('importErrors').append(li);}
     for(const row of preview.rows.slice(0,50)) {
       const tr=document.createElement('tr');
-      for(const value of [row.line,row.word,row.reading,row.translation]) {const td=document.createElement('td');td.textContent=String(value);tr.append(td);}
+      for(const value of [row.line,row.word,row.reading,row.translation,row.example]) {const td=document.createElement('td');td.textContent=String(value);tr.append(td);}
       el('importPreview').append(tr);
     }
     status('Do importu: '+preview.rows.length+' • Pominięte duplikaty: '+preview.duplicates+' • Błędy: '+preview.errors.length+
@@ -77,7 +77,7 @@
     refreshPreview();if(preview.errors.length || !preview.rows.length) return;
     const current=generation,owner=account.userId,language=activeLanguage,folder=el('importFolder').value || null;
     if(folder && !activeFolders().some(f=>f.id===folder)){status('Wybierz zestaw należący do aktualnego języka.',true);return;}
-    const payload=preview.rows.map(({word,reading,translation})=>({word,reading,translation,lang:language,folder_id:folder,owner_id:owner}));
+    const payload=preview.rows.map(({word,reading,translation,example})=>({word,reading,translation,...(example ? {example} : {}),lang:language,folder_id:folder,owner_id:owner}));
     importBusy=true;updateImportControls();status('Zapisywanie '+payload.length+' słówek…');
     const ok=await writeLibrary(({client})=>client.from('vocabulary_words').insert(payload),'Zaimportowano '+payload.length+' słówek.');
     if(current!==generation || account?.userId!==owner || activeLanguage!==language) return;

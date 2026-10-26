@@ -1,0 +1,12 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const c={window:{},Map,WeakMap,document:{}};vm.createContext(c);
+for(const file of ['import-parser.js','furigana.js'])vm.runInContext(fs.readFileSync(require('path').join(__dirname,'..',file),'utf8'),c);
+const parse=(text,opts={})=>c.window.TooweeImport.parse(text,{language:'Japanese',delimiter:'-',dash:true,...opts});
+let r=parse('進み方（すすみかた） – tempo postępów [授業の進み方が少し速いです。]');assert.equal(r.errors.length,0);assert.equal(r.rows[0].word,'進み方');assert.equal(r.rows[0].reading,'すすみかた');assert.equal(r.rows[0].example,'授業の進み方が少し速いです。');assert.equal(r.rows[0].translation,'tempo postępów');
+r=parse('hola\tcześć [Hola, ¿qué tal?]',{language:'Spanish',delimiter:'\t',dash:false});assert.equal(r.rows[0].example,'Hola, ¿qué tal?');assert.equal(r.rows[0].translation,'cześć');
+r=parse('jeść\t食べる（たべる） [よく食べます。]',{delimiter:'\t',dash:false,reverse:true});assert.equal(r.rows[0].reading,'たべる');assert.equal(r.rows[0].example,'よく食べます。');
+r=parse('食べる\tたべる\tjeść [よく食べます。]',{delimiter:'\t',dash:false,threeColumns:true});assert.equal(r.rows[0].reading,'たべる');assert.equal(r.rows[0].example,'よく食べます。');
+assert.equal(parse('a - b ['+'x'.repeat(2001)+']').errors.length,1);
+assert.equal(c.window.TooweeImport.unique([{word:'a',translation:'b',example:'one'},{word:'a',translation:'b',example:'two'}],[]).rows.length,2);
+const align=c.window.TooweeFurigana.align;assert.equal(JSON.stringify(align('進み方','すすみかた')),JSON.stringify([{text:'進',reading:'すす'},{text:'み'},{text:'方',reading:'かた'}]));assert.equal(JSON.stringify(align('少し','スコシ')),JSON.stringify([{text:'少',reading:'すこ'},{text:'し'}]));assert.equal(align('授業','じゅぎょう')[0].reading,'じゅぎょう');
+console.log('PASS: examples in JP/ES, reverse and 3-column imports, bounds, deduplication, furigana kana alignment');

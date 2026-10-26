@@ -27,7 +27,11 @@ window.TooweeImport = Object.freeze({
       return [record.slice(0,position),record.slice(position+delimiter.length)];
     }
     for(let i=0;i<records.length;i++) {
-      const record=records[i].trim();if(!record) continue;
+      let record=records[i].trim();if(!record) continue;
+      let example='';
+      const bracket=/\s*\[([^\[\]]*)\]\s*$/.exec(record);
+      if(bracket){example=bracket[1].trim();record=record.slice(0,bracket.index).trim();}
+      if(example.length>2000){errors.push({line:i+1,message:'Zdanie może mieć maksymalnie 2000 znaków.'});continue;}
       // Markdown section headings are labels, not vocabulary entries.
       if(options.language==='Japanese' && /^#{1,6}\s+\S/.test(record)) continue;
       if(options.threeColumns && options.dash) {errors.push({line:i+1,message:'Dla trzech kolumn wybierz tabulator lub własny separator.'});continue;}
@@ -43,13 +47,13 @@ window.TooweeImport = Object.freeze({
       }
       if(!word || !translation) {errors.push({line:i+1,message:'Brakuje słówka lub tłumaczenia.'});continue;}
       if(word.length>500 || reading.length>500 || translation.length>1000) {errors.push({line:i+1,message:'Wpis jest za długi (słówko/czytanie: 500 znaków, tłumaczenie: 1000).'});continue;}
-      rows.push({word,reading,translation,line:i+1});
+      rows.push({word,reading,translation,example,line:i+1});
     }
     return {rows,errors};
   },
   unique(rows, existing, skip=true) {
     const normalize=s=>String(s || '').trim().normalize('NFC');
-    const key=row=>JSON.stringify([row.word,row.reading,row.translation].map(normalize));
+    const key=row=>JSON.stringify([row.word,row.reading,row.translation,row.example].map(normalize));
     const seen=new Set(existing.map(key)),result=[];let duplicates=0;
     for(const row of rows) {
       const k=key(row);if(skip && seen.has(k)) {duplicates++;continue;}

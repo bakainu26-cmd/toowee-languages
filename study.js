@@ -27,10 +27,23 @@
   }
   function paintCard(card){
     const toTarget=direction==='toTarget';
+    if(window.TooweeFurigana)for(const id of ['studyPrompt','studyAnswerText','studyExampleText'])window.TooweeFurigana.cancel(el(id));
     el('studyPrompt').textContent=toTarget ? card.translation : card.word;el('studyPrompt').lang=toTarget ? 'pl' : languageInfo[card.lang]?.code || 'en';
     el('studyAnswerText').textContent=toTarget ? card.word : card.translation;el('studyAnswerText').lang=toTarget ? languageInfo[card.lang]?.code || 'en' : 'pl';
     el('studyPromptReading').textContent=card.reading || '';el('studyPromptReading').hidden=toTarget || card.lang!=='Japanese' || !card.reading || !el('studyReading').checked;
     el('studyAnswerReading').textContent=card.reading || '';el('studyAnswerReading').hidden=!toTarget || card.lang!=='Japanese' || !card.reading;
+    const example=el('studyExample'),exampleText=el('studyExampleText');
+    if(example){example.hidden=!card.example;exampleText.textContent=card.example || '';exampleText.lang=languageInfo[card.lang]?.code || 'en';}
+    if(window.TooweeFurigana){
+      const target=toTarget?el('studyAnswerText'):el('studyPrompt');
+      if(card.lang==='Japanese' && (toTarget || el('studyReading').checked)){
+        window.TooweeFurigana.render(target,card.word,card.reading);
+        el(toTarget?'studyAnswerReading':'studyPromptReading').hidden=true;
+      }
+      if(example && card.example && card.lang==='Japanese')window.TooweeFurigana.render(exampleText,card.example,'',el('studyFuriganaStatus'));
+      else if(el('studyFuriganaStatus'))el('studyFuriganaStatus').textContent='';
+    }
+
   }
   function showHistory(){
     const item=cardHistory[historyIndex];if(!item)return;

@@ -136,6 +136,7 @@ function renderWords() {
   controls();
 }
 function dbError(error) {
+  if(['PGRST204','42703'].includes(error?.code) && /example/.test(error?.message || ''))return 'Aby zapisać zdania, uruchom kod example_sentences.sql w Supabase → SQL Editor.';
   if(['PGRST204','42703'].includes(error.code) && /lang/i.test(error.message || ''))return 'Włącz języki folderów: uruchom folder_languages.sql w SQL Editor w Supabase, a potem odśwież bibliotekę.';
   if(error.code==='23503' && /folder_language/.test(error.message || ''))return 'Słówko i folder muszą należeć do tego samego języka. Odśwież bibliotekę i wybierz właściwy folder.';
   if (['PGRST205','42P01'].includes(error.code)) return 'Brakuje tabel biblioteki. Uruchom vocabulary_setup.sql w SQL Editor w Supabase, a potem kliknij „Odśwież bibliotekę”.';
@@ -217,6 +218,8 @@ byId('wordForm').onsubmit = async event => {
   const word = {lang:activeLanguage,word:f.word.value.trim(),reading:f.reading.value.trim(),translation:f.translation.value.trim(),folder_id:f.folder.value || null};
   if(word.folder_id && !activeFolders().some(folder=>folder.id===word.folder_id)){libraryStatus('Wybierz folder należący do aktualnego języka.',true);return;}
   if (!word.word || !word.translation) { libraryStatus('Wpisz słówko i tłumaczenie.',true); return; }
+  const example=f.example?.value.trim() || '';
+  if(example || library.words.find(w=>w.id===editId)?.example)word.example=example;
   const id = editId;
   const success = await writeLibrary(({client,userId}) => id
     ? client.from('vocabulary_words').update(word).eq('owner_id',userId).eq('id',id).select('id').single()
@@ -244,7 +247,7 @@ byId('wordRows').addEventListener('click', async event => {
     if (!w) return;
     editId = w.id;
     const f = byId('wordForm').elements;
-    for (const name of ['lang','word','reading','translation']) f[name].value = w[name];
+    for (const name of ['lang','word','reading','translation','example']) if(f[name])f[name].value = w[name] || '';
     f.folder.value = w.folder_id || '';
     byId('saveWord').textContent = 'Zapisz zmiany'; byId('cancelEdit').hidden = false;
     f.word.focus();
