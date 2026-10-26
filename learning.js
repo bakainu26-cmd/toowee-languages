@@ -35,7 +35,8 @@
       card.append(title,info);
       const future=group.words.map(w=>records.get(w.id)).filter(p=>p?.stage>0&&!srs.isDue(p)).sort((a,b)=>new Date(a.due_at)-new Date(b.due_at))[0];
       if(future){const date=document.createElement('p');date.className='scope-hint';date.textContent='Najbliższa zaplanowana powtórka: '+new Date(future.due_at).toLocaleString('pl-PL',{dateStyle:'short',timeStyle:'short'})+'.';card.append(date);}
-      card.append(button);el('learningSetCards').append(card);
+      const flashcards=document.createElement('button');flashcards.type='button';flashcards.disabled=!available();flashcards.textContent='Fiszki →';flashcards.style.marginRight='8px';flashcards.onclick=()=>{if(!available())return;openSet(group,mode);tab('study');};button.className='alt';
+      card.append(flashcards,button);el('learningSetCards').append(card);
     }
     el('learningEmpty').hidden=shown>0;
     el('learningEmpty').textContent=view==='learn' ? 'Nie masz teraz słówek do nauki. Dodaj nowe słownictwo lub sprawdź powtórki.' : view==='review' ? 'Na tę chwilę nie masz zaplanowanych ani zaległych powtórek.' : 'Tutaj pojawią się słówka po udanej powtórce następującej po 7-dniowej przerwie.';

@@ -97,7 +97,7 @@
   }
   function updateStudyControls() {
     const disabled=!available() || busy;
-    el('startStudy').disabled=disabled;
+    el('startStudy').disabled=disabled;el('openFlashcards').disabled=disabled;
     for(const id of ['revealStudy','knowStudyCard','retryStudyCard'])el(id).disabled=disabled || !active || paused || !['learn','verify','review'].includes(phase);
     for(const id of settings)el(id).disabled=busy;
     el('studyMode').disabled=busy || Boolean(window.getLearningContext?.());
@@ -231,6 +231,7 @@
   function pauseStudySession() {
     if(!active||paused||busy)return;settleClock();paused=true;updateTimer();if(active && !paused){settleClock();paused=true;}updateStudyControls();setNotice('Sesja wstrzymana. Kliknij „Wznów”, aby kontynuować.');
   }
+  el('openFlashcards').onclick=()=>{if(!available() || busy)return;if(window.clearLearningContext)window.clearLearningContext();el('studyScope').value='all';el('studyFolder').value='';el('studyLanguage').value=activeLanguage;if(!hasSession())el('studyMode').value='learn';updateSettings();updateStudyControls();if(typeof tab==='function')tab('study');};
   el('startStudy').onclick=startStudy;el('revealStudy').onclick=reveal;el('knowStudyCard').onclick=()=>selectRating(true);el('retryStudyCard').onclick=()=>selectRating(false);
   el('studyPrevious').onclick=previous;el('studyNext').onclick=next;el('closeStudyFocus').onclick=closeFocus;el('resumeStudy').onclick=openFocus;
   el('retryStudySave').onclick=()=>{if(phase==='save-error')void saveResults();};
