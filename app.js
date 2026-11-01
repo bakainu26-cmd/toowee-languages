@@ -93,6 +93,7 @@ function openVocabulary() {
   renderWords();tab('words');
 }
 function tab(id) {
+  if(id!=='games')window.worldGameMission=false;
   window.onActivityTabChange?.(id);
   if(window.onStudyTabChange)window.onStudyTabChange(id);
   document.querySelectorAll('main section').forEach(x => x.hidden = x.id !== id);

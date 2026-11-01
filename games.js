@@ -149,7 +149,7 @@
   el('startGame').onclick=startGame;el('replayGame').onclick=startGame;el('endGame').onclick=()=>window.openGamesLobby();
   el('nextGameQuestion').onclick=()=>{if(['quiz','write'].includes(kind) && inSession() && answered && questionIndex<questions.length-1){questionIndex++;renderQuestion();}};
   el('gameWriteForm').onsubmit=checkWritten;
-  window.openGamesLobby=()=>{window.closeActivityFocus?.();if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab('games');el('games').scrollIntoView?.({block:'start'});};
+  window.openGamesLobby=(allowWorld=true)=>{const toWorld=allowWorld && window.worldGameMission===true;window.worldGameMission=false;window.closeActivityFocus?.();if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab(toWorld?'world':'games');if(!toWorld)el('games').scrollIntoView?.({block:'start'});};
   window.updateGameControls=updateGameControls;window.updateGameFolders=updateGameFolders;window.resetGame=resetGame;
   updateGameFolders();resetGame();
 })();

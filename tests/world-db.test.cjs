@@ -21,6 +21,10 @@ const fs=require('fs'),path=require('path'),assert=require('node:assert/strict')
  result=await rpc('load',{},'Spanish');assert.equal(result.daily.learned_ids.length,0);assert.equal(result.daily.seconds,0);assert(result.profile.owned.includes('shirt_mint'));
  result=await rpc('activity',{event_id:randomUUID(),kind:'learn',ids},'Spanish');assert.equal(result.daily.learned_ids.length,0);
  await as(other);result=await rpc('load');assert.equal(result.profile.coins,0);assert.deepEqual(result.profile.owned,['shirt_lilac']);result=await rpc('activity',{event_id:randomUUID(),kind:'learn',ids});assert.equal(result.earned,0);assert.equal(result.daily.learned_ids.length,0);
+ await as(owner);
+ const sessionRpc=async(payload=null,revision=null)=>(await db.query('select public.toowee_world_study($1,$2,$3::jsonb,$4) as value',['Japanese','learn',payload===null?null:JSON.stringify(payload),revision])).rows[0].value;
+ let session=await sessionRpc();assert.equal(session.revision,0);session=await sessionRpc({phase:'learn',queue:['first']},0);assert.equal(session.revision,1);assert.equal(session.state.queue[0],'first');await assert.rejects(sessionRpc({phase:'learn',queue:[]},0));session=await sessionRpc();assert.equal(session.state.queue.length,1);
+ await as(other);session=await sessionRpc();assert.equal(session.state,null);await db.exec('set role authenticated');await assert.rejects(db.exec('update world_study_sessions set revision=0'));await db.exec('reset role');
  await db.exec('set role authenticated');await assert.rejects(db.exec('update world_profiles set coins=999'));await db.exec('reset role');await as('');await assert.rejects(rpc('load'));
  console.log('PASS real PostgreSQL: idempotent migration, rewards, event deduplication, purchases, limits, language/account isolation, RLS and unauthenticated rejection');await db.close();
 })().catch(error=>{console.error(error);process.exitCode=1});

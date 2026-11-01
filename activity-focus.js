@@ -20,7 +20,7 @@
   function header(id){
     let bar=el('activityHeader-'+id);if(bar)return bar;
     bar=document.createElement('div');bar.id='activityHeader-'+id;bar.className='activity-header';
-    const button=document.createElement('button');button.type='button';button.className='alt';button.textContent='← '+(id==='games'?'Wybór gry':'Ustawienia');button.onclick=back;
+    const button=document.createElement('button');button.type='button';button.className='alt';button.textContent='← '+(id==='games'?(window.worldGameMission?'Wróć na mapę':'Wybór gry'):'Ustawienia');button.onclick=back;
     const title=document.createElement('strong');title.id='activityTitle-'+id;
     bar.append(button,title);el(id).prepend(bar);return bar;
   }
@@ -29,7 +29,7 @@
     if(state?.id!==id)leave();
     const before=state?hashFor(state):'';
     state={id,title,playing,kind,owner:account.userId,language:activeLanguage};page=0;
-    header(id);el('activityTitle-'+id).textContent=title;
+    header(id);el('activityHeader-'+id).querySelector('button').textContent='← '+(id==='games'?(window.worldGameMission?'Wróć na mapę':'Wybór gry'):'Ustawienia');el('activityTitle-'+id).textContent=title;
     el(id).classList.add('activity-screen');el(id).classList.toggle('activity-playing',playing);el(id).dataset.activityKind=kind;
     document.body.classList.add('activity-focus');tab(id);
     const hash=hashFor(state);if(location.hash!==hash)history[before?'replaceState':'pushState'](null,'',hash);
