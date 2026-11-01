@@ -10,7 +10,7 @@ Wymagana wcześniejsza konfiguracja kont (`accounts_setup.sql`) i słownictwa. W
 2. Wybierz język, zestaw, kierunek pytań, liczbę rund (6/10/15/20/25) czas na odpowiedź (20/30/45/60 sekund) oraz jeden warunek końca gry: „Liczba słówek” albo „Timer”. Liczba słówek (6/10/15/20/25) kończy grę po wybranej porcji, bez zegara całej gry. Timer (1/3/5/10/15/30 minut) kończy grę wyłącznie po czasie, bez limitu liczby rund; bank obejmuje dostępne słówka, a po jego przejściu pytania wracają w kolejnej turze.
 3. Potrzeba przynajmniej 4 różnych pytań i odpowiedzi. Pula obejmuje do 1000 słówek z wybranego zestawu. Jeśli jest mniej słówek niż wybranych rund, gra używa dostępnej liczby.
 4. Udostępnij kod albo link do pokoju. Każdy z linkiem otwiera ekran gry i podaje tylko pseudonim. Nie trzeba się logować ani zakładać konta. Logowanie jest opcjonalne.
-5. Poczekaj na uczestników i rozpocznij grę. Każdy ma własny ekran odpowiedzi i saszetek; prowadzący widzi ranking. Rundy przechodzą dalej automatycznie.
+5. Poczekaj na uczestników i rozpocznij grę. Każdy ma własny ekran odpowiedzi i saszetek; prowadzący widzi kod pokoju, ranking, zegar i postęp grupy. Nie widzi pytań, odpowiedzi ani przycisku odsłaniania odpowiedzi. Rundy przechodzą dalej automatycznie.
 6. Kolejna runda rozpoczyna się automatycznie po 1 sekundzie od rozliczenia wszystkich odpowiedzi/saszetek albo po upływie czasu na pytanie + 10 sekund na saszetki. Odświeżenie dowolnego uczestnika uruchamia sprawdzanie zegara w bazie — nie wymaga to obecności prowadzącego. Synchronizacja może dodać do 1,5 sekundy oczekiwania. Prowadzący może też zakończyć całą grę wcześniej.
 7. W trybie liczby słówek wyniki pojawiają się automatycznie po ostatniej rundzie; w trybie timera — po końcu czasu, nawet jeśli wcześniej przejdziesz cały bank pytań. Zegar całej gry zaczyna odliczać przy rozpoczęciu pierwszej rundy; poczekalnia nie zużywa czasu. Uczeń kończy przyciskiem „Koniec gry — wróć do panelu”.
 
@@ -55,8 +55,16 @@ Każda z trzech saszetek ma niezależnie losowaną w bazie zawartość: zwykły 
 - Kradzież: uczeń wybiera innego uczestnika z listy. Przenosi 20% jego aktualnej karmy w tym pokoju, zaokrąglone w dół. Nie dotyka monet świata ani karmy z innych rozgrywek. Przy grze solo kradzież zamienia się w +100.
 - Utrata: odejmuje 10% własnej karmy w tym pokoju, zaokrąglone w dół, po doliczeniu poprawnej odpowiedzi. Stan nie spada poniżej zera.
 - Superkarma: dodatkowe 200 karmy.
-- Tarcza Sophie: blokuje jedną kradzież i znika. Nie chroni przed własną pechową saszetką. Tarcze nie sumują się.
+- Tarcza Sophie: blokuje jedną kradzież i znika. Nie chroni przed własną pechową saszetką. Można zgromadzić maksymalnie 3 tarcze. Czwarte trafienie tarczy nie zwiększa zapasu. Licznik widzi tylko właściciel; ranking i lista celów nie zawierają stanu ochrony. Atakujący dowiaduje się o tarczy dopiero po zablokowanej próbie, bez informacji o liczbie pozostałych tarcz.
 
 Kradzież jest zakończona dopiero po wyborze celu; do tego momentu nie przyspieszamy rundy kosztem tego gracza. Obowiązuje nadal limit czasu rundy i całej gry. Duplikat wyboru nie powtarza efektu ani potrącenia. Zalogowanym uczestnikom przypisujemy aktualny wynik tej rozgrywki, więc zarówno zyski, jak i straty aktualizują odpowiednią część sumy karmy na koncie.
 
 Cele wskazuje się losowym identyfikatorem uczestnika pokoju; ranking nie ujawnia identyfikatorów kont ani kluczy gości. Funkcja pomocnicza licząca karmę nie jest dostępna bezpośrednio dla anon/authenticated.
+
+## Pauza po błędnej odpowiedzi
+
+Po zapisaniu błędnej odpowiedzi baza ustawia niezmienny termin pauzy: 5 sekund. Przez ten czas gracz widzi to samo pytanie, poprawną odpowiedź i odliczanie. Tło, spacja i Enter nie przechodzą dalej, a serwer blokuje także bezpośrednie wywołanie ready/next oraz automatyczną zmianę rundy. Ponowienie odpowiedzi nie resetuje ani nie skraca pauzy.
+
+Przy wspólnych rundach zmiana czeka na zakończenie ostatniej aktywnej pauzy. Jeśli w tym czasie kończy się timer całej gry, odpowiedzi nie są już przyjmowane, ale wynik końcowy zaczeka na dokończenie pięciu sekund czytania poprawki. Zakończenie gry przez prowadzącego również nie omija tej krótkiej pauzy. Po upływie pauzy wracają zwykłe zasady szybkiego przechodzenia.
+
+Testy sprawdzają limit 3 tarcz, brak informacji o tarczach w publicznym rankingu, zużycie jednej ochrony na próbę, ponowienie ataku bez podwójnego zużycia, prywatny licznik i komunikat dla atakującego. Osobno sprawdzają 5 sekund poprawki, blokadę klawiatury/kliknięcia, ochronę przed pominięciem przez hosta lub polling oraz ekran prowadzącego bez pytań.

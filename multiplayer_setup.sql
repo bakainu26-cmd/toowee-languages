@@ -57,7 +57,14 @@ alter table public.sophie_participants add column if not exists public_id uuid n
 create unique index if not exists sophie_public_player_idx on public.sophie_participants(room_id,public_id);
 alter table public.sophie_participants add column if not exists adjustment integer not null default 0;
 alter table public.sophie_participants add column if not exists shield boolean not null default false;
+do $$ begin
+ if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='sophie_participants' and column_name='shields') then
+  alter table public.sophie_participants add column shields integer not null default 0 check(shields between 0 and 3);
+  update public.sophie_participants set shields=case when shield then 1 else 0 end;
+ end if;
+end $$;
 alter table public.sophie_participants add column if not exists notice text not null default '';
+alter table public.sophie_round_answers add column if not exists review_until timestamptz;
 alter table public.sophie_round_answers add column if not exists pack_events text[];
 alter table public.sophie_round_answers add column if not exists event text not null default 'bonus';
 alter table public.sophie_round_answers add column if not exists resolved boolean not null default true;
@@ -75,7 +82,8 @@ returns jsonb language plpgsql security definer set search_path=public,pg_temp a
 declare
  who uuid:=auth.uid();room public.sophie_rooms%rowtype;answer public.sophie_round_answers%rowtype;
  pool jsonb;questions jsonb:='[]';q jsonb;item jsonb;choices jsonb;correct_index integer;
- victim uuid;victim_name text;victim_shield boolean;amount integer;kind text;credit_row record;
+ victim uuid;victim_name text;victim_shields integer;own_shields integer;amount integer;kind text;credit_row record;
+ review_hold timestamptz;
  advance boolean:=false;limit_seconds integer;mode text;
  n integer;requested integer;duration integer;direction text;rid uuid;roomcode text;nick text;
  pid uuid;secret text;secret_hash text;linked_account uuid;credited integer;game_score integer;delta integer;
@@ -161,21 +169,24 @@ begin
  if not host and not member then raise exception 'Najpierw dołącz do pokoju kodem.';end if;
  if member then update public.sophie_participants set last_seen=clock_timestamp() where room_id=room.id and player_id=pid;end if;
  select count(*) into players from public.sophie_participants where room_id=room.id;
+ select max(review_until) into review_hold from public.sophie_round_answers where room_id=room.id and round=room.round and not correct;
  select count(*),count(*) filter(where not correct or (pick is not null and resolved)) into answered,settled from public.sophie_round_answers where room_id=room.id and round=room.round;
- can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds');
+ can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds') and (review_hold is null or clock_timestamp()>=review_hold);
  -- Any participant's refresh advances a due round. A teacher click is not required.
  if p_action in ('next','finish') and not host then raise exception 'Tylko prowadzący steruje rundami.';end if;
  if room.status='question' and room.game_deadline is not null and clock_timestamp()>=room.game_deadline then
-  room.status:='finished';
+  if review_hold is null or clock_timestamp()>=review_hold then room.status:='finished';end if;
   update public.sophie_rooms set status=room.status where id=room.id;
   if p_action in ('answer','pick','steal','ready','next') then p_action:='load';end if;
  end if;
- if room.status='question' and p_action in ('load','answer','pick','steal','ready','link') and clock_timestamp()>=coalesce(room.auto_at,room.deadline+interval '10 seconds') then
+ if room.status='question' and p_action in ('load','answer','pick','steal','ready','link') and clock_timestamp()>=coalesce(room.auto_at,room.deadline+interval '10 seconds') and (review_hold is null or clock_timestamp()>=review_hold) then
   advance:=true;
   if p_action in ('answer','pick','steal','ready') then p_action:='load';end if;
  end if;
  if p_action in ('next','finish') then
-  if p_action='finish' then room.status:='finished';
+  if p_action='finish' then
+   if review_hold>clock_timestamp() then raise exception 'Trwa 5-sekundowa pauza na zapamiętanie poprawnej odpowiedzi.';end if;
+   room.status:='finished';
   elsif (p_data->>'round')::integer is distinct from room.round then null;
   elsif room.status='finished' then null;
   elsif not can_next then raise exception 'Poczekaj na odpowiedzi i wybór saszetek albo na koniec czasu + 10 sekund.';
@@ -190,7 +201,7 @@ begin
    selected:=(p_data->>'choice')::integer;
    if selected is null or selected not between 0 and 3 then raise exception 'Wybierz jedną z czterech odpowiedzi.';end if;
    q:=room.questions->((room.round-1)%jsonb_array_length(room.questions));
-   insert into public.sophie_round_answers(room_id,player_id,round,choice,correct,base,bonuses,pack_events) values(room.id,pid,room.round,selected,selected=(q->>'correct')::integer,case when selected=(q->>'correct')::integer then 100 else 0 end,array[20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer)],array(select case floor(random()*20)::integer when 0 then 'lose' when 1 then 'lose' when 2 then 'super' when 3 then 'super' when 4 then 'steal' when 5 then 'steal' when 6 then 'steal' when 7 then 'shield' else 'bonus' end from generate_series(1,3)));
+   insert into public.sophie_round_answers(room_id,player_id,round,choice,correct,base,bonuses,pack_events,review_until) values(room.id,pid,room.round,selected,selected=(q->>'correct')::integer,case when selected=(q->>'correct')::integer then 100 else 0 end,array[20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer)],array(select case floor(random()*20)::integer when 0 then 'lose' when 1 then 'lose' when 2 then 'super' when 3 then 'super' when 4 then 'steal' when 5 then 'steal' when 6 then 'steal' when 7 then 'shield' else 'bonus' end from generate_series(1,3)),case when selected<>(q->>'correct')::integer then clock_timestamp()+interval '5 seconds' else null end);
   end if;
  elsif p_action='pick' then
   if room.status<>'question' or (p_data->>'round')::integer is distinct from room.round then raise exception 'Ta runda jest już zakończona.';end if;
@@ -208,8 +219,9 @@ begin
     update public.sophie_participants set adjustment=adjustment-amount,notice='Psotna saszetka: tracisz 10% karmy (−'||amount||').' where room_id=room.id and player_id=pid;
     update public.sophie_round_answers set effect_amount=-amount,effect_message='Psotna saszetka! Tracisz 10% swojej karmy: −'||amount||'.' where room_id=room.id and player_id=pid and round=room.round;
    elsif kind='shield' then
-    update public.sophie_participants set shield=true,notice='Masz tarczę Sophie — zablokuje jedną kradzież.' where room_id=room.id and player_id=pid;
-    update public.sophie_round_answers set effect_message='Tarcza Sophie! Chroni przed jedną kradzieżą. Tarcze nie sumują się.' where room_id=room.id and player_id=pid and round=room.round;
+    select shields into own_shields from public.sophie_participants where room_id=room.id and player_id=pid;
+    update public.sophie_participants set shields=least(3,shields+1),notice=case when own_shields>=3 then 'Masz już 3 tarcze — zapas jest pełny.' else 'Zdobywasz tarczę Sophie. Tarcze są ukryte przed innymi graczami.' end where room_id=room.id and player_id=pid;
+    update public.sophie_round_answers set effect_message=case when own_shields>=3 then 'Masz już komplet 3 tarcz. Kolejna tarcza nie jest dodawana.' else 'Tarcza Sophie! Masz '||(own_shields+1)||'/3 tarcz. Każda blokuje jedną kradzież.' end where room_id=room.id and player_id=pid and round=room.round;
    elsif kind='steal' and players>1 then
     update public.sophie_round_answers set resolved=false,effect_message='Kocia psota! Wybierz gracza i ukradnij 20% jego karmy.' where room_id=room.id and player_id=pid and round=room.round;
    else
@@ -222,25 +234,27 @@ begin
   select * into answer from public.sophie_round_answers where room_id=room.id and player_id=pid and round=room.round for update;
   if not found or answer.event<>'steal' or answer.pick is null then raise exception 'Nie masz kradzieży w tej rundzie.';end if;
   if not answer.resolved then
-   select p.player_id,p.nickname,p.shield into victim,victim_name,victim_shield from public.sophie_participants p where p.room_id=room.id and p.public_id=(p_data->>'target')::uuid and p.player_id<>pid for update;
+   select p.player_id,p.nickname,p.shields into victim,victim_name,victim_shields from public.sophie_participants p where p.room_id=room.id and p.public_id=(p_data->>'target')::uuid and p.player_id<>pid for update;
    if victim is null then raise exception 'Wybierz innego gracza z tego pokoju.';end if;
-   if victim_shield then
-    amount:=0;update public.sophie_participants set shield=false,notice='Twoja tarcza Sophie zablokowała kradzież!' where room_id=room.id and player_id=victim;
+   if victim_shields>0 then
+    amount:=0;update public.sophie_participants set shields=shields-1,notice='Twoja tarcza Sophie zablokowała kradzież! Zostało tarcz: '||(shields-1)||'.' where room_id=room.id and player_id=victim;
    else
     amount:=floor(public.sophie_game_score(room.id,victim)*0.20)::integer;
     update public.sophie_participants set adjustment=adjustment-amount,notice='Kocia psota! Ktoś ukradł 20% Twojej karmy: −'||amount||'.' where room_id=room.id and player_id=victim;
     update public.sophie_participants set adjustment=adjustment+amount where room_id=room.id and player_id=pid;
    end if;
-   update public.sophie_round_answers set resolved=true,effect_amount=amount,effect_message=case when victim_shield then victim_name||' ma tarczę! Kradzież zablokowana, tarcza zużyta.' else 'Kradniesz 20% karmy gracza '||victim_name||': +'||amount||'!' end where room_id=room.id and player_id=pid and round=room.round;
+   update public.sophie_round_answers set resolved=true,effect_amount=amount,effect_message=case when victim_shields>0 then 'Nic nie ukradłeś — gracz '||victim_name||' miał tarczę. Kradzież zablokowana.' else 'Kradniesz 20% karmy gracza '||victim_name||': +'||amount||'!' end where room_id=room.id and player_id=pid and round=room.round;
   end if;
  elsif p_action='ready' then
   if host or room.status<>'question' or (p_data->>'round')::integer is distinct from room.round then raise exception 'Poczekaj na zakończenie swojej odpowiedzi.';end if;
   select * into answer from public.sophie_round_answers where room_id=room.id and player_id=pid and round=room.round;
+  if found and not answer.correct and answer.review_until>clock_timestamp() then raise exception 'Zapamiętaj poprawną odpowiedź — pauza trwa 5 sekund.';end if;
   if not found and clock_timestamp()>=room.deadline then
-   insert into public.sophie_round_answers(room_id,player_id,round,choice,correct) values(room.id,pid,room.round,-1,false) on conflict do nothing;
+   insert into public.sophie_round_answers(room_id,player_id,round,choice,correct,review_until) values(room.id,pid,room.round,-1,false,clock_timestamp()+interval '5 seconds') on conflict do nothing;
   elsif not found or answer.correct and (answer.pick is null or not answer.resolved) then raise exception 'Najpierw odpowiedz i rozlicz saszetkę.';end if;
   select count(*) filter(where not correct or (pick is not null and resolved)) into settled from public.sophie_round_answers where room_id=room.id and round=room.round;
-  if settled>=players then advance:=true;end if;
+  select max(review_until) into review_hold from public.sophie_round_answers where room_id=room.id and round=room.round and not correct;
+  if settled>=players and (review_hold is null or clock_timestamp()>=review_hold) then advance:=true;end if;
 
  elsif p_action not in ('create','join','load','link') then raise exception 'Nieznana operacja gry.';end if;
  if advance then
@@ -253,10 +267,15 @@ begin
   update public.sophie_rooms set status=room.status,round=room.round,deadline=room.deadline,auto_at=room.auto_at,game_deadline=room.game_deadline where id=room.id;
  end if;
  select * into answer from public.sophie_round_answers where room_id=room.id and player_id=pid and round=room.round;
+ select max(review_until) into review_hold from public.sophie_round_answers where room_id=room.id and round=room.round and not correct;
  select count(*),count(*) filter(where not correct or (pick is not null and resolved)) into answered,settled from public.sophie_round_answers where room_id=room.id and round=room.round;
- can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds');
+ can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds') and (review_hold is null or clock_timestamp()>=review_hold);
  if room.status='question' and players>0 and settled>=players then
   room.auto_at:=least(coalesce(room.auto_at,room.deadline+interval '10 seconds'),clock_timestamp()+interval '1 second',room.game_deadline);
+  update public.sophie_rooms set auto_at=room.auto_at where id=room.id;
+ end if;
+ if room.status='question' and review_hold>clock_timestamp() then
+  room.auto_at:=greatest(coalesce(room.auto_at,room.deadline+interval '10 seconds'),review_hold);
   update public.sophie_rooms set auto_at=room.auto_at where id=room.id;
  end if;
  q:=case when room.round>0 then room.questions->((room.round-1)%jsonb_array_length(room.questions)) else null end;
@@ -269,12 +288,12 @@ begin
   end if;
  end loop;
 
- return jsonb_build_object('surprises',true,'notice',(select notice from public.sophie_participants where room_id=room.id and player_id=pid),'automatic',true,'auto_at',room.auto_at,'time_limit',room.time_limit,'game_deadline',room.game_deadline,'code',room.code,'host',host,'guest',who is null,'personal_points',case when who is not null and member then coalesce((select points from public.sophie_account_points where owner_id=who),0) else null end,'status',room.status,'round',room.round,'end_mode',room.end_mode,'bank_size',jsonb_array_length(room.questions),'total',case when room.end_mode='words' then jsonb_array_length(room.questions) else null end,'lang',room.lang,'deadline',room.deadline,'server_now',clock_timestamp(),'players',players,'answered',answered,'settled',settled,'can_next',can_next,
-  'question',case when q is null then null else q-'correct' end,
-  'solution',case when host or answer.player_id is not null or room.status='finished' or room.deadline<=clock_timestamp() then q->'options'->((q->>'correct')::integer) else null end,
-  'answer',case when answer.player_id is null then null else jsonb_build_object('choice',answer.choice,'correct',answer.correct,'base',answer.base,'pick',answer.pick,'bonus',answer.bonus,'effect',jsonb_build_object('kind',answer.event,'resolved',answer.resolved,'amount',answer.effect_amount,'message',answer.effect_message)) end,
-  'ranking',(select coalesce(jsonb_agg(jsonb_build_object('id',public_id,'shield',shield,'name',nickname,'score',score,'correct',correct,'me',player_id=pid) order by score desc,joined_at),'[]') from (
-   select p.player_id,p.public_id,p.shield,p.nickname,p.joined_at,public.sophie_game_score(room.id,p.player_id) as score,(select count(*) from public.sophie_round_answers a where a.room_id=p.room_id and a.player_id=p.player_id and a.correct) as correct from public.sophie_participants p where p.room_id=room.id
+ return jsonb_build_object('shield_limit',3,'shields',(select shields from public.sophie_participants where room_id=room.id and player_id=pid),'wrong_delay',5,'review_hold_until',review_hold,'surprises',true,'notice',(select notice from public.sophie_participants where room_id=room.id and player_id=pid),'automatic',true,'auto_at',room.auto_at,'time_limit',room.time_limit,'game_deadline',room.game_deadline,'code',room.code,'host',host,'guest',who is null,'personal_points',case when who is not null and member then coalesce((select points from public.sophie_account_points where owner_id=who),0) else null end,'status',room.status,'round',room.round,'end_mode',room.end_mode,'bank_size',jsonb_array_length(room.questions),'total',case when room.end_mode='words' then jsonb_array_length(room.questions) else null end,'lang',room.lang,'deadline',room.deadline,'server_now',clock_timestamp(),'players',players,'answered',answered,'settled',settled,'can_next',can_next,
+  'question',case when host or q is null then null else q-'correct' end,
+  'solution',case when host then null when answer.player_id is not null or room.status='finished' or room.deadline<=clock_timestamp() then q->'options'->((q->>'correct')::integer) else null end,
+  'answer',case when answer.player_id is null then null else jsonb_build_object('choice',answer.choice,'correct',answer.correct,'review_until',answer.review_until,'base',answer.base,'pick',answer.pick,'bonus',answer.bonus,'effect',jsonb_build_object('kind',answer.event,'resolved',answer.resolved,'amount',answer.effect_amount,'message',answer.effect_message)) end,
+  'ranking',(select coalesce(jsonb_agg(jsonb_build_object('id',public_id,'name',nickname,'score',score,'correct',correct,'me',player_id=pid) order by score desc,joined_at),'[]') from (
+   select p.player_id,p.public_id,p.nickname,p.joined_at,public.sophie_game_score(room.id,p.player_id) as score,(select count(*) from public.sophie_round_answers a where a.room_id=p.room_id and a.player_id=p.player_id and a.correct) as correct from public.sophie_participants p where p.room_id=room.id
 
   ) standings));
 end $$;

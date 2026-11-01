@@ -6,3 +6,7 @@ body.sophie-live-open{overflow:hidden}
 .sophie-pack{padding:10px;gap:8px;min-height:220px;background:#f1eaf6;box-shadow:none}.sophie-pack:before,.sophie-pack:after{display:none}.sophie-pack img{display:block;width:100%;height:165px;object-fit:contain}.sophie-pack:nth-child(2){background:#eaf2ed;box-shadow:none}.sophie-pack:nth-child(3){background:#f7eee6;box-shadow:none}#sophieGameTimer{font-size:18px}#sophieAutoNext{font-weight:700;color:#73528b}@media(max-width:700px){.sophie-pack{min-height:145px;gap:4px;padding:7px}.sophie-pack img{height:100px}.sophie-pack strong{font-size:13px}}
 
 .sophie-effect{font-weight:800;color:#724889;background:#f1e8f7;border-radius:14px;padding:10px 16px}.sophie-targets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}.sophie-targets button{min-height:45px;overflow-wrap:anywhere}.sophie-notice{margin:0 0 10px;padding:10px 14px;border-radius:12px;background:#fff0cf;color:#704e13;font-weight:700}#sophieArena:has(.sophie-targets) .sophie-packs{max-width:330px}#sophieArena:has(.sophie-targets) .sophie-pack{min-height:95px}#sophieArena:has(.sophie-targets) .sophie-pack img{height:65px}
+
+.sophie-wrong-delay{background:#fff1d6;border:1px solid #e5c384;border-radius:16px;padding:14px 18px;font-size:clamp(16px,2vw,22px);font-weight:800;color:#785618}
+
+.sophie-own-shields{background:#e6f0ed;color:#356455;padding:8px 12px;border-radius:12px;font-size:14px;font-weight:800;white-space:nowrap}
