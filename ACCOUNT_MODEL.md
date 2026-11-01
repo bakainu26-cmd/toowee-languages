@@ -27,7 +27,7 @@ Uczeń lub nauczyciel może rozłączyć konta. Dostęp nauczyciela do raportu u
 - Materiały opłacającego dostęp nauczyciela mają umożliwiać naukę i misje bez dodatkowej opłaty ucznia.
 - Własna subskrypcja ucznia ma rozszerzać samodzielną naukę.
 
-Ceny, limity demo, operator płatności i reguły wygasania dostępu nie zostały ustalone. Ta wersja nie pobiera opłat i nie egzekwuje abonamentów. Rola nauczyciela nie jest potwierdzeniem płatności ani uprawnieniem administratora. „Graj razem” pozostaje przyszłą funkcją panelu nauczyciela; nie jest wdrożone w tej zmianie.
+Ceny, limity demo, operator płatności i reguły wygasania dostępu nie zostały ustalone. Ta wersja nie pobiera opłat i nie egzekwuje abonamentów. Rola nauczyciela nie jest potwierdzeniem płatności ani uprawnieniem administratora. „Graj razem” jest dostępne w panelu nauczyciela jako Saszetki Sophie; wymaga dodatkowej konfiguracji multiplayer_setup.sql.
 
 ## ADMIN właścicielki
 

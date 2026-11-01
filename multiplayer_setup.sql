@@ -1,0 +1,130 @@
+-- TooWee: Saszetki Sophie. Uruchom całość w Supabase SQL Editor.
+-- Wymaga accounts_setup.sql i konfiguracji słownictwa. Nie zmienia monet świata.
+begin;
+create table if not exists public.sophie_rooms (
+ id uuid primary key default gen_random_uuid(),host_id uuid not null references auth.users(id) on delete cascade,
+ request_id uuid not null,code text not null unique,status text not null default 'lobby' check(status in ('lobby','question','finished')),
+ lang text not null,questions jsonb not null,round integer not null default 0,
+ seconds integer not null default 30,deadline timestamptz,created_at timestamptz not null default now(),expires_at timestamptz not null default now()+interval '24 hours',
+ unique(host_id,request_id)
+);
+create table if not exists public.sophie_players (
+ room_id uuid not null references public.sophie_rooms(id) on delete cascade,user_id uuid not null references auth.users(id) on delete cascade,
+ nickname text not null check(length(trim(nickname)) between 1 and 32),joined_at timestamptz not null default now(),last_seen timestamptz not null default now(),primary key(room_id,user_id)
+);
+create table if not exists public.sophie_answers (
+ room_id uuid not null,user_id uuid not null,round integer not null,choice integer not null,correct boolean not null,
+ base integer not null default 0,bonuses integer[] not null default '{}',pick integer,bonus integer not null default 0,
+ primary key(room_id,user_id,round),foreign key(room_id,user_id) references public.sophie_players(room_id,user_id) on delete cascade
+);
+alter table public.sophie_rooms enable row level security;
+alter table public.sophie_players enable row level security;
+alter table public.sophie_answers enable row level security;
+revoke all on public.sophie_rooms,public.sophie_players,public.sophie_answers from public,anon,authenticated;
+create index if not exists sophie_rooms_host_idx on public.sophie_rooms(host_id,created_at desc);
+create or replace function public.toowee_sophie(p_action text,p_data jsonb default '{}')
+returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
+declare
+ who uuid:=auth.uid();room public.sophie_rooms%rowtype;answer public.sophie_answers%rowtype;
+ pool jsonb;questions jsonb:='[]';q jsonb;item jsonb;choices jsonb;correct_index integer;
+ n integer;requested integer;duration integer;direction text;rid uuid;roomcode text;nick text;
+ host boolean;member boolean;players integer;answered integer;settled integer;can_next boolean;expired boolean;selected integer;
+begin
+ if who is null then raise exception 'Zaloguj się, aby zagrać.';end if;
+ if p_action='create' then
+  if not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Tylko nauczyciel może tworzyć rozgrywki.';end if;
+  -- Serialize creates per teacher and allow safe retry of the same request.
+  perform 1 from public.toowee_accounts where id=who for update;
+  rid:=(p_data->>'request_id')::uuid;
+  select * into room from public.sophie_rooms where host_id=who and request_id=rid for update;
+  if not found then
+   if (select count(*) from public.sophie_rooms where host_id=who and status<>'finished' and expires_at>clock_timestamp())>=3 then raise exception 'Masz już 3 otwarte pokoje. Zakończ poprzednią grę.';end if;
+   requested:=(p_data->>'count')::integer;duration:=(p_data->>'seconds')::integer;direction:=p_data->>'direction';
+   if requested is null or requested not in (6,10,15,20,25) or duration is null or duration not in (20,30,45,60) or direction is null or direction not in ('to_pl','from_pl') then raise exception 'Nieprawidłowe ustawienia gry.';end if;
+   if p_data->>'lang' is null or p_data->>'lang' not in ('English','Japanese','Spanish') then raise exception 'Wybierz język materiałów.';end if;
+   if jsonb_typeof(p_data->'ids') is distinct from 'array' or jsonb_array_length(p_data->'ids')>1000 then raise exception 'Wybierz od 4 do 1000 słówek.';end if;
+   select coalesce(jsonb_agg(jsonb_build_object('prompt',prompt,'answer',solution)),'[]') into pool from (
+    select distinct on (lower(trim(prompt))) prompt,solution from (
+     select w.id,case when direction='to_pl' then w.word||case when w.lang='Japanese' and w.reading<>'' then ' ('||w.reading||')' else '' end else w.translation end as prompt,
+     case when direction='to_pl' then w.translation else w.word||case when w.lang='Japanese' and w.reading<>'' then ' ('||w.reading||')' else '' end end as solution
+     from public.vocabulary_words w where w.owner_id=who and w.lang=p_data->>'lang' and w.id in (select value::uuid from jsonb_array_elements_text(p_data->'ids'))
+    ) raw order by lower(trim(prompt)),id
+   ) unique_prompts;
+   if jsonb_array_length(pool)<4 or (select count(distinct lower(trim(value->>'answer'))) from jsonb_array_elements(pool))<4 then raise exception 'Potrzebujesz co najmniej 4 różnych pytań i odpowiedzi w wybranym zestawie.';end if;
+   for item in select value from jsonb_array_elements(pool) order by random() limit requested loop
+    -- Build distractors separately so the correct answer is always included.
+    select jsonb_agg(label order by random()) into choices from (
+     select item->>'answer' as label union all
+     (select label from (select distinct on (lower(trim(value->>'answer'))) value->>'answer' as label from jsonb_array_elements(pool) where lower(trim(value->>'answer'))<>lower(trim(item->>'answer')) order by lower(trim(value->>'answer'))) labels order by random() limit 3)
+    ) options;
+    select ordinality::integer-1 into correct_index from jsonb_array_elements_text(choices) with ordinality where value=item->>'answer';
+    questions:=questions||jsonb_build_array(jsonb_build_object('prompt',item->>'prompt','options',choices,'correct',correct_index));
+   end loop;
+   roomcode:=upper(substr(replace(gen_random_uuid()::text,'-',''),1,8));
+   insert into public.sophie_rooms(host_id,request_id,code,lang,questions,seconds) values(who,rid,roomcode,p_data->>'lang',questions,duration) returning * into room;
+  end if;
+ else
+  roomcode:=upper(trim(p_data->>'code'));
+  select * into room from public.sophie_rooms where code=roomcode for update;
+  if not found then raise exception 'Nie znaleziono pokoju. Sprawdź kod.';end if;
+ end if;
+ if room.expires_at<=clock_timestamp() then raise exception 'Pokój wygasł. Nauczyciel może utworzyć nowy.';end if;
+ host:=room.host_id=who;
+ select exists(select 1 from public.sophie_players where room_id=room.id and user_id=who) into member;
+ if p_action='join' and not host then
+  if not member then
+   if room.status<>'lobby' then raise exception 'Gra już się rozpoczęła. Do nowej gry dołączysz w poczekalni.';end if;
+   if (select count(*) from public.sophie_players where room_id=room.id)>=30 then raise exception 'Pokój ma już 30 uczestników.';end if;
+   nick:=trim(p_data->>'nickname');if nick is null or length(nick) not between 1 and 32 then raise exception 'Wpisz pseudonim (1–32 znaki).';end if;
+   insert into public.sophie_players(room_id,user_id,nickname) values(room.id,who,nick);member:=true;
+  end if;
+ end if;
+ if not host and not member then raise exception 'Najpierw dołącz do pokoju kodem.';end if;
+ if member then update public.sophie_players set last_seen=clock_timestamp() where room_id=room.id and user_id=who;end if;
+ select count(*) into players from public.sophie_players where room_id=room.id;
+ select count(*),count(*) filter(where not correct or pick is not null) into answered,settled from public.sophie_answers where room_id=room.id and round=room.round;
+ can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds');
+ if p_action in ('next','finish') then
+  if not host then raise exception 'Tylko prowadzący steruje rundami.';end if;
+  if p_action='finish' then room.status:='finished';
+  elsif (p_data->>'round')::integer is distinct from room.round then null; -- idempotent double click/retry
+  elsif room.status='finished' then null;
+  elsif not can_next then raise exception 'Poczekaj na odpowiedzi i wybór saszetek albo na koniec czasu + 10 sekund.';
+  elsif room.round>=jsonb_array_length(room.questions) then room.status:='finished';
+  else room.round:=room.round+1;room.status:='question';room.deadline:=clock_timestamp()+make_interval(secs=>room.seconds);end if;
+  update public.sophie_rooms set status=room.status,round=room.round,deadline=room.deadline where id=room.id;
+ elsif p_action='answer' then
+  if host then raise exception 'Prowadzący nie odpowiada jako gracz.';end if;
+  if room.status<>'question' or (p_data->>'round')::integer is distinct from room.round then raise exception 'Ta runda nie jest już aktywna.';end if;
+  select * into answer from public.sophie_answers where room_id=room.id and user_id=who and round=room.round;
+  if not found then
+   if clock_timestamp()>room.deadline then raise exception 'Czas na odpowiedź minął.';end if;
+   selected:=(p_data->>'choice')::integer;
+   if selected is null or selected not between 0 and 3 then raise exception 'Wybierz jedną z czterech odpowiedzi.';end if;
+   q:=room.questions->(room.round-1);
+   insert into public.sophie_answers(room_id,user_id,round,choice,correct,base,bonuses) values(room.id,who,room.round,selected,selected=(q->>'correct')::integer,case when selected=(q->>'correct')::integer then 100 else 0 end,array[20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer)]);
+  end if;
+ elsif p_action='pick' then
+  if room.status<>'question' or (p_data->>'round')::integer is distinct from room.round then raise exception 'Ta runda jest już zakończona.';end if;
+  select * into answer from public.sophie_answers where room_id=room.id and user_id=who and round=room.round for update;
+  if not found or not answer.correct then raise exception 'Saszetkę wybierasz po poprawnej odpowiedzi.';end if;
+  selected:=(p_data->>'pick')::integer;
+  if selected is null or selected not between 0 and 2 then raise exception 'Wybierz jedną z trzech saszetek.';end if;
+  if answer.pick is null then update public.sophie_answers set pick=selected,bonus=bonuses[selected+1] where room_id=room.id and user_id=who and round=room.round;end if;
+ elsif p_action not in ('create','join','load') then raise exception 'Nieznana operacja gry.';end if;
+ select * into answer from public.sophie_answers where room_id=room.id and user_id=who and round=room.round;
+ select count(*),count(*) filter(where not correct or pick is not null) into answered,settled from public.sophie_answers where room_id=room.id and round=room.round;
+ can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds');
+ q:=case when room.round>0 then room.questions->(room.round-1) else null end;
+ return jsonb_build_object('code',room.code,'host',host,'status',room.status,'round',room.round,'total',jsonb_array_length(room.questions),'lang',room.lang,'deadline',room.deadline,'server_now',clock_timestamp(),'players',players,'answered',answered,'settled',settled,'can_next',can_next,
+  'question',case when q is null then null else q-'correct' end,
+  'solution',case when host or answer.user_id is not null or room.status='finished' or room.deadline<=clock_timestamp() then q->'options'->((q->>'correct')::integer) else null end,
+  'answer',case when answer.user_id is null then null else jsonb_build_object('choice',answer.choice,'correct',answer.correct,'base',answer.base,'pick',answer.pick,'bonus',answer.bonus) end,
+  'ranking',(select coalesce(jsonb_agg(jsonb_build_object('name',nickname,'score',score,'correct',correct,'me',user_id=who) order by score desc,joined_at),'[]') from (
+   select p.user_id,p.nickname,p.joined_at,coalesce(sum(a.base+a.bonus),0) as score,count(a.round) filter(where a.correct) as correct from public.sophie_players p left join public.sophie_answers a on a.room_id=p.room_id and a.user_id=p.user_id where p.room_id=room.id group by p.user_id,p.nickname,p.joined_at
+  ) standings));
+end $$;
+revoke all on function public.toowee_sophie(text,jsonb) from public;
+grant execute on function public.toowee_sophie(text,jsonb) to authenticated;
+notify pgrst,'reload schema';
+commit;
