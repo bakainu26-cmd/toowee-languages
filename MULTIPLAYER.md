@@ -7,12 +7,12 @@ Wymagana wcześniejsza konfiguracja kont (`accounts_setup.sql`) i słownictwa. W
 ## Prowadzenie
 
 1. Zaloguj się jako nauczyciel lub jako ADMIN w widoku nauczyciela.
-2. Wybierz język, zestaw, kierunek pytań, liczbę rund (6/10/15/20/25) i czas (20/30/45/60 sekund).
+2. Wybierz język, zestaw, kierunek pytań, liczbę rund (6/10/15/20/25) czas na odpowiedź (20/30/45/60 sekund) i opcjonalny limit czasu całej gry (1/3/5/10/15/30 minut). Gra kończy się po banku pytań lub po limicie, zależnie co nastąpi wcześniej.
 3. Potrzeba przynajmniej 4 różnych pytań i odpowiedzi. Pula obejmuje do 1000 słówek z wybranego zestawu. Jeśli jest mniej słówek niż wybranych rund, gra używa dostępnej liczby.
 4. Udostępnij kod albo link do pokoju. Każdy z linkiem otwiera ekran gry i podaje tylko pseudonim. Nie trzeba się logować ani zakładać konta. Logowanie jest opcjonalne.
-5. Poczekaj na uczestników i rozpocznij grę. Każdy ma własny ekran odpowiedzi i saszetek; prowadzący widzi ranking i steruje rundami.
-6. Kolejna runda jest dostępna po rozliczeniu wszystkich odpowiedzi/saszetek lub po upływie czasu na pytanie + 10 sekund. Prowadzący może też zakończyć całą grę wcześniej.
-7. Po ostatniej rundzie kliknij „Pokaż wyniki końcowe”. Uczeń kończy przyciskiem „Koniec gry — wróć do panelu”.
+5. Poczekaj na uczestników i rozpocznij grę. Każdy ma własny ekran odpowiedzi i saszetek; prowadzący widzi ranking. Rundy przechodzą dalej automatycznie.
+6. Kolejna runda rozpoczyna się automatycznie po 3 sekundach od rozliczenia wszystkich odpowiedzi/saszetek albo po upływie czasu na pytanie + 10 sekund na saszetki. Odświeżenie dowolnego uczestnika uruchamia sprawdzanie zegara w bazie — nie wymaga to obecności prowadzącego. Synchronizacja może dodać do 2,5 sekundy oczekiwania. Prowadzący może też zakończyć całą grę wcześniej.
+7. Po ostatniej rundzie wyniki końcowe pojawiają się automatycznie. Zegar całej gry zaczyna odliczać przy rozpoczęciu pierwszej rundy; poczekalnia nie zużywa czasu. Uczeń kończy przyciskiem „Koniec gry — wróć do panelu”.
 
 Japońskie słówka pokazują czytanie w nawiasach w pytaniach i odpowiedziach. Własne materiały nauczyciela są kopiowane do prywatnego banku pytań pokoju w chwili tworzenia — późniejsza edycja słówka nie zmienia trwającej gry.
 
@@ -39,3 +39,9 @@ Testy PostgreSQL (PGlite) obejmują rzeczywistą funkcję SQL: dwóch uczniów, 
 Migracja zachowuje uczestników i odpowiedzi ze wcześniejszej wersji wymagającej kont; stare tabele są pozostawione jako źródło migracji, bez publicznego dostępu. Testy obejmują też rzeczywistą rolę anon, dwa niezależne klucze gości, odmowę przejęcia cudzej sesji, przypisanie wyniku do konta i brak ponownego naliczania punktów.
 
 Konfiguracja produkcyjnej bazy i test na fizycznych urządzeniach wymagają uruchomienia migracji przez właścicielkę Supabase. Nie uruchomiono płatności ani mechanizmu abonamentów.
+
+## Ilustracje saszetek
+
+Wbudowany generator obrazów utworzył trzy niezależne assety: `assets/sophie-pouch-fish.webp`, `assets/sophie-pouch-chicken.webp`, `assets/sophie-pouch-shrimp.webp`. Zapis WebP zachowuje kanał alfa. Grafiki są dekoracyjne; wariant jedzenia nie określa bonusu.
+
+Prompt wspólny: one polished game asset for TooWee Languages, a single sealed wet cat food sachet, cozy illustrated premium packaging, softly shaded hand painted 2.5D style, muted pastel colors, front view, crimped seams, slender grey-brown tabby cat with olive green eyes and cream chin, transparent background, no words, logos or numbers. Warianty: lavender with fish; sage green with chicken; peach with shrimp.

@@ -8,6 +8,9 @@ create table if not exists public.sophie_rooms (
  seconds integer not null default 30,deadline timestamptz,created_at timestamptz not null default now(),expires_at timestamptz not null default now()+interval '24 hours',
  unique(host_id,request_id)
 );
+alter table public.sophie_rooms add column if not exists time_limit integer not null default 0 check(time_limit between 0 and 1800);
+alter table public.sophie_rooms add column if not exists game_deadline timestamptz;
+alter table public.sophie_rooms add column if not exists auto_at timestamptz;
 create table if not exists public.sophie_players (
  room_id uuid not null references public.sophie_rooms(id) on delete cascade,user_id uuid not null references auth.users(id) on delete cascade,
  nickname text not null check(length(trim(nickname)) between 1 and 32),joined_at timestamptz not null default now(),last_seen timestamptz not null default now(),primary key(room_id,user_id)
@@ -53,6 +56,7 @@ returns jsonb language plpgsql security definer set search_path=public,pg_temp a
 declare
  who uuid:=auth.uid();room public.sophie_rooms%rowtype;answer public.sophie_round_answers%rowtype;
  pool jsonb;questions jsonb:='[]';q jsonb;item jsonb;choices jsonb;correct_index integer;
+ advance boolean:=false;limit_seconds integer;
  n integer;requested integer;duration integer;direction text;rid uuid;roomcode text;nick text;
  pid uuid;secret text;secret_hash text;linked_account uuid;credited integer;game_score integer;delta integer;
  host boolean;member boolean;players integer;answered integer;settled integer;can_next boolean;expired boolean;selected integer;
@@ -65,6 +69,7 @@ begin
   select * into room from public.sophie_rooms where host_id=who and request_id=rid for update;
   if not found then
    if (select count(*) from public.sophie_rooms where host_id=who and status<>'finished' and expires_at>clock_timestamp())>=3 then raise exception 'Masz już 3 otwarte pokoje. Zakończ poprzednią grę.';end if;
+   limit_seconds:=coalesce((p_data->>'time_limit')::integer,0);if limit_seconds<0 or limit_seconds>1800 then raise exception 'Czas gry musi wynosić od 1 do 30 minut lub być bez limitu.';end if;
    requested:=(p_data->>'count')::integer;duration:=(p_data->>'seconds')::integer;direction:=p_data->>'direction';
    if requested is null or requested not in (6,10,15,20,25) or duration is null or duration not in (20,30,45,60) or direction is null or direction not in ('to_pl','from_pl') then raise exception 'Nieprawidłowe ustawienia gry.';end if;
    if p_data->>'lang' is null or p_data->>'lang' not in ('English','Japanese','Spanish') then raise exception 'Wybierz język materiałów.';end if;
@@ -87,7 +92,13 @@ begin
     questions:=questions||jsonb_build_array(jsonb_build_object('prompt',item->>'prompt','options',choices,'correct',correct_index));
    end loop;
    roomcode:=upper(substr(replace(gen_random_uuid()::text,'-',''),1,8));
-   insert into public.sophie_rooms(host_id,request_id,code,lang,questions,seconds) values(who,rid,roomcode,p_data->>'lang',questions,duration) returning * into room;
+   insert into public.sophie_rooms(host_id,request_id,code,lang,questions,seconds,time_limit) values(who,rid,roomcode,p_data->>'lang',questions,duration,limit_seconds) returning * into room;
+  end if;
+  -- A retry after upgrading an older server must retain the chosen game clock.
+  if room.status='lobby' and p_data ? 'time_limit' then
+   limit_seconds:=coalesce((p_data->>'time_limit')::integer,0);
+   if limit_seconds<0 or limit_seconds>1800 then raise exception 'Nieprawidłowy czas gry.';end if;
+   room.time_limit:=limit_seconds;update public.sophie_rooms set time_limit=limit_seconds where id=room.id;
   end if;
  else
   roomcode:=upper(trim(p_data->>'code'));
@@ -127,15 +138,24 @@ begin
  select count(*) into players from public.sophie_participants where room_id=room.id;
  select count(*),count(*) filter(where not correct or pick is not null) into answered,settled from public.sophie_round_answers where room_id=room.id and round=room.round;
  can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds');
+ -- Any participant's refresh advances a due round. A teacher click is not required.
+ if p_action in ('next','finish') and not host then raise exception 'Tylko prowadzący steruje rundami.';end if;
+ if room.status='question' and room.game_deadline is not null and clock_timestamp()>=room.game_deadline then
+  room.status:='finished';
+  update public.sophie_rooms set status=room.status where id=room.id;
+  if p_action in ('answer','pick','next') then p_action:='load';end if;
+ end if;
+ if room.status='question' and p_action in ('load','answer','pick','link') and clock_timestamp()>=coalesce(room.auto_at,room.deadline+interval '10 seconds') then
+  advance:=true;
+  if p_action in ('answer','pick') then p_action:='load';end if;
+ end if;
  if p_action in ('next','finish') then
-  if not host then raise exception 'Tylko prowadzący steruje rundami.';end if;
   if p_action='finish' then room.status:='finished';
-  elsif (p_data->>'round')::integer is distinct from room.round then null; -- idempotent double click/retry
+  elsif (p_data->>'round')::integer is distinct from room.round then null;
   elsif room.status='finished' then null;
   elsif not can_next then raise exception 'Poczekaj na odpowiedzi i wybór saszetek albo na koniec czasu + 10 sekund.';
-  elsif room.round>=jsonb_array_length(room.questions) then room.status:='finished';
-  else room.round:=room.round+1;room.status:='question';room.deadline:=clock_timestamp()+make_interval(secs=>room.seconds);end if;
-  update public.sophie_rooms set status=room.status,round=room.round,deadline=room.deadline where id=room.id;
+  else advance:=true;end if;
+  update public.sophie_rooms set status=room.status where id=room.id;
  elsif p_action='answer' then
   if host then raise exception 'Prowadzący nie odpowiada jako gracz.';end if;
   if room.status<>'question' or (p_data->>'round')::integer is distinct from room.round then raise exception 'Ta runda nie jest już aktywna.';end if;
@@ -155,9 +175,22 @@ begin
   if selected is null or selected not between 0 and 2 then raise exception 'Wybierz jedną z trzech saszetek.';end if;
   if answer.pick is null then update public.sophie_round_answers set pick=selected,bonus=bonuses[selected+1] where room_id=room.id and player_id=pid and round=room.round;end if;
  elsif p_action not in ('create','join','load','link') then raise exception 'Nieznana operacja gry.';end if;
+ if advance then
+  if room.round>=jsonb_array_length(room.questions) then room.status:='finished';
+  else
+   if room.round=0 and room.time_limit>0 then room.game_deadline:=clock_timestamp()+make_interval(secs=>room.time_limit);end if;
+   room.round:=room.round+1;room.status:='question';room.deadline:=least(clock_timestamp()+make_interval(secs=>room.seconds),room.game_deadline);
+   room.auto_at:=least(room.deadline+interval '10 seconds',room.game_deadline);
+  end if;
+  update public.sophie_rooms set status=room.status,round=room.round,deadline=room.deadline,auto_at=room.auto_at,game_deadline=room.game_deadline where id=room.id;
+ end if;
  select * into answer from public.sophie_round_answers where room_id=room.id and player_id=pid and round=room.round;
  select count(*),count(*) filter(where not correct or pick is not null) into answered,settled from public.sophie_round_answers where room_id=room.id and round=room.round;
  can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds');
+ if room.status='question' and players>0 and settled>=players then
+  room.auto_at:=least(coalesce(room.auto_at,room.deadline+interval '10 seconds'),clock_timestamp()+interval '3 seconds',room.game_deadline);
+  update public.sophie_rooms set auto_at=room.auto_at where id=room.id;
+ end if;
  q:=case when room.round>0 then room.questions->(room.round-1) else null end;
  if member and who is not null then
   select account_id,p.credited into linked_account,credited from public.sophie_participants p where room_id=room.id and player_id=pid for update;
@@ -170,7 +203,7 @@ begin
    end if;
   end if;
  end if;
- return jsonb_build_object('code',room.code,'host',host,'guest',who is null,'personal_points',case when who is not null and member then coalesce((select points from public.sophie_account_points where owner_id=who),0) else null end,'status',room.status,'round',room.round,'total',jsonb_array_length(room.questions),'lang',room.lang,'deadline',room.deadline,'server_now',clock_timestamp(),'players',players,'answered',answered,'settled',settled,'can_next',can_next,
+ return jsonb_build_object('automatic',true,'auto_at',room.auto_at,'time_limit',room.time_limit,'game_deadline',room.game_deadline,'code',room.code,'host',host,'guest',who is null,'personal_points',case when who is not null and member then coalesce((select points from public.sophie_account_points where owner_id=who),0) else null end,'status',room.status,'round',room.round,'total',jsonb_array_length(room.questions),'lang',room.lang,'deadline',room.deadline,'server_now',clock_timestamp(),'players',players,'answered',answered,'settled',settled,'can_next',can_next,
   'question',case when q is null then null else q-'correct' end,
   'solution',case when host or answer.player_id is not null or room.status='finished' or room.deadline<=clock_timestamp() then q->'options'->((q->>'correct')::integer) else null end,
   'answer',case when answer.player_id is null then null else jsonb_build_object('choice',answer.choice,'correct',answer.correct,'base',answer.base,'pick',answer.pick,'bonus',answer.bonus) end,
