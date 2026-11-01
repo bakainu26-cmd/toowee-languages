@@ -8,6 +8,7 @@ create table if not exists public.world_profiles (
  x integer not null default 6 check(x between 0 and 11),
  y integer not null default 6 check(y between 0 and 7)
 );
+alter table public.world_profiles add column if not exists shelf text[] not null default '{}';
 create table if not exists public.world_days (
  owner_id uuid not null references auth.users(id) on delete cascade,
  day date not null, lang text not null check(lang in ('English','Japanese','Spanish')),
@@ -57,6 +58,11 @@ begin
    when 'hoodie_night' then price:=60;category:='outfit';
    when 'hat_sun' then price:=40;category:='accessory';
    when 'headphones' then price:=50;category:='accessory';
+   when 'sofi_sleep' then price:=40;category:='figurine';
+   when 'sofi_box' then price:=60;category:='figurine';
+   when 'sofi_book' then price:=90;category:='figurine';
+   when 'sofi_wizard' then price:=120;category:='figurine';
+   when 'sofi_magda' then price:=180;category:='figurine';
    when 'none' then price:=0;category:='accessory';
    else raise exception 'Nieznany przedmiot.';
   end case;
@@ -65,7 +71,16 @@ begin
    if profile.coins<price then raise exception 'Masz za mało monet.'; end if;
    profile.coins:=profile.coins-price;profile.owned:=array_append(profile.owned,item);
   end if;
-  if category='outfit' then profile.outfit:=item;else profile.accessory:=item;end if;
+  if category='outfit' then profile.outfit:=item;elsif category='accessory' then profile.accessory:=item;end if;
+ elsif p_action='display' then
+  item:=p_data->>'item';
+  if item is null or item not in ('sofi_sleep','sofi_box','sofi_book','sofi_wizard','sofi_magda') then raise exception 'Nieznana figurka.';end if;
+  if not(item=any(profile.owned)) then raise exception 'Najpierw kup tę figurkę.';end if;
+  if item=any(profile.shelf) then profile.shelf:=array_remove(profile.shelf,item);
+  else
+   if cardinality(profile.shelf)>=3 then raise exception 'Na półce są 3 figurki. Schowaj jedną, aby ustawić inną.';end if;
+   profile.shelf:=array_append(profile.shelf,item);
+  end if;
  elsif p_action='activity' then
   if jsonb_array_length(coalesce(p_data->'ids','[]'))>100 then raise exception 'Za dużo słówek w jednym zapisie.';end if;
   insert into public.world_events(owner_id,event_id) values(who,(p_data->>'event_id')::uuid) on conflict do nothing;
@@ -102,7 +117,7 @@ begin
   end if;
  elsif p_action<>'load' then raise exception 'Nieznana operacja.';
  end if;
- update public.world_profiles set coins=profile.coins,owned=profile.owned,outfit=profile.outfit,accessory=profile.accessory,x=profile.x,y=profile.y where owner_id=who;
+ update public.world_profiles set coins=profile.coins,owned=profile.owned,shelf=profile.shelf,outfit=profile.outfit,accessory=profile.accessory,x=profile.x,y=profile.y where owner_id=who;
  update public.world_days set learned_ids=daily.learned_ids,reviewed_ids=daily.reviewed_ids,pairs_done=daily.pairs_done,seconds=daily.seconds,learned_paid=daily.learned_paid,review_paid=daily.review_paid,pairs_paid=daily.pairs_paid,time_paid=daily.time_paid where owner_id=who and day=today and lang=p_lang;
  return jsonb_build_object('profile',to_jsonb(profile)-'owner_id','daily',to_jsonb(daily)-'owner_id','earned',gain);
 end $$;

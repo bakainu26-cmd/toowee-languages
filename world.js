@@ -10,9 +10,10 @@
     {id:'headphones',name:'Słuchawki do przygód',price:50,icon:'🎧',group:'accessory'},
     {id:'none',name:'Bez dodatku',price:0,icon:'✧',group:'accessory'}
   ];
+  const figurines=[{"id": "sofi_sleep", "name": "Śpiąca Sofi", "price": 40, "image": "assets/sofi-sleep.webp"}, {"id": "sofi_box", "name": "Sofi w pudełku", "price": 60, "image": "assets/sofi-box.webp"}, {"id": "sofi_book", "name": "Sofi z książką", "price": 90, "image": "assets/sofi-book.webp"}, {"id": "sofi_wizard", "name": "Sofi czarodziejka", "price": 120, "image": "assets/sofi-wizard.webp"}, {"id": "sofi_magda", "name": "Magda i Sofi", "price": 180, "image": "assets/sofi-magda.webp"}];
   let profile=null,daily=null,cloud=false,busy=false,epoch=0,owner=null,mode='missions',chain=Promise.resolve(),saveTimer=null;
   let position={x:6,y:6},pending=[],setupMissing=false,lastLoad=0,loadedLanguage=null;
-  const locations={missions:{x:6,y:3,title:'Magda i Sofi: czas na małą misję!',text:'Wybierz zadanie poniżej. Każdy krok robisz na własnym słownictwie — w języku wybranym na platformie.'},shop:{x:10,y:4,title:'Sofi pilnuje sklepiku 🐾',text:'Tutaj wydajesz zdobyte monety. Kupiony przedmiot od razu pojawi się na Twojej postaci.'},wardrobe:{x:2,y:3,title:'Twój domek, Twój styl',text:'W garderobie znajdziesz wszystkie kupione ubrania i dodatki. Możesz zmieniać je bez dodatkowych opłat.'}};
+  const locations={missions:{x:6,y:3,title:'Magda i Sofi: czas na małą misję!',text:'Wybierz zadanie poniżej. Każdy krok robisz na własnym słownictwie — w języku wybranym na platformie.'},shop:{x:10,y:4,title:'Sofi pilnuje sklepiku 🐾',text:'Tutaj wydajesz zdobyte monety. Kupuj ubrania lub figurki Sofi za monety z nauki. Figurki ustawisz na półce w domku.'},wardrobe:{x:2,y:3,title:'Twój domek i kolekcja Sofi',text:'W garderobie znajdziesz wszystkie kupione ubrania i dodatki. Możesz zmieniać je bez dodatkowych opłat.'}};
   const key=suffix=>'toowee-world:'+owner+':'+suffix;
   function read(suffix,fallback){try{return JSON.parse(localStorage.getItem(key(suffix))) ?? fallback;}catch{return fallback;}}
   function write(suffix,value){try{localStorage.setItem(key(suffix),JSON.stringify(value));return true;}catch{return false;}}
@@ -29,8 +30,8 @@
       if(current!==epoch||account?.userId!==user)throw new Error('Konto zostało zmienione.');
       const result=await client.rpc('toowee_world',{p_action:action,p_lang:language,p_data:data});
       if(current!==epoch||account?.userId!==user)return null;
-      if(result.error){if(missing(result.error)){setupMissing=true;cloud=false;render();}throw result.error;}
-      cloud=true;setupMissing=false;profile=result.data.profile;
+      if(result.error){if(missing(result.error)||(/Nieznany przedmiot|Nieznana operacja/.test(result.error.message||''))){setupMissing=true;cloud=false;render();}throw result.error;}
+      profile=result.data.profile;setupMissing=!Array.isArray(profile.shelf);cloud=!setupMissing;
       if(language===activeLanguage){daily=result.data.daily;loadedLanguage=language;}
       render();return result.data;
     });chain=task;return task;
@@ -47,7 +48,7 @@
     if(!valid())return;if(owner!==account.userId)reset();
     if(!force && Date.now()-lastLoad<5000 && cloud && loadedLanguage===activeLanguage){render();return;}
     lastLoad=Date.now();const current=epoch;notice('Wczytuję Twój świat…');
-    try{const result=await send('load');if(!result||current!==epoch)return;position={x:result.profile.x,y:result.profile.y};if(!passable(position.x,position.y))position={x:6,y:6};paintAvatar();await flush();if(current===epoch)notice(pending.length?'Część nagród czeka na zapis. Kliknij „Odśwież zapis”.':'Postęp zapisuje się na Twoim koncie. Miłej przygody!');}
+    try{const result=await send('load');if(!result||current!==epoch)return;position={x:result.profile.x,y:result.profile.y};if(!passable(position.x,position.y))position={x:6,y:6};paintAvatar();await flush();if(current===epoch)notice(setupMissing?'Figurki wymagają aktualizacji zapisu. Otwórz konfigurację poniżej, skopiuj kod i uruchom go w Supabase SQL Editor.':pending.length?'Część nagród czeka na zapis. Kliknij „Odśwież zapis”.':'Postęp zapisuje się na Twoim koncie. Miłej przygody!');}
     catch(error){if(current!==epoch)return;notice(setupMissing?'Włącz zapis poniżej. Do tego czasu możesz zwiedzać mapę, a ukończone aktywności będą czekały na rozliczenie.':'Nie udało się połączyć ze światem. '+(error.message || 'Spróbuj odświeżyć zapis.'));}
   }
   function paintAvatar(){const avatar=el('worldAvatar');avatar.style.left=((position.x+.5)/12*100)+'%';avatar.style.top=((position.y+1)/8*100)+'%';avatar.dataset.outfit=profile?.outfit || 'shirt_lilac';avatar.dataset.accessory=profile?.accessory || 'none';}
@@ -62,8 +63,26 @@
     const time=document.createElement('div');time.className='world-mission';const h=document.createElement('h4');h.textContent='✦ Każde 5 minut ma znaczenie';const text=document.createElement('p');const seconds=daily?.seconds||0;text.textContent='10 monet / 5 min aktywnej nauki. Dziś: '+Math.floor(seconds/60)+' min '+seconds%60+' s. '+(seconds>=3600?'Dzisiejszy limit nagród za czas osiągnięty.':'Do następnej nagrody: '+(300-seconds%300)+' s.')+' W misjach zapisujemy czas po każdej odpowiedzi; zwykła nauka nalicza go po ukończeniu sesji.';time.append(h,text);container.append(time);
   }
   function renderItems(id,wardrobe){const container=el(id);container.replaceChildren();for(const item of catalog){const owned=item.id==='none'||profile?.owned?.includes(item.id);if(wardrobe&&!owned)continue;if(!wardrobe&&item.id==='none')continue;const equipped=profile?.[item.group]===item.id;const row=document.createElement('div');row.className='world-item';const icon=document.createElement('span');icon.className='world-item-swatch';icon.textContent=item.icon;const label=document.createElement('div');const name=document.createElement('strong');name.textContent=item.name;const price=document.createElement('small');price.textContent=owned?'W Twojej garderobie':item.price+' monet';label.append(name,price);row.append(icon,label,makeButton(equipped?'Założone':owned?'Załóż':'Kup',()=>buy(item,owned),!cloud||busy||equipped||(!owned&&(profile?.coins||0)<item.price)));container.append(row);}}
-  function render(){el('worldCoins').textContent=profile?String(profile.coins):'—';el('dashboardWorldCoins').textContent=profile?String(profile.coins):'—';el('worldLanguage').textContent=languageInfo[activeLanguage]?.name || '';el('worldSetupNotice').hidden=!setupMissing;paintAvatar();renderMissions();renderItems('worldShop',false);renderItems('worldWardrobe',true);el('worldRefresh').disabled=busy||!valid();}
-  async function buy(item,owned){if(!cloud||busy||!valid())return;busy=true;render();try{const data=await send(owned?'equip':'buy',{item:item.id});if(data)notice((owned?'Założono: ':'Kupiono i założono: ')+item.name+'.');}catch(error){notice(error.message || 'Nie udało się zapisać zakupu.');}finally{busy=false;render();}}
+  function renderFigurines(){
+    const shop=el('worldShop'),home=el('worldWardrobe');
+    const heading=document.createElement('h3');heading.textContent='Figurki Sofi';shop.prepend(heading);
+    const grid=document.createElement('div');grid.className='sofi-grid';heading.after(grid);
+    const collection=document.createElement('section');collection.className='sofi-collection';
+    const title=document.createElement('h3');title.textContent='Moja półka · Zebrano '+figurines.filter(f=>profile?.owned?.includes(f.id)).length+' z '+figurines.length;
+    const hint=document.createElement('p');hint.className='world-note';hint.textContent='Ustaw do 3 figurek. Kolekcja i zakupy zapisują się na Twoim koncie.';
+    const shelf=document.createElement('div');shelf.className='sofi-shelf';
+    const displayed=profile?.shelf||[];
+    for(let slot=0;slot<3;slot++){const f=figurines.find(f=>f.id===displayed[slot]);const cell=document.createElement('div');cell.className='sofi-slot';if(f){const img=document.createElement('img');img.src=f.image;img.alt=f.name;cell.append(img,makeButton('Schowaj',()=>displayFigure(f.id),!cloud||busy));}else{cell.textContent='Puste miejsce';}shelf.append(cell);}
+    collection.append(title,hint,shelf);home.prepend(collection);
+    const ownedGrid=document.createElement('div');ownedGrid.className='sofi-grid';collection.append(ownedGrid);
+    for(const f of figurines){const owned=profile?.owned?.includes(f.id);const card=document.createElement('article');card.className='sofi-card';const img=document.createElement('img');img.src=f.image;img.alt=f.name;img.loading='lazy';const name=document.createElement('strong');name.textContent=f.name;const price=document.createElement('small');price.textContent=owned?'W Twojej kolekcji':f.price+' monet';card.append(img,name,price);
+      if(owned){card.append(makeButton(displayed.includes(f.id)?'Na półce':'Ustaw na półce',()=>displayFigure(f.id),!cloud||busy||displayed.includes(f.id)||displayed.length>=3));ownedGrid.append(card);const info=document.createElement('p');info.className='world-note';info.textContent=f.name+' · masz już w kolekcji ✓';grid.append(info);}
+      else {card.append(makeButton('Kup za '+f.price+' monet',()=>buy(f,false),!cloud||busy||(profile?.coins||0)<f.price));grid.append(card);}
+    }
+  }
+  async function displayFigure(item){if(!cloud||busy||!valid())return;busy=true;render();try{await send('display',{item});notice('Półka zapisana na Twoim koncie.');}catch(error){notice(error.message||'Nie udało się zapisać półki.');}finally{busy=false;render();}}
+  function render(){el('worldCoins').textContent=profile?String(profile.coins):'—';el('dashboardWorldCoins').textContent=profile?String(profile.coins):'—';el('worldLanguage').textContent=languageInfo[activeLanguage]?.name || '';el('worldSetupNotice').hidden=!setupMissing;paintAvatar();renderMissions();renderItems('worldShop',false);renderItems('worldWardrobe',true);renderFigurines();el('worldRefresh').disabled=busy||!valid();}
+  async function buy(item,owned){if(!cloud||busy||!valid())return;busy=true;render();try{const data=await send(owned?'equip':'buy',{item:item.id});if(data)notice((item.id.startsWith('sofi_')?'Kupiono figurkę! Znajdziesz ją w domku: ':owned?'Założono: ':'Kupiono i założono: ')+item.name+'.');}catch(error){notice(error.message || 'Nie udało się zapisać zakupu.');}finally{busy=false;render();}}
   function show(place){mode=place;for(const name of ['missions','shop','wardrobe']){el('world'+name[0].toUpperCase()+name.slice(1)).hidden=place!==name;el('worldTab'+name[0].toUpperCase()+name.slice(1)).classList.toggle('alt',place!==name);}el('worldGuideTitle').textContent=locations[place].title;el('worldGuideText').textContent=locations[place].text;}
   function passable(x,y){return x>=1&&x<11&&y>=0&&y<8&&!(x<=3&&y<=2)&&!(x>=9&&y<=3)&&!(y<=1&&x>=5&&x<=7)&&!(x<=3&&y>=4);}
   function savePosition(){write('position',position);clearTimeout(saveTimer);if(!cloud)return;const user=owner,point={...position};saveTimer=setTimeout(()=>{if(owner===user&&account?.userId===user)void send('position',point).catch(()=>notice('Pozycja czeka na połączenie. Odśwież zapis, gdy wróci internet.'));},600);}
