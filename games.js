@@ -4,6 +4,7 @@
   const names={match:'Połącz w pary',memory:'Memory',quiz:'Wybierz tłumaczenie',write:'Wpisz słówko',escape:'Escape room',falling:'Spadające słówka'};
   let kind='match',pairs=[],left=null,right=null,attempts=0,deck=[],flipped=[],lock=false,hideTimer=null;
   let questions=[],questionIndex=0,score=0,answered=false,startedAt=null,sessionOwner=null,sessionLanguage=null,finished=false;
+  let worldRewardId=null;
   const matched=new Set();
   const canPlay=()=>ready && !saving && Boolean(activeLanguage) && Boolean(account?.userId);
   const inSession=()=>canPlay() && sessionOwner===account.userId && sessionLanguage===activeLanguage && !finished;
@@ -48,6 +49,7 @@
     if(side==='target' && activeLanguage==='Japanese' && word.reading && el('gameReading').checked){const reading=document.createElement('small');reading.textContent=word.reading;button.append(reading);}
   }
   function finish(text){
+    if(!finished && kind==='match' && matched.size>=6 && matched.size===pairs.length && worldRewardId && window.recordWorldGame)void window.recordWorldGame({event_id:worldRewardId,owner:sessionOwner,language:sessionLanguage,ids:[...matched]});
     finished=true;el('gameResult').hidden=false;el('gameResultText').textContent=text+' Czas: '+Math.max(0,Math.floor((Date.now()-startedAt)/1000))+' s.';
     status('Gra zakończona! Zagraj ponownie lub kliknij „Koniec gry”, aby wrócić do wyboru gier.');updateGameControls();el('gameResult').scrollIntoView?.({block:'nearest'});
   }
@@ -133,7 +135,7 @@
     const endless=kind==='falling' && ['endless','survival'].includes(el('fallMode').value);
     const count=Number(el('gameCount').value);pairs=endless?words:words.slice(0,[6,10,15,20,25].includes(count)?count:6);
     if(pairs.length<(kind==='escape'?3:2)){pairs=[];status('Do gry potrzeba co najmniej '+(kind==='escape'?3:2)+' różnych słówek i tłumaczeń w wybranym zestawie i kategorii.');return;}
-    sessionOwner=account.userId;sessionLanguage=activeLanguage;startedAt=Date.now();
+    worldRewardId=window.newWorldEventId?.();sessionOwner=account.userId;sessionLanguage=activeLanguage;startedAt=Date.now();
     window.openActivityFocus?.('games',names[kind],true,kind);
     status('Grasz: '+names[kind]+(endless?' · Endless. Pula: ':'. W tej grze: ')+pairs.length+' słówek'+(!endless && pairs.length<count?' (tyle jest dostępnych)':'')+'.');
     if(kind==='falling'){if(window.TooweeFalling)window.TooweeFalling.start(pairs,{owner:sessionOwner,language:sessionLanguage,direction:el('gameDirection').value,speed:el('fallSpeed').value,mode:el('fallMode').value,onFinish:finish});else status('Odśwież stronę, aby wczytać grę.');}

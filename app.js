@@ -105,10 +105,12 @@ function tab(id) {
   byId('learningViewName').textContent = (learningNames[id] || '')+(setName ? ' · '+setName : '');
   if(id!=='games' && window.pauseFallingGame)window.pauseFallingGame();
   if (id !== 'study' && window.pauseStudySession) window.pauseStudySession();
+  if ((id === 'world' || id === 'dashboard') && window.loadWorld)void window.loadWorld();
   if (id === 'learning' && window.refreshLearningSets) void window.refreshLearningSets();
   if (id === 'progress' && window.loadProgressDashboard) void window.loadProgressDashboard();
 }
 function renderLibrary() {
+  if(ready && activeLanguage && window.loadWorld)void window.loadWorld();
   byId('stats').textContent = activeWords().length + ' słówek • ' + activeFolders().length + ' folderów';
   const options = activeFolders().map(f => '<option value="' + safe(f.id) + '">' + safe(f.name) + '</option>').join('');
   const selected = byId('wordFolder').value;

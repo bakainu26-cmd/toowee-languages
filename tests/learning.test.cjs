@@ -67,6 +67,10 @@ function harness(){
  key('ArrowDown');key('ArrowLeft');assert.notEqual(h.els.studyPrompt.textContent,initial);assert.equal(h.els.unknownPileWords.children.length,1);
  key('ArrowUp');key('ArrowRight');assert.equal(h.els.knownPileWords.children.length,1);assert.equal(h.writes.length,0);
  h.els.studyPrevious.onclick();const history=h.els.studyPrompt.textContent;key('ArrowRight');key('ArrowDown');assert.equal(h.els.studyPrompt.textContent,history);assert.equal(h.writes.length,0);
+ // World rewards are reported after a successful SRS save, with verified IDs and bounded active time.
+ h=harness();const worldReports=[];h.c.newWorldEventId=()=> '11111111-1111-4111-8111-111111111111';h.c.recordWorldStudy=event=>{worldReports.push(event);return Promise.resolve()};h.c.library.words=Array.from({length:10},(_,i)=>h.word('reward'+i));await h.start('learn');
+ for(let i=0;i<10;i++){h.elapse(15000);await h.rate(true)}assert.equal(worldReports.length,0);h.fail=true;for(let i=0;i<10;i++){h.elapse(15000);await h.rate(true)}assert.equal(worldReports.length,0);h.fail=false;await h.els.retryStudySave.onclick();await new Promise(r=>setImmediate(r));assert.equal(worldReports.length,1);assert.equal(worldReports[0].ids.length,10);assert.equal(worldReports[0].seconds,300);assert.equal(worldReports[0].kind,'learn');assert.equal(worldReports[0].owner,'owner');
+ h=harness();const idleReports=[];h.c.newWorldEventId=()=> '22222222-2222-4222-8222-222222222222';h.c.recordWorldStudy=event=>{idleReports.push(event);return Promise.resolve()};h.c.library.words=[h.word('idle')];await h.start('learn');h.elapse(600000);await h.rate(true);h.elapse(600000);await h.rate(true);assert.equal(idleReports[0].seconds,60);
  // Inline correction pauses time, preserves the same revealed card and updates future verification.
  h=harness();h.els.studyMinutes.value='5';h.c.library.words=[h.word('typo')];await h.start('learn');h.els.revealStudy.onclick();
  const editWrites=[];let editFail=false;const originalFrom=h.c.account.client.from;

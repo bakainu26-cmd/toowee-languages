@@ -5,6 +5,7 @@
   let direction='toTarget',busy=false,version=0,progressOwner=null,progress=new Map(),progressLoaded=false;
   let active=false,paused=false,elapsedMs=0,runningSince=null,budgetMs=0,sessionGoalMs=0,learningElapsedMs=0,ticker=null;
   let challengeReported=false,sessionOwner=null,sessionLanguage=null,portionSize=10,sessionKind='learn';
+  let worldRewardId=null,rewardSeconds=0,rewardLastElapsed=0;
   let focused=false,pendingRating=null,cardHistory=[],historyIndex=null,editing=null;
   const el=id=>document.getElementById(id),scope=window.TooweeStudyScope;
   const available=()=>ready && !saving && Boolean(activeLanguage) && Boolean(account?.userId);
@@ -100,6 +101,7 @@
   function resetStudy() {
     if(focused){setFocus(false);route('#/fiszki');}
     editing=null;if(el('studyEditDialog').open)el('studyEditDialog').close();
+    worldRewardId=null;rewardSeconds=0;rewardLastElapsed=0;
     pendingRating=null;cardHistory=[];historyIndex=null;
     ++version;busy=false;active=false;paused=false;phase='idle';stopTicker();elapsedMs=0;runningSince=null;budgetMs=0;sessionGoalMs=0;learningElapsedMs=0;
     queue=[];pool=[];sessionWords=[];training.clear();verified.clear();originalProgress.clear();verificationIds.clear();revealed=false;attempts=0;verificationTotal=0;challengeReported=false;sessionOwner=null;sessionLanguage=null;
@@ -170,7 +172,7 @@
   async function startStudy() {
     if(!available()||busy)return;const invalid=validateSettings();if(invalid){setNotice(invalid);return;}
     if(active&&!confirm('Rozpocząć nową sesję? Bieżąca sesja nie zapisała jeszcze końcowej weryfikacji.'))return;
-    resetStudy();budgetMs=getBudget();sessionGoalMs=budgetMs;const current=version,snapshot={...account};busy=true;updateStudyControls();setNotice('Wczytywanie zapisanych powtórek…');
+    resetStudy();worldRewardId=window.newWorldEventId?.();budgetMs=getBudget();sessionGoalMs=budgetMs;const current=version,snapshot={...account};busy=true;updateStudyControls();setNotice('Wczytywanie zapisanych powtórek…');
     try{
       const loaded=await loadProgress(snapshot);if(current!==version||account?.userId!==snapshot.userId)return;
       progress=loaded;originalProgress=new Map(loaded);progressOwner=snapshot.userId;progressLoaded=true;let rows=selectedWords();
@@ -201,6 +203,7 @@
   async function markCard(isKnown,checkTime=true) {
     if(!available()||busy||!active||(paused && checkTime)||!revealed||!queue.length||!['learn','verify','review'].includes(phase))return;
     const oldPhase=phase;if(checkTime)updateTimer();if(oldPhase!==phase)return;
+    const rewardElapsed=elapsed();rewardSeconds+=Math.min(30,Math.max(0,(rewardElapsed-rewardLastElapsed)/1000));rewardLastElapsed=rewardElapsed;
     const card=queue.shift();cardHistory.push({card,known:isKnown,phase});historyIndex=null;pendingRating=null;revealed=false;attempts++;
     if(phase==='review'){
       training.set(card.id,isKnown);verified.set(card.id,isKnown);renderPiles();
@@ -238,6 +241,7 @@
       setNotice(sessionKind==='review'?'Powtórka zapisana. „Nie umiem” wraca do nauki. Listy poniżej zachowują Twój wynik.':'Listy poniżej pokazują wynik końcowej weryfikacji.');
       // Cards which did not reach verification remain due for another practice.
       reviewed.forEach(w=>{if(!verified.has(w.id))verified.set(w.id,false);});renderPiles();reportChallenge();
+      if(worldRewardId && window.recordWorldStudy)void window.recordWorldStudy({event_id:worldRewardId,owner:sessionOwner,language:sessionLanguage,kind:sessionKind,seconds:rewardSeconds,answers:attempts,ids:reviewed.filter(w=>verified.get(w.id)===true && (sessionKind==='review' || (sessionKind==='learn' && !(originalProgress.get(w.id)?.stage>0)))).map(w=>w.id)});
       if(window.setLearningProgress)window.setLearningProgress([...progress.values()]);
       if(window.loadProgressDashboard)void window.loadProgressDashboard();
     }catch(error){if(current===version){phase='save-error';el('studySummaryText').textContent='Weryfikacja gotowa, ale wynik nie został zapisany. Zachowaliśmy go na tej stronie. Ponów zapis. '+(error.message||'');el('retryStudySave').hidden=false;}}
