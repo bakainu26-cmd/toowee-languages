@@ -22,15 +22,41 @@ alter table public.sophie_players enable row level security;
 alter table public.sophie_answers enable row level security;
 revoke all on public.sophie_rooms,public.sophie_players,public.sophie_answers from public,anon,authenticated;
 create index if not exists sophie_rooms_host_idx on public.sophie_rooms(host_id,created_at desc);
+-- Uczestnik może mieć konto albo prywatny klucz gościa. Stare wyniki zachowujemy.
+create table if not exists public.sophie_participants (
+ room_id uuid not null references public.sophie_rooms(id) on delete cascade,
+ player_id uuid not null default gen_random_uuid(),account_id uuid references auth.users(id) on delete cascade,
+ guest_hash text,nickname text not null check(length(trim(nickname)) between 1 and 32),
+ joined_at timestamptz not null default now(),last_seen timestamptz not null default now(),credited integer not null default 0,
+ primary key(room_id,player_id),unique(room_id,account_id),unique(room_id,guest_hash),
+ check(account_id is not null or guest_hash is not null)
+);
+create table if not exists public.sophie_round_answers (
+ room_id uuid not null,player_id uuid not null,round integer not null,choice integer not null,correct boolean not null,
+ base integer not null default 0,bonuses integer[] not null default '{}',pick integer,bonus integer not null default 0,
+ primary key(room_id,player_id,round),foreign key(room_id,player_id) references public.sophie_participants(room_id,player_id) on delete cascade
+);
+create table if not exists public.sophie_account_points (
+ owner_id uuid primary key references auth.users(id) on delete cascade,points bigint not null default 0 check(points>=0)
+);
+insert into public.sophie_participants(room_id,player_id,account_id,nickname,joined_at,last_seen)
+ select room_id,user_id,user_id,nickname,joined_at,last_seen from public.sophie_players on conflict do nothing;
+insert into public.sophie_round_answers(room_id,player_id,round,choice,correct,base,bonuses,pick,bonus)
+ select a.room_id,p.player_id,a.round,a.choice,a.correct,a.base,a.bonuses,a.pick,a.bonus from public.sophie_answers a
+ join public.sophie_participants p on p.room_id=a.room_id and p.account_id=a.user_id on conflict do nothing;
+alter table public.sophie_participants enable row level security;
+alter table public.sophie_round_answers enable row level security;
+alter table public.sophie_account_points enable row level security;
+revoke all on public.sophie_participants,public.sophie_round_answers,public.sophie_account_points from public,anon,authenticated;
 create or replace function public.toowee_sophie(p_action text,p_data jsonb default '{}')
 returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
 declare
- who uuid:=auth.uid();room public.sophie_rooms%rowtype;answer public.sophie_answers%rowtype;
+ who uuid:=auth.uid();room public.sophie_rooms%rowtype;answer public.sophie_round_answers%rowtype;
  pool jsonb;questions jsonb:='[]';q jsonb;item jsonb;choices jsonb;correct_index integer;
  n integer;requested integer;duration integer;direction text;rid uuid;roomcode text;nick text;
+ pid uuid;secret text;secret_hash text;linked_account uuid;credited integer;game_score integer;delta integer;
  host boolean;member boolean;players integer;answered integer;settled integer;can_next boolean;expired boolean;selected integer;
 begin
- if who is null then raise exception 'Zaloguj się, aby zagrać.';end if;
  if p_action='create' then
   if not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Tylko nauczyciel może tworzyć rozgrywki.';end if;
   -- Serialize creates per teacher and allow safe retry of the same request.
@@ -69,20 +95,37 @@ begin
   if not found then raise exception 'Nie znaleziono pokoju. Sprawdź kod.';end if;
  end if;
  if room.expires_at<=clock_timestamp() then raise exception 'Pokój wygasł. Nauczyciel może utworzyć nowy.';end if;
- host:=room.host_id=who;
- select exists(select 1 from public.sophie_players where room_id=room.id and user_id=who) into member;
+ host:=coalesce(room.host_id=who,false);
+ if who is null or p_action='link' then
+  secret:=p_data->>'guest_token';
+  if secret is null or secret !~ '^[0-9a-f]{64}$' then raise exception 'Dołącz pseudonimem, aby otrzymać dostęp do gry.';end if;
+  secret_hash:=encode(sha256(convert_to(secret,'UTF8')),'hex');
+ end if;
+ if p_action='link' then
+  if who is null then raise exception 'Zaloguj się, aby przypisać punkty do konta.';end if;
+  select player_id,account_id into pid,linked_account from public.sophie_participants where room_id=room.id and guest_hash=secret_hash for update;
+  if pid is null or (linked_account is not null and linked_account<>who) then raise exception 'Nieprawidłowy dostęp do sesji gościa.';end if;
+  if exists(select 1 from public.sophie_participants where room_id=room.id and account_id=who and player_id<>pid) then raise exception 'To konto ma już uczestnika w tym pokoju. Wróć do gry na swoim koncie.';end if;
+  update public.sophie_participants set account_id=who where room_id=room.id and player_id=pid;
+ elsif who is not null and not host then
+  select player_id into pid from public.sophie_participants where room_id=room.id and account_id=who;
+ elsif not host then
+  select player_id into pid from public.sophie_participants where room_id=room.id and guest_hash=secret_hash and account_id is null;
+ end if;
+ member:=pid is not null;
  if p_action='join' and not host then
   if not member then
    if room.status<>'lobby' then raise exception 'Gra już się rozpoczęła. Do nowej gry dołączysz w poczekalni.';end if;
-   if (select count(*) from public.sophie_players where room_id=room.id)>=30 then raise exception 'Pokój ma już 30 uczestników.';end if;
+   if (select count(*) from public.sophie_participants where room_id=room.id)>=30 then raise exception 'Pokój ma już 30 uczestników.';end if;
+   if who is null and exists(select 1 from public.sophie_participants where room_id=room.id and guest_hash=secret_hash) then raise exception 'Ta sesja gościa jest już przypisana do konta. Zaloguj się, aby wrócić.';end if;
    nick:=trim(p_data->>'nickname');if nick is null or length(nick) not between 1 and 32 then raise exception 'Wpisz pseudonim (1–32 znaki).';end if;
-   insert into public.sophie_players(room_id,user_id,nickname) values(room.id,who,nick);member:=true;
+   insert into public.sophie_participants(room_id,account_id,guest_hash,nickname) values(room.id,who,secret_hash,nick) returning player_id into pid;member:=true;
   end if;
  end if;
  if not host and not member then raise exception 'Najpierw dołącz do pokoju kodem.';end if;
- if member then update public.sophie_players set last_seen=clock_timestamp() where room_id=room.id and user_id=who;end if;
- select count(*) into players from public.sophie_players where room_id=room.id;
- select count(*),count(*) filter(where not correct or pick is not null) into answered,settled from public.sophie_answers where room_id=room.id and round=room.round;
+ if member then update public.sophie_participants set last_seen=clock_timestamp() where room_id=room.id and player_id=pid;end if;
+ select count(*) into players from public.sophie_participants where room_id=room.id;
+ select count(*),count(*) filter(where not correct or pick is not null) into answered,settled from public.sophie_round_answers where room_id=room.id and round=room.round;
  can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds');
  if p_action in ('next','finish') then
   if not host then raise exception 'Tylko prowadzący steruje rundami.';end if;
@@ -96,35 +139,46 @@ begin
  elsif p_action='answer' then
   if host then raise exception 'Prowadzący nie odpowiada jako gracz.';end if;
   if room.status<>'question' or (p_data->>'round')::integer is distinct from room.round then raise exception 'Ta runda nie jest już aktywna.';end if;
-  select * into answer from public.sophie_answers where room_id=room.id and user_id=who and round=room.round;
+  select * into answer from public.sophie_round_answers where room_id=room.id and player_id=pid and round=room.round;
   if not found then
    if clock_timestamp()>room.deadline then raise exception 'Czas na odpowiedź minął.';end if;
    selected:=(p_data->>'choice')::integer;
    if selected is null or selected not between 0 and 3 then raise exception 'Wybierz jedną z czterech odpowiedzi.';end if;
    q:=room.questions->(room.round-1);
-   insert into public.sophie_answers(room_id,user_id,round,choice,correct,base,bonuses) values(room.id,who,room.round,selected,selected=(q->>'correct')::integer,case when selected=(q->>'correct')::integer then 100 else 0 end,array[20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer)]);
+   insert into public.sophie_round_answers(room_id,player_id,round,choice,correct,base,bonuses) values(room.id,pid,room.round,selected,selected=(q->>'correct')::integer,case when selected=(q->>'correct')::integer then 100 else 0 end,array[20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer),20*(1+floor(random()*5)::integer)]);
   end if;
  elsif p_action='pick' then
   if room.status<>'question' or (p_data->>'round')::integer is distinct from room.round then raise exception 'Ta runda jest już zakończona.';end if;
-  select * into answer from public.sophie_answers where room_id=room.id and user_id=who and round=room.round for update;
+  select * into answer from public.sophie_round_answers where room_id=room.id and player_id=pid and round=room.round for update;
   if not found or not answer.correct then raise exception 'Saszetkę wybierasz po poprawnej odpowiedzi.';end if;
   selected:=(p_data->>'pick')::integer;
   if selected is null or selected not between 0 and 2 then raise exception 'Wybierz jedną z trzech saszetek.';end if;
-  if answer.pick is null then update public.sophie_answers set pick=selected,bonus=bonuses[selected+1] where room_id=room.id and user_id=who and round=room.round;end if;
- elsif p_action not in ('create','join','load') then raise exception 'Nieznana operacja gry.';end if;
- select * into answer from public.sophie_answers where room_id=room.id and user_id=who and round=room.round;
- select count(*),count(*) filter(where not correct or pick is not null) into answered,settled from public.sophie_answers where room_id=room.id and round=room.round;
+  if answer.pick is null then update public.sophie_round_answers set pick=selected,bonus=bonuses[selected+1] where room_id=room.id and player_id=pid and round=room.round;end if;
+ elsif p_action not in ('create','join','load','link') then raise exception 'Nieznana operacja gry.';end if;
+ select * into answer from public.sophie_round_answers where room_id=room.id and player_id=pid and round=room.round;
+ select count(*),count(*) filter(where not correct or pick is not null) into answered,settled from public.sophie_round_answers where room_id=room.id and round=room.round;
  can_next:=room.status='lobby' and players>0 or room.status='question' and (settled>=players and players>0 or clock_timestamp()>=room.deadline+interval '10 seconds');
  q:=case when room.round>0 then room.questions->(room.round-1) else null end;
- return jsonb_build_object('code',room.code,'host',host,'status',room.status,'round',room.round,'total',jsonb_array_length(room.questions),'lang',room.lang,'deadline',room.deadline,'server_now',clock_timestamp(),'players',players,'answered',answered,'settled',settled,'can_next',can_next,
+ if member and who is not null then
+  select account_id,p.credited into linked_account,credited from public.sophie_participants p where room_id=room.id and player_id=pid for update;
+  if linked_account=who then
+   select coalesce(sum(base+bonus),0)::integer into game_score from public.sophie_round_answers where room_id=room.id and player_id=pid;
+   delta:=greatest(0,game_score-credited);
+   if delta>0 then
+    insert into public.sophie_account_points(owner_id,points) values(who,delta) on conflict(owner_id) do update set points=public.sophie_account_points.points+excluded.points;
+    update public.sophie_participants set credited=game_score where room_id=room.id and player_id=pid;
+   end if;
+  end if;
+ end if;
+ return jsonb_build_object('code',room.code,'host',host,'guest',who is null,'personal_points',case when who is not null and member then coalesce((select points from public.sophie_account_points where owner_id=who),0) else null end,'status',room.status,'round',room.round,'total',jsonb_array_length(room.questions),'lang',room.lang,'deadline',room.deadline,'server_now',clock_timestamp(),'players',players,'answered',answered,'settled',settled,'can_next',can_next,
   'question',case when q is null then null else q-'correct' end,
-  'solution',case when host or answer.user_id is not null or room.status='finished' or room.deadline<=clock_timestamp() then q->'options'->((q->>'correct')::integer) else null end,
-  'answer',case when answer.user_id is null then null else jsonb_build_object('choice',answer.choice,'correct',answer.correct,'base',answer.base,'pick',answer.pick,'bonus',answer.bonus) end,
-  'ranking',(select coalesce(jsonb_agg(jsonb_build_object('name',nickname,'score',score,'correct',correct,'me',user_id=who) order by score desc,joined_at),'[]') from (
-   select p.user_id,p.nickname,p.joined_at,coalesce(sum(a.base+a.bonus),0) as score,count(a.round) filter(where a.correct) as correct from public.sophie_players p left join public.sophie_answers a on a.room_id=p.room_id and a.user_id=p.user_id where p.room_id=room.id group by p.user_id,p.nickname,p.joined_at
+  'solution',case when host or answer.player_id is not null or room.status='finished' or room.deadline<=clock_timestamp() then q->'options'->((q->>'correct')::integer) else null end,
+  'answer',case when answer.player_id is null then null else jsonb_build_object('choice',answer.choice,'correct',answer.correct,'base',answer.base,'pick',answer.pick,'bonus',answer.bonus) end,
+  'ranking',(select coalesce(jsonb_agg(jsonb_build_object('name',nickname,'score',score,'correct',correct,'me',player_id=pid) order by score desc,joined_at),'[]') from (
+   select p.player_id,p.nickname,p.joined_at,coalesce(sum(a.base+a.bonus),0) as score,count(a.round) filter(where a.correct) as correct from public.sophie_participants p left join public.sophie_round_answers a on a.room_id=p.room_id and a.player_id=p.player_id where p.room_id=room.id group by p.player_id,p.nickname,p.joined_at
   ) standings));
 end $$;
 revoke all on function public.toowee_sophie(text,jsonb) from public;
-grant execute on function public.toowee_sophie(text,jsonb) to authenticated;
+grant execute on function public.toowee_sophie(text,jsonb) to anon,authenticated;
 notify pgrst,'reload schema';
 commit;
