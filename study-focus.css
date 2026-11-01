@@ -2,3 +2,5 @@
 
 .study-focus>header,.study-focus #accountPanel,.study-focus #languagePicker,.study-focus #learningWorkspace>:not(#study){visibility:hidden}
 ruby{ruby-align:center;ruby-position:over}rt{font-size:.48em;font-weight:400;line-height:1.2;color:#746987}#studyExample{margin-top:12px;padding-top:12px;border-top:1px solid #e5ddf5}#studyExampleText{font-size:clamp(20px,2.5vw,29px);line-height:2.3;overflow-wrap:anywhere;white-space:pre-wrap}#studyFuriganaStatus{font-size:11px;color:#746987}.study-focus #studyCard #studyExampleText{font-size:clamp(18px,2.3vw,27px);line-height:2.3}.study-focus #studyCard h3:has(ruby){line-height:1.9}
+
+#studyPiles[hidden]{display:none}.study-focus #study.study-piles-hidden{grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:'toolbar' 'notice' 'main'}

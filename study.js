@@ -252,6 +252,13 @@
   el('continueStudy').onclick=()=>{};el('finishStudy').onclick=()=>{};
   el('studyCard').addEventListener('dragstart',event=>{if(!active||!revealed||busy||paused||historyIndex!==null||!available()||!queue.length){event.preventDefault();return;}event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',queue[0].id);});
   for(const id of ['unknownPile','knownPile']){const pile=el(id);pile.addEventListener('dragover',event=>{if(active&&revealed&&!busy&&!paused&&available()){event.preventDefault();pile.classList.add('drag-over');}});pile.addEventListener('dragleave',()=>pile.classList.remove('drag-over'));pile.addEventListener('drop',event=>{event.preventDefault();pile.classList.remove('drag-over');if(event.dataTransfer.getData('text/plain')===queue[0]?.id)selectRating(id==='knownPile');});}
+  el('toggleStudyPiles').onclick=()=>{
+    const lists=el('studyPiles'),button=el('toggleStudyPiles');
+    lists.hidden=!lists.hidden;
+    el('study').classList.toggle('study-piles-hidden',lists.hidden);
+    button.textContent=lists.hidden?'Pokaż listy':'Ukryj listy';
+    button.setAttribute('aria-expanded',String(!lists.hidden));
+  };
   el('studyCard').addEventListener('dragend',()=>{for(const id of ['unknownPile','knownPile'])el(id).classList.remove('drag-over');});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseStudySession();});
   document.addEventListener('keydown',event=>{
