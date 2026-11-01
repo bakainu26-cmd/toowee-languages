@@ -80,18 +80,18 @@
       if(local?.state && local.revision===revision && local.dirty && (!state||local.state.id===state.id)){state=local.state;dirty=true;}
       if(!state||state.phase==='done'){
         const progress=await records();if(!alive(token))return;
-        const now=Date.now(),eligible=library.words.filter(w=>w.lang===language&&(mode==='learn'?!(progress[w.id]?.stage>0):progress[w.id]?.stage>0&&Date.parse(progress[w.id].due_at)<=now));
+        const now=Date.now(),eligible=library.words.filter(w=>(!window.learningSourceAccepts||window.learningSourceAccepts(w))&&w.lang===language&&(mode==='learn'?!(progress[w.id]?.stage>0):progress[w.id]?.stage>0&&Date.parse(progress[w.id].due_at)<=now));
         for(let i=eligible.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[eligible[i],eligible[j]]=[eligible[j],eligible[i]];}
         const targets=eligible.slice(0,10).map(w=>w.id);
         if(!targets.length){state=null;status(mode==='learn'?'Nie masz teraz nowych słówek do nauki. Dodaj słownictwo albo wybierz misję powtórek.':'Na tę chwilę nie ma słówek z terminem powtórki. Wróć na mapę lub wybierz naukę.');return;}
-        state={id:window.newWorldEventId(),phase:mode==='learn'?'learn':'review',targets,queue:[...targets],trained:[],failed:[],completed:[],processed:[],progress:Object.fromEntries(targets.filter(id=>progress[id]).map(id=>[id,progress[id]])),seconds:0,answers:0,checkpoint:null};dirty=true;await persist(token);
+        state={sourceLabel:el('materialSource')?.selectedOptions[0]?.textContent||'Wszystkie dostępne',id:window.newWorldEventId(),phase:mode==='learn'?'learn':'review',targets,queue:[...targets],trained:[],failed:[],completed:[],processed:[],progress:Object.fromEntries(targets.filter(id=>progress[id]).map(id=>[id,progress[id]])),seconds:0,answers:0,checkpoint:null};dirty=true;await persist(token);
       }else{
         // Deleted vocabulary cannot leave an unanswerable card at the head of the queue.
         state.queue=state.queue.filter(id=>word(id));state.targets=state.targets.filter(id=>word(id));
         if(!state.queue.length&&!state.checkpoint)state.phase='done';
         if(state.checkpoint||dirty)await runCheckpoint(token);
       }
-      if(!alive(token))return;status(state.phase==='done'?'Zapisana sesja jest ukończona. Wróć na mapę.':'Misja wczytana. Każda odpowiedź ma własny zapis; „Wróć na mapę” zachowuje postęp.');
+      if(!alive(token))return;status(state.phase==='done'?'Zapisana sesja jest ukończona. Wróć na mapę.':'Wznawiasz zapisaną misję · '+(state.sourceLabel||'Wszystkie dostępne')+'. Każda odpowiedź ma własny zapis; „Wróć na mapę” zachowuje postęp. Zmiana źródła dotyczy kolejnej nowej misji.');
     }catch(error){if(!alive(token))return;saveError=error.message||'Brak połączenia.';if(['PGRST202','42883','42P01'].includes(error.code)){status('Najpierw włącz zapis misji na koncie. Skopiuj poprawkę poniżej i uruchom ją w Supabase.');showSetup();}else status('Nie udało się wczytać/zapisać misji. '+saveError);}
     finally{if(alive(token)){busy=false;stamp=!document.hidden&&el('worldStudyDialog').open?Date.now():null;draw();}}
   }

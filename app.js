@@ -9,7 +9,7 @@ let editId = null;
 let quiz = [];
 let activeLanguage = null;
 const languageInfo = Object.freeze({English:{name:'Angielski',genitive:'angielskiego',target:'angielski',code:'en'},Japanese:{name:'Japoński',genitive:'japońskiego',target:'japoński',code:'ja'},Spanish:{name:'Hiszpański',genitive:'hiszpańskiego',target:'hiszpański',code:'es'}});
-function activeWords() { return library.words.filter(w => w.lang === activeLanguage); }
+function activeWords() { return library.words.filter(w => w.lang === activeLanguage && (!window.learningSourceAccepts||window.learningSourceAccepts(w))); }
 function activeFolders() {
   return library.folders.filter(folder=>{
     if(folder.lang)return folder.lang===activeLanguage;
@@ -169,6 +169,8 @@ async function loadLibrary() {
   controls();
   try {
     const [words,folders] = await Promise.all([fetchAll('vocabulary_words',id),fetchAll('vocabulary_folders',id)]);
+    if (version !== libraryRevision || id !== account?.userId) return;
+    await window.refreshMaterialSources?.();
     if (version !== libraryRevision || id !== account?.userId) return;
     library = {words,folders};
     ready = true;

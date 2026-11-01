@@ -34,12 +34,13 @@
       const { data, error } = await client.from('profiles')
         .select('display_name,role,native_language,target_language').eq('id', id).maybeSingle();
       if (version !== revision || userId !== id) return;
+      if(window.tooweeProfile){const p=window.tooweeProfile;el('profileStatus').textContent=[p.display_name,'Rola: '+(p.role==='teacher'?'Nauczyciel':'Uczeń')].filter(Boolean).join(' • ');return;}
       if (error) throw error;
       if (!data) {
         el('profileStatus').textContent = 'Konto jest zalogowane, ale nie znaleziono profilu. Sprawdź konfigurację profili w Supabase.';
         return;
       }
-      const role = data.role === 'teacher' ? 'Nauczyciel' : data.role === 'student' ? 'Uczeń' : data.role;
+      const type=window.tooweeProfile?.role||data.role;const role = type === 'teacher' ? 'Nauczyciel' : type === 'student' ? 'Uczeń' : type;
       el('profileStatus').textContent = [data.display_name, 'Rola: ' + role,
         'Język nauki: ' + data.target_language].filter(Boolean).join(' • ');
     } catch (error) {
@@ -55,7 +56,7 @@
       window.tooweeAccount = { client, userId: id };
       window.dispatchEvent(new CustomEvent('toowee-account', { detail: window.tooweeAccount }));
     }
-    el('signedOut').hidden = Boolean(id);
+    el('signedOut').hidden = Boolean(id);if(!id){el('passwordRecovery').hidden=true;el('passwordRecovery').reset();}
     el('signedIn').hidden = !id;
     if (id) {
       el('accountIdentity').textContent = 'Zalogowano jako: ' + session.user.email;
@@ -70,10 +71,11 @@
       el('accountIdentity').textContent = '';
       el('profileStatus').textContent = '';
       el('loginPassword').value = '';
-      el('signupPassword').value = '';
+      el('signupPassword').value = '';el('signupPasswordConfirm').value='';
       status('Zaloguj się lub utwórz konto.');
     }
   }
+  window.addEventListener('toowee-profile',event=>{el('profileStatus').textContent=[event.detail.display_name,'Rola: '+(event.detail.role==='teacher'?'Nauczyciel':'Uczeń')].filter(Boolean).join(' • ');});
   el('loginForm').addEventListener('submit', async event => {
     event.preventDefault();
     if (!client || busy) return;
@@ -94,16 +96,17 @@
     if (!client || busy) return;
     const name = el('signupName').value.trim();
     if (!name) { status('Wpisz imię lub nazwę.', 'error'); return; }
+    if(el('signupPassword').value!==el('signupPasswordConfirm').value){status('Hasła muszą być takie same.','error');return;}
     setBusy(true);
     status('Tworzenie konta…');
     try {
       const { data, error } = await client.auth.signUp({
         email: el('signupEmail').value.trim(), password: el('signupPassword').value,
-        options: { data: { display_name: name }, emailRedirectTo: location.origin + location.pathname }
+        options: { data: { display_name: name,role:el('signupRole').value==='teacher'?'teacher':'student' }, emailRedirectTo: location.origin + location.pathname }
       });
       if (error) throw error;
       el('loginEmail').value = el('signupEmail').value.trim();
-      el('signupPassword').value = '';
+      el('signupPassword').value = '';el('signupPasswordConfirm').value='';
       if (data.session) renderSession(data.session);
       else status('Sprawdź skrzynkę e-mail (także spam). Jeśli adres kwalifikuje się do rejestracji, otrzymasz link potwierdzający. Jeśli masz już konto, zaloguj się.', 'success');
     } catch (error) { status(message(error), 'error'); }
@@ -122,10 +125,15 @@
   el('reloadProfile').addEventListener('click', () => {
     if (userId) void loadProfile(userId, ++revision);
   });
+  function authTab(signup){el('loginForm').hidden=signup;el('signupForm').hidden=!signup;el('authLoginTab').classList.toggle('alt',signup);el('authSignupTab').classList.toggle('alt',!signup);}
+  el('authLoginTab').onclick=()=>authTab(false);el('authSignupTab').onclick=()=>authTab(true);
+  el('signupRole').onchange=()=>{el('signupRoleHint').textContent=el('signupRole').value==='teacher'?'Konto nauczyciela: docelowo płatny abonament. Ceny i pakiety nie są jeszcze uruchomione.':'Konto ucznia: docelowo bezpłatne demo lub pełna wersja w subskrypcji.';};
+  el('forgotPassword').onclick=async()=>{if(!client||busy)return;const email=el('loginEmail');if(!email.value.trim()||!email.checkValidity()){status('Wpisz poprawny e-mail w polu logowania.','error');email.focus();return;}setBusy(true);try{const {error}=await client.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:location.origin+location.pathname});if(error)throw error;status('Jeśli konto istnieje, otrzymasz wiadomość z linkiem do zmiany hasła.','success');}catch(error){status(message(error),'error');}finally{setBusy(false);}};
+  el('passwordRecovery').onsubmit=async event=>{event.preventDefault();if(!client||busy)return;if(el('recoveryPassword').value!==el('recoveryConfirm').value){status('Hasła muszą być takie same.','error');return;}setBusy(true);try{const {error}=await client.auth.updateUser({password:el('recoveryPassword').value});if(error)throw error;el('passwordRecovery').reset();el('passwordRecovery').hidden=true;el('signedIn').hidden=false;status('Nowe hasło zostało zapisane.','success');}catch(error){status(message(error),'error');}finally{setBusy(false);}};
   try {
     if (!window.supabase) throw new Error('Nie udało się pobrać biblioteki logowania. Odśwież stronę lub sprawdź połączenie.');
     client = window.supabase.createClient(url, publicKey);
-    client.auth.onAuthStateChange((_event, session) => renderSession(session));
+    client.auth.onAuthStateChange((event, session) => {renderSession(session);if(event==='PASSWORD_RECOVERY'){el('passwordRecovery').hidden=false;el('signedIn').hidden=true;}});
     // INITIAL_SESSION restores the account after a reload, including email confirmation callbacks.
     setBusy(false);
   } catch (error) {

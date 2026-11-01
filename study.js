@@ -84,7 +84,7 @@
   }
   function scopeOptions() {return {scope:el('studyScope').value,language:el('studyLanguage').value,folder:el('studyFolder').value,from:el('studyDateFrom').value,to:el('studyDateTo').value};}
   function selectedWords() {
-    let words=scope.select(library.words,progress,scopeOptions());
+    let words=scope.select(library.words.filter(w=>!window.learningSourceAccepts||window.learningSourceAccepts(w)),progress,scopeOptions());
     if(window.filterLearningWords)words=window.filterLearningWords(words,progress);
     const mode=el('studyMode').value;
     return words.filter(w=>mode==='learn' ? window.TooweeSRS.category(progress.get(w.id))==='learn' : mode==='review' ? window.TooweeSRS.category(progress.get(w.id))==='review' : true);
