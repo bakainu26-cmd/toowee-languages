@@ -33,4 +33,6 @@ Ceny, limity demo, operator płatności i reguły wygasania dostępu nie został
 
 Nadanie roli ADMIN odbywa się wyłącznie prywatną operacją właścicielki w Supabase SQL Editor, dla jednego wskazanego konta. Publiczny interfejs nie udostępnia operacji nadawania ADMIN. Publiczna rejestracja i metadane użytkownika nie tworzą administratorów. Aktualizacja accounts_setup.sql dodaje obsługę roli bez nadawania jej komukolwiek.
 
-ADMIN ma przełącznik widoku nauczyciela/ucznia z zapamiętywaniem wyboru na urządzeniu. To widoki tego samego konta, bez podszywania się pod innych uczniów. Zmiana widoku nie zmienia roli w bazie. Uprawnienia nauczycielskie nadal dotyczą tylko własnych połączeń i materiałów, nie globalnego podglądu prywatnych kont.
+ADMIN ma trzy opcje „Zaloguj jako admin / uczeń / nauczyciel” z zapamiętywaniem wyboru na urządzeniu. To widoki tego samego konta, bez podszywania się pod innych uczniów. Zmiana widoku nie zmienia roli w bazie. Uprawnienia nauczycielskie nadal dotyczą tylko własnych połączeń i materiałów, nie globalnego podglądu prywatnych kont.
+
+Panel ADMIN jest osobnym centrum wyboru widoków i konfiguracji. Panel ucznia pokazuje własną naukę i świat Sophie, a panel nauczyciela przypisywanie materiałów i własnych uczniów. Przełączenie nie rozpoczyna innej sesji logowania i nie zmienia roli w bazie.
