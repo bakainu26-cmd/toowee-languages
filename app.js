@@ -53,7 +53,7 @@ function chooseLanguage(language) {
   byId('currentLanguage').textContent = 'Uczysz się ' + languageInfo[language].genitive;
   byId('languagePicker').hidden = true;
   byId('learningWorkspace').hidden = false;
-  tab(window.location?.hash?.startsWith('#/fiszki')?'study':'learning');renderLibrary();
+  tab(window.location?.hash?.startsWith('#/fiszki')?'study':window.tooweeView==='teacher'?'words':'learning');renderLibrary();
   if (window.resetStudy) window.resetStudy();
 }
 byId('chooseEnglish').onclick = () => chooseLanguage('English');

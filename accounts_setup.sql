@@ -3,9 +3,11 @@
 begin;
 create table if not exists public.toowee_accounts (
  id uuid primary key references auth.users(id) on delete cascade,
- role text not null check(role in ('student','teacher')),
+ role text not null check(role in ('student','teacher','admin')),
  display_name text not null default '',created_at timestamptz not null default now()
 );
+alter table public.toowee_accounts drop constraint if exists toowee_accounts_role_check;
+alter table public.toowee_accounts add constraint toowee_accounts_role_check check(role in ('student','teacher','admin'));
 create table if not exists public.toowee_connections (
  teacher_id uuid not null references auth.users(id) on delete cascade,
  student_id uuid not null references auth.users(id) on delete cascade,
@@ -37,9 +39,9 @@ begin
  select id,case when raw_user_meta_data->>'role'='teacher' then 'teacher' else 'student' end,left(coalesce(raw_user_meta_data->>'display_name','Użytkownik'),100) from auth.users where id=who on conflict do nothing;
  select * into me from public.toowee_accounts where id=who for update;
  if p_action='become_teacher' then
-  update public.toowee_accounts set role='teacher' where id=who returning * into me;
+  update public.toowee_accounts set role=case when role='admin' then 'admin' else 'teacher' end where id=who returning * into me;
  elsif p_action='invite' then
-  if me.role<>'teacher' then raise exception 'Tylko nauczyciel może zapraszać uczniów.';end if;
+  if me.role not in ('teacher','admin') then raise exception 'Tylko nauczyciel może zapraszać uczniów.';end if;
   code:=replace(gen_random_uuid()::text,'-','')||replace(gen_random_uuid()::text,'-','');
   insert into public.toowee_invites(token,teacher_id) values(code,who);
   return jsonb_build_object('token',code,'expires_days',7);
@@ -54,7 +56,7 @@ begin
   delete from public.toowee_connections where (teacher_id=who and student_id=other) or (student_id=who and teacher_id=other);
  elsif p_action='assign' then
   other:=(p_data->>'student_id')::uuid;
-  if me.role<>'teacher' or not exists(select 1 from public.toowee_connections where teacher_id=who and student_id=other) then raise exception 'Uczeń nie jest połączony z Twoim kontem.';end if;
+  if me.role not in ('teacher','admin') or not exists(select 1 from public.toowee_connections where teacher_id=who and student_id=other) then raise exception 'Uczeń nie jest połączony z Twoim kontem.';end if;
   if p_data->>'lang' not in ('English','Japanese','Spanish') or p_data->>'lang' is null then raise exception 'Wybierz język.';end if;
   -- Lock the connection: a concurrent disconnect cannot race with an assignment.
   perform 1 from public.toowee_connections where teacher_id=who and student_id=other for update;
@@ -70,7 +72,7 @@ begin
   return jsonb_build_object('assigned',n);
  elsif p_action='progress' then
   other:=(p_data->>'student_id')::uuid;
-  if me.role<>'teacher' or not exists(select 1 from public.toowee_connections where teacher_id=who and student_id=other) then raise exception 'Brak dostępu do postępu tego ucznia.';end if;
+  if me.role not in ('teacher','admin') or not exists(select 1 from public.toowee_connections where teacher_id=who and student_id=other) then raise exception 'Brak dostępu do postępu tego ucznia.';end if;
   select coalesce(jsonb_agg(jsonb_build_object('word',w.word,'reading',w.reading,'translation',w.translation,'lang',w.lang,'stage',coalesce(vp.stage,0),'reviews',coalesce(vp.reviews,0),'due_at',vp.due_at,'last_reviewed_at',vp.last_reviewed_at) order by w.word),'[]') into result
   from public.toowee_assignments a join public.vocabulary_words w on w.id=a.word_id and w.owner_id=other left join public.vocabulary_progress vp on vp.owner_id=other and vp.word_id=a.word_id where a.teacher_id=who and a.student_id=other;
   return jsonb_build_object('words',result);

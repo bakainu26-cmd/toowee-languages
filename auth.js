@@ -34,7 +34,7 @@
       const { data, error } = await client.from('profiles')
         .select('display_name,role,native_language,target_language').eq('id', id).maybeSingle();
       if (version !== revision || userId !== id) return;
-      if(window.tooweeProfile){const p=window.tooweeProfile;el('profileStatus').textContent=[p.display_name,'Rola: '+(p.role==='teacher'?'Nauczyciel':'Uczeń')].filter(Boolean).join(' • ');return;}
+      if(window.tooweeProfile){const p=window.tooweeProfile;el('profileStatus').textContent=[p.display_name,'Rola: '+(p.role==='admin'?'ADMIN':p.role==='teacher'?'Nauczyciel':'Uczeń')].filter(Boolean).join(' • ');return;}
       if (error) throw error;
       if (!data) {
         el('profileStatus').textContent = 'Konto jest zalogowane, ale nie znaleziono profilu. Sprawdź konfigurację profili w Supabase.';
@@ -53,7 +53,7 @@
     const changed = id !== userId;
     userId = id;
     if (changed || !window.tooweeAccount) {
-      window.tooweeAccount = { client, userId: id };
+      window.tooweeAccount = { client, userId: id, email:session?.user?.email||null };
       window.dispatchEvent(new CustomEvent('toowee-account', { detail: window.tooweeAccount }));
     }
     el('signedOut').hidden = Boolean(id);if(!id){el('passwordRecovery').hidden=true;el('passwordRecovery').reset();}
@@ -75,7 +75,7 @@
       status('Zaloguj się lub utwórz konto.');
     }
   }
-  window.addEventListener('toowee-profile',event=>{el('profileStatus').textContent=[event.detail.display_name,'Rola: '+(event.detail.role==='teacher'?'Nauczyciel':'Uczeń')].filter(Boolean).join(' • ');});
+  window.addEventListener('toowee-profile',event=>{el('profileStatus').textContent=[event.detail.display_name,'Rola: '+(event.detail.role==='admin'?'ADMIN':event.detail.role==='teacher'?'Nauczyciel':'Uczeń')].filter(Boolean).join(' • ');});
   el('loginForm').addEventListener('submit', async event => {
     event.preventDefault();
     if (!client || busy) return;

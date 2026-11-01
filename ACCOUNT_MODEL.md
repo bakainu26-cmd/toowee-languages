@@ -28,3 +28,9 @@ Uczeń lub nauczyciel może rozłączyć konta. Dostęp nauczyciela do raportu u
 - Własna subskrypcja ucznia ma rozszerzać samodzielną naukę.
 
 Ceny, limity demo, operator płatności i reguły wygasania dostępu nie zostały ustalone. Ta wersja nie pobiera opłat i nie egzekwuje abonamentów. Rola nauczyciela nie jest potwierdzeniem płatności ani uprawnieniem administratora. „Graj razem” pozostaje przyszłą funkcją panelu nauczyciela; nie jest wdrożone w tej zmianie.
+
+## ADMIN właścicielki
+
+Nadanie roli ADMIN odbywa się wyłącznie prywatną operacją właścicielki w Supabase SQL Editor, dla jednego wskazanego konta. Publiczny interfejs nie udostępnia operacji nadawania ADMIN. Publiczna rejestracja i metadane użytkownika nie tworzą administratorów. Aktualizacja accounts_setup.sql dodaje obsługę roli bez nadawania jej komukolwiek.
+
+ADMIN ma przełącznik widoku nauczyciela/ucznia z zapamiętywaniem wyboru na urządzeniu. To widoki tego samego konta, bez podszywania się pod innych uczniów. Zmiana widoku nie zmienia roli w bazie. Uprawnienia nauczycielskie nadal dotyczą tylko własnych połączeń i materiałów, nie globalnego podglądu prywatnych kont.
