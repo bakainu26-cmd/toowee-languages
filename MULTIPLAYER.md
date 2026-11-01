@@ -7,12 +7,12 @@ Wymagana wcześniejsza konfiguracja kont (`accounts_setup.sql`) i słownictwa. W
 ## Prowadzenie
 
 1. Zaloguj się jako nauczyciel lub jako ADMIN w widoku nauczyciela.
-2. Wybierz język, zestaw, kierunek pytań, liczbę rund (6/10/15/20/25) czas na odpowiedź (20/30/45/60 sekund) i opcjonalny limit czasu całej gry (1/3/5/10/15/30 minut). Gra kończy się po banku pytań lub po limicie, zależnie co nastąpi wcześniej.
+2. Wybierz język, zestaw, kierunek pytań, liczbę rund (6/10/15/20/25) czas na odpowiedź (20/30/45/60 sekund) oraz jeden warunek końca gry: „Liczba słówek” albo „Timer”. Liczba słówek (6/10/15/20/25) kończy grę po wybranej porcji, bez zegara całej gry. Timer (1/3/5/10/15/30 minut) kończy grę wyłącznie po czasie, bez limitu liczby rund; bank obejmuje dostępne słówka, a po jego przejściu pytania wracają w kolejnej turze.
 3. Potrzeba przynajmniej 4 różnych pytań i odpowiedzi. Pula obejmuje do 1000 słówek z wybranego zestawu. Jeśli jest mniej słówek niż wybranych rund, gra używa dostępnej liczby.
 4. Udostępnij kod albo link do pokoju. Każdy z linkiem otwiera ekran gry i podaje tylko pseudonim. Nie trzeba się logować ani zakładać konta. Logowanie jest opcjonalne.
 5. Poczekaj na uczestników i rozpocznij grę. Każdy ma własny ekran odpowiedzi i saszetek; prowadzący widzi ranking. Rundy przechodzą dalej automatycznie.
 6. Kolejna runda rozpoczyna się automatycznie po 3 sekundach od rozliczenia wszystkich odpowiedzi/saszetek albo po upływie czasu na pytanie + 10 sekund na saszetki. Odświeżenie dowolnego uczestnika uruchamia sprawdzanie zegara w bazie — nie wymaga to obecności prowadzącego. Synchronizacja może dodać do 2,5 sekundy oczekiwania. Prowadzący może też zakończyć całą grę wcześniej.
-7. Po ostatniej rundzie wyniki końcowe pojawiają się automatycznie. Zegar całej gry zaczyna odliczać przy rozpoczęciu pierwszej rundy; poczekalnia nie zużywa czasu. Uczeń kończy przyciskiem „Koniec gry — wróć do panelu”.
+7. W trybie liczby słówek wyniki pojawiają się automatycznie po ostatniej rundzie; w trybie timera — po końcu czasu, nawet jeśli wcześniej przejdziesz cały bank pytań. Zegar całej gry zaczyna odliczać przy rozpoczęciu pierwszej rundy; poczekalnia nie zużywa czasu. Uczeń kończy przyciskiem „Koniec gry — wróć do panelu”.
 
 Japońskie słówka pokazują czytanie w nawiasach w pytaniach i odpowiedziach. Własne materiały nauczyciela są kopiowane do prywatnego banku pytań pokoju w chwili tworzenia — późniejsza edycja słówka nie zmienia trwającej gry.
 
