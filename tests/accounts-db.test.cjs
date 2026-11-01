@@ -26,5 +26,26 @@ await db.exec('set role authenticated');await assert.rejects(db.exec("select * f
 const attacker=randomUUID();await db.query("insert into auth.users(id,raw_user_meta_data,email,email_confirmed_at) values($1,'{\"role\":\"admin\"}','attacker@example.com',now())",[attacker]);await as(attacker);assert.equal((await rpc()).account.role,'student');await assert.rejects(rpc('become_admin'));
 await db.query("update auth.users set email='owner@example.test',email_confirmed_at=now() where id=$1",[teacher]);
 await db.query("update toowee_accounts set role='admin' where id=$1",[teacher]);await as(teacher);assert.equal((await rpc()).account.role,'admin');await rpc('become_teacher');assert.equal((await rpc()).account.role,'admin');assert.equal((await rpc('invite')).token.length,64);await assert.rejects(rpc('progress',{student_id:stranger}));await as(attacker);assert.equal((await rpc()).account.role,'student');
+// Offline teaching profile: no auth user is created; language and owner isolation.
+await as(teacher);const authCount=(await db.query('select count(*)::int as n from auth.users')).rows[0].n;
+await assert.rejects(rpc('profile_create',{first_name:'',last_name:'Test'}));
+const profile=await rpc('profile_create',{first_name:'Anna',last_name:'Testowa'});
+assert.equal(profile.student_id,null);assert.equal((await db.query('select count(*)::int as n from auth.users')).rows[0].n,authCount);
+assert((await rpc()).profiles.some(p=>p.id===profile.id));
+const save={profile_id:profile.id,lang:'Japanese',words:[{word:'記憶',reading:'きおく',translation:'pamięć',example:'記憶です。'}]};
+result=await rpc('profile_save',save);assert.equal(result.added,1);const profileFolder=result.folder_id;assert.equal(result.words[0].owner_id,teacher);assert.equal(result.words[0].reading,'きおく');
+assert.equal((await rpc('profile_save',save)).added,0);
+assert.equal((await rpc('profile_load',{profile_id:profile.id,lang:'Spanish'})).words.length,0);
+assert.notEqual((await rpc('profile_load',{profile_id:profile.id,lang:'Spanish'})).folder_id,profileFolder);
+await assert.rejects(rpc('profile_save',{...save,words:[save.words[0],{word:'bad',translation:''}]}));
+const token=(await rpc('profile_invite',{profile_id:profile.id})).token;
+await as(otherTeacher);await assert.rejects(rpc('profile_load',{profile_id:profile.id,lang:'Japanese'}));await assert.rejects(rpc('profile_invite',{profile_id:profile.id}));
+await as(attacker);await assert.rejects(rpc('profile_create',{first_name:'A',last_name:'B'}));await rpc('accept',{token});
+assert((await rpc()).sources.some(s=>s.teacher_id===teacher));await assert.rejects(rpc('accept',{token}));
+const copiedWord=(await db.query("select w.* from vocabulary_words w join toowee_assignments a on a.word_id=w.id where a.student_id=$1 and a.teacher_id=$2",[attacker,teacher])).rows[0];assert.equal(copiedWord.reading,'きおく');assert.equal(copiedWord.example,'記憶です。');
+await as(teacher);assert.equal((await rpc()).profiles.find(p=>p.id===profile.id).student_id,attacker);
+await rpc('profile_save',{...save,words:[{word:'猫',reading:'ねこ',translation:'kot'}]});assert.equal((await rpc('progress',{student_id:attacker})).words.length,2);
+await rpc('disconnect',{id:attacker});assert.equal((await rpc()).profiles.find(p=>p.id===profile.id).student_id,null);assert.equal((await rpc('profile_load',{profile_id:profile.id,lang:'Japanese'})).words.length,2);await assert.rejects(rpc('progress',{student_id:attacker}));
+await db.exec('set role authenticated');await assert.rejects(db.exec('select * from toowee_student_profiles'));await assert.rejects(db.exec('select * from toowee_profile_folders'));await db.exec('reset role');
 await as('');await assert.rejects(rpc());
 console.log('PASS account SQL: roles, consent, single-use invites, isolated assignments/progress, independent teachers, disconnect, no direct writes and no anonymous access');await db.close();})().catch(e=>{console.error(e);process.exitCode=1;});

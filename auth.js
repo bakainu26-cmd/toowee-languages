@@ -102,7 +102,7 @@
     try {
       const { data, error } = await client.auth.signUp({
         email: el('signupEmail').value.trim(), password: el('signupPassword').value,
-        options: { data: { display_name: name,role:el('signupRole').value==='teacher'?'teacher':'student' }, emailRedirectTo: location.origin + location.pathname }
+        options: { data: { display_name: name,role:el('signupRole').value==='teacher'?'teacher':'student' }, emailRedirectTo: location.origin + location.pathname + ((()=>{try{const token=localStorage.getItem('toowee-pending-invite');return /^[a-f0-9]{64}$/.test(token||'')?'?uczen='+token:'';}catch{return '';}})()) }
       });
       if (error) throw error;
       el('loginEmail').value = el('signupEmail').value.trim();
