@@ -58,6 +58,15 @@ function harness(){
  h.els.resumeStudy.onclick();let swallowed=false;h.events.keydown({key:'Enter',target:{tagName:'INPUT'},preventDefault(){swallowed=true}});assert.equal(swallowed,false);h.els.pauseStudy.onclick();h.events.keydown({key:' ',target:{tagName:'BODY'},preventDefault(){swallowed=true}});assert.equal(swallowed,false);h.c.resetStudy();assert(!h.focusClasses.has('study-focus'));assert.equal(h.els.resumeStudy.hidden,true);
  // Grading at the timer boundary moves once to verification, without an early SRS write.
  h=harness();h.els.studyMinutes.value='5';h.c.library.words=[h.word('boundary')];await h.start('learn');h.els.revealStudy.onclick();h.elapse(300000);await h.els.knowStudyCard.onclick();assert.equal(h.els.studyPhaseLabel.textContent,'Końcowa weryfikacja');assert.equal(h.writes.length,0);await h.rate(true);assert.equal(h.writes.length,1);assert.equal(h.records[0].stage,1);
+ // Arrow keys flip both ways and grade only revealed cards; text fields, repeats and history are protected.
+ h=harness();h.c.library.words=[h.word('left'),h.word('right')];await h.start('learn');
+ const key=(key,extra={})=>h.events.keydown({key,target:{tagName:'BODY'},preventDefault(){},...extra});
+ const initial=h.els.studyPrompt.textContent;key('ArrowRight');assert.equal(h.els.studyPrompt.textContent,initial);assert.equal(h.els.studyAnswer.hidden,true);
+ key('ArrowUp');assert.equal(h.els.studyAnswer.hidden,false);key('ArrowDown');assert.equal(h.els.studyAnswer.hidden,true);
+ key('ArrowUp',{target:{tagName:'INPUT'}});assert.equal(h.els.studyAnswer.hidden,true);key('ArrowUp',{repeat:true});assert.equal(h.els.studyAnswer.hidden,true);
+ key('ArrowDown');key('ArrowLeft');assert.notEqual(h.els.studyPrompt.textContent,initial);assert.equal(h.els.unknownPileWords.children.length,1);
+ key('ArrowUp');key('ArrowRight');assert.equal(h.els.knownPileWords.children.length,1);assert.equal(h.writes.length,0);
+ h.els.studyPrevious.onclick();const history=h.els.studyPrompt.textContent;key('ArrowRight');key('ArrowDown');assert.equal(h.els.studyPrompt.textContent,history);assert.equal(h.writes.length,0);
  // Inline correction pauses time, preserves the same revealed card and updates future verification.
  h=harness();h.els.studyMinutes.value='5';h.c.library.words=[h.word('typo')];await h.start('learn');h.els.revealStudy.onclick();
  const editWrites=[];let editFail=false;const originalFrom=h.c.account.client.from;

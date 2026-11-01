@@ -304,6 +304,16 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseStudySession();});
   document.addEventListener('keydown',event=>{
     if(!focused || !active || busy || paused || event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.target?.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName))return;
+    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){
+      if(historyIndex!==null || editing)return;
+      event.preventDefault();
+      if(event.key==='ArrowUp' || event.key==='ArrowDown'){
+        if(!revealed)reveal();
+        else{revealed=false;pendingRating=null;renderCard(true);}
+      }else if(revealed)void selectRating(event.key==='ArrowRight');
+      else setNotice('Najpierw odsłoń odpowiedź: ↑ / ↓, spacja lub Enter.');
+      return;
+    }
     if(!['Enter',' ','Spacebar'].includes(event.key))return;
     const target=event.target;if(target?.tagName==='BUTTON' && !['studyNext','studyCard'].includes(target.id))return;
     event.preventDefault();void next();
