@@ -62,11 +62,11 @@
       const feedback=document.createElement('p');feedback.hidden=true;feedback.className='task-feedback';card.append(input,feedback);el('taskQuestions').append(card);rows.push({word,input,feedback});
     });
     el('taskStatus').textContent='Przygotowano '+rows.length+' zadań'+(rows.length<limit?' — tyle różnych słówek jest dostępnych':'')+'. '+(kind==='match'?'Dopasuj tłumaczenia w rozwijanych listach. Każde wykorzystaj raz.':kind==='gaps'?'Wpisz całe słowo, uzupełniając brakujące litery lub kana.':'Uzupełnij odpowiedzi i sprawdź cały zestaw.');
-    el('checkTasks').hidden=false;updateTaskControls();
+    el('checkTasks').hidden=false;updateTaskControls();window.openActivityFocus?.('tasks','Zadania ze słówkami',true);
   }
   function check(event){
     event.preventDefault();if(!current() || submitted || !rows.length)return;
-    const empty=rows.find(r=>!r.input.value.trim());if(empty){el('taskStatus').textContent='Uzupełnij wszystkie odpowiedzi przed sprawdzeniem.';empty.input.focus?.();return;}
+    const empty=rows.find(r=>!r.input.value.trim());if(empty){el('taskStatus').textContent='Uzupełnij wszystkie odpowiedzi przed sprawdzeniem.';window.revealActivityQuestion?.(empty.input);empty.input.focus?.();return;}
     submitted=true;let score=0;
     for(const {word,input,feedback} of rows){
       const toTarget=sessionDirection==='toTarget',japanese=toTarget && activeLanguage==='Japanese';
@@ -80,7 +80,7 @@
   }
   for(const id of ['taskType','taskFolder','taskCount','taskDirection'])el(id).onchange=resetTasks;
   el('generateTasks').onclick=generate;el('taskWorksheet').onsubmit=check;
-  window.openTasksLobby=()=>{if(window.clearLearningContext)window.clearLearningContext();el('taskFolder').value='';resetTasks();tab('tasks');};
+  window.openTasksLobby=()=>{window.closeActivityFocus?.();if(window.clearLearningContext)window.clearLearningContext();el('taskFolder').value='';resetTasks();tab('tasks');};
   window.resetTasks=resetTasks;window.updateTaskFolders=updateTaskFolders;window.updateTaskControls=updateTaskControls;
   updateTaskFolders();
 })();

@@ -86,13 +86,14 @@ function cancelEdit() {
   byId('saveWord').textContent = '+ Dodaj słówko';
   byId('cancelEdit').hidden = true;
 }
-function clearQuiz() { quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); if (window.resetGame) window.resetGame(); if(window.resetTasks)window.resetTasks(); }
+function clearQuiz() { window.closeActivityFocus?.();quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); if (window.resetGame) window.resetGame(); if(window.resetTasks)window.resetTasks(); }
 function openVocabulary() {
   if(window.clearLearningContext)window.clearLearningContext();
   byId('filterFolder').value='';byId('search').value='';
   renderWords();tab('words');
 }
 function tab(id) {
+  window.onActivityTabChange?.(id);
   if(window.onStudyTabChange)window.onStudyTabChange(id);
   document.querySelectorAll('main section').forEach(x => x.hidden = x.id !== id);
   const learningNames = {words:'Lista słówek',study:'Fiszki',games:'Gry',tests:'Szybki test',imports:'Importuj słownictwo',tasks:'Zadania'};
@@ -278,6 +279,7 @@ function makeTest() {
   for (let i=quiz.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [quiz[i],quiz[j]]=[quiz[j],quiz[i]]; }
   quiz = quiz.slice(0,10);
   byId('testArea').innerHTML = quiz.length ? quiz.map((w,i)=>'<div class="question"><strong>'+(i+1)+'. '+safe(w.translation)+'</strong><label for="answer'+i+'">Przetłumacz na '+safe(languageInfo[lang]?.target || lang)+'</label><input id="answer'+i+'" autocomplete="off"></div>').join('')+'<button onclick="checkTest()">Sprawdź odpowiedzi</button>' : '<p>Dodaj słówka w tym języku.</p>';
+  if(quiz.length)window.openActivityFocus?.('tests','Szybki test',true);
 }
 function checkTest() {
   if (!ready || !quiz.length || !byId('answer0')) return;

@@ -21,6 +21,7 @@
     if(pairs.length){if(kind==='match')showSelections();else if(kind==='memory')renderMemory();else for(const button of el('gameQuizOptions').children)button.disabled=!inSession() || answered;}
   }
   function resetGame(){
+    window.setActivityPlaying?.(false);
     if(window.TooweeEscape)window.TooweeEscape.reset();
     if(window.TooweeFalling)window.TooweeFalling.reset();
     if(hideTimer!==null)clearTimeout(hideTimer);hideTimer=null;
@@ -69,7 +70,7 @@
   function renderMemory(){
     el('gameMemoryBoard').replaceChildren();
     deck.forEach((card,index)=>{
-      const button=document.createElement('button');button.type='button';button.className='match-card memory-card';button.dataset.index=String(index);
+      const button=document.createElement('button');button.type='button';button.className='match-card memory-card';button.dataset.index=String(index);button.dataset.pair=card.word.id;
       const found=matched.has(card.word.id),shown=found || flipped.includes(index);
       button.classList.toggle('matched',found);button.classList.toggle('selected',shown&&!found);button.setAttribute('aria-pressed',String(shown));
       if(shown)addLabel(button,card.word,card.side);else {button.textContent='?';button.setAttribute('aria-label','Odkryj kartę '+(index+1));}
@@ -133,6 +134,7 @@
     const count=Number(el('gameCount').value);pairs=endless?words:words.slice(0,[6,10,15,20,25].includes(count)?count:6);
     if(pairs.length<(kind==='escape'?3:2)){pairs=[];status('Do gry potrzeba co najmniej '+(kind==='escape'?3:2)+' różnych słówek i tłumaczeń w wybranym zestawie i kategorii.');return;}
     sessionOwner=account.userId;sessionLanguage=activeLanguage;startedAt=Date.now();
+    window.openActivityFocus?.('games',names[kind],true,kind);
     status('Grasz: '+names[kind]+(endless?' · Endless. Pula: ':'. W tej grze: ')+pairs.length+' słówek'+(!endless && pairs.length<count?' (tyle jest dostępnych)':'')+'.');
     if(kind==='falling'){if(window.TooweeFalling)window.TooweeFalling.start(pairs,{owner:sessionOwner,language:sessionLanguage,direction:el('gameDirection').value,speed:el('fallSpeed').value,mode:el('fallMode').value,onFinish:finish});else status('Odśwież stronę, aby wczytać grę.');}
     else if(kind==='escape'){if(window.TooweeEscape)window.TooweeEscape.start(pairs,{owner:sessionOwner,language:sessionLanguage,onFinish:finish});else status('Odśwież stronę, aby wczytać escape room.');}
@@ -140,12 +142,12 @@
     else if(kind==='memory'){el('gameMemory').hidden=false;deck=shuffle(pairs.flatMap(word=>[{word,side:'target'},{word,side:'polish'}]));renderMemory();el('gameScore').textContent='Pary: 0 / '+pairs.length;}
     else {el('gameQuiz').hidden=false;questions=shuffle(pairs);renderQuestion();}
   }
-  for(const key of Object.keys(names))el('gameType-'+key).onclick=()=>{kind=key;resetGame();};
+  for(const key of Object.keys(names))el('gameType-'+key).onclick=()=>{kind=key;resetGame();window.openActivityFocus?.('games',names[kind],false,kind);};
   for(const id of ['gameFolder','gameCount','gameDirection','gameReading','fallSpeed','fallMode'])el(id).onchange=resetGame;
   el('startGame').onclick=startGame;el('replayGame').onclick=startGame;el('endGame').onclick=()=>window.openGamesLobby();
   el('nextGameQuestion').onclick=()=>{if(['quiz','write'].includes(kind) && inSession() && answered && questionIndex<questions.length-1){questionIndex++;renderQuestion();}};
   el('gameWriteForm').onsubmit=checkWritten;
-  window.openGamesLobby=()=>{if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab('games');el('games').scrollIntoView?.({block:'start'});};
+  window.openGamesLobby=()=>{window.closeActivityFocus?.();if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab('games');el('games').scrollIntoView?.({block:'start'});};
   window.updateGameControls=updateGameControls;window.updateGameFolders=updateGameFolders;window.resetGame=resetGame;
   updateGameFolders();resetGame();
 })();
