@@ -5,6 +5,7 @@ class Element {
  replaceChildren(...items){this.children=items;if(this.id==='studyFolder'||this.id==='gameFolder')this.options=items;}
  append(...items){this.children.push(...items);}
  add(item){this.options.push(item);}
+ focus(){} showModal(){this.open=true} close(){this.open=false}
  setAttribute(){} addEventListener(name,fn){this.listeners[name]=fn;}
  querySelectorAll(){return this.children.filter(x=>x.type==='button');}
 }
@@ -57,6 +58,14 @@ function harness(){
  h.els.resumeStudy.onclick();let swallowed=false;h.events.keydown({key:'Enter',target:{tagName:'INPUT'},preventDefault(){swallowed=true}});assert.equal(swallowed,false);h.els.pauseStudy.onclick();h.events.keydown({key:' ',target:{tagName:'BODY'},preventDefault(){swallowed=true}});assert.equal(swallowed,false);h.c.resetStudy();assert(!h.focusClasses.has('study-focus'));assert.equal(h.els.resumeStudy.hidden,true);
  // Grading at the timer boundary moves once to verification, without an early SRS write.
  h=harness();h.els.studyMinutes.value='5';h.c.library.words=[h.word('boundary')];await h.start('learn');h.els.revealStudy.onclick();h.elapse(300000);await h.els.knowStudyCard.onclick();assert.equal(h.els.studyPhaseLabel.textContent,'Końcowa weryfikacja');assert.equal(h.writes.length,0);await h.rate(true);assert.equal(h.writes.length,1);assert.equal(h.records[0].stage,1);
+ // Inline correction pauses time, preserves the same revealed card and updates future verification.
+ h=harness();h.els.studyMinutes.value='5';h.c.library.words=[h.word('typo')];await h.start('learn');h.els.revealStudy.onclick();
+ const editWrites=[];let editFail=false;const originalFrom=h.c.account.client.from;
+ h.c.account.client.from=table=>table!=='vocabulary_words'?originalFrom(table):{update(patch){const filters={};return {eq(k,v){filters[k]=v;return this},select(){return this},single:async()=>{editWrites.push({patch,filters});return editFail?{error:{message:'offline'}}:{data:{id:'typo'}}}}}};
+ h.els.editStudyCard.onclick();assert.equal(h.els.studyEditDialog.open,true);h.advance(600000);assert.equal(h.els.studyPhaseLabel.textContent,'Nauka');h.els.studyEditWord.value='corrected';h.els.studyEditTranslation.value='Poprawione';h.els.studyEditReading.value='かな';h.els.studyEditExample.value='Przykład';
+ editFail=true;await h.els.studyEditForm.onsubmit({preventDefault(){}});assert.equal(h.els.studyEditDialog.open,true);assert(h.els.studyEditStatus.textContent.includes('offline'));assert.equal(h.c.library.words[0].word,'typo');
+ editFail=false;await h.els.studyEditForm.onsubmit({preventDefault(){}});assert.equal(h.els.studyEditDialog.open,false);assert.equal(editWrites[1].filters.owner_id,'owner');assert.equal(editWrites[1].filters.id,'typo');assert.equal(h.c.library.words[0].word,'corrected');assert.equal(h.els.studyPrompt.textContent,'Poprawione');assert.equal(h.els.studyAnswer.hidden,false);assert.equal(h.writes.length,0);
+ await h.els.knowStudyCard.onclick();assert.equal(h.els.studyPhaseLabel.textContent,'Końcowa weryfikacja');assert.equal(h.els.studyPrompt.textContent,'Poprawione');h.els.editStudyCard.onclick();h.els.studyEditWord.value='unsaved';h.els.cancelStudyEdit.onclick();assert.equal(h.c.library.words[0].word,'corrected');assert.equal(editWrites.length,2);await h.rate(true);assert.equal(h.writes[0][0].word_id,'typo');
  // Flashcards remain discoverable from Nauka and directly from a set card.
  h=harness();h.c.library.folders=[{id:'a',name:'Zestaw A'}];h.c.library.words=[h.word('entry')];await h.c.refreshLearningSets();const setCard=h.els.learningSetCards.children[0];const direct=setCard.children.find(child=>child.textContent==='Fiszki →');assert(direct);direct.onclick();assert.equal(h.c.tabbed,'study');assert.equal(h.c.location.hash,'#/fiszki');assert.equal(h.c.getLearningContext().folder,'a');assert.equal(h.els.studyMode.value,'learn');assert.equal(h.els.openFlashcards.disabled,false);h.els.openFlashcards.onclick();assert.equal(h.c.getLearningContext(),null);assert.equal(h.c.tabbed,'study');assert.equal(h.els.studyScope.value,'all');assert.equal(h.els.studyLanguage.value,'Japanese');
  console.log('PASS: schedule, early practice, categories, mixed/loose sets, language isolation, single-pass reviews, failures/relearning, learning verification/retry, timers/batches, untouched words, bottom piles, challenges, read errors');

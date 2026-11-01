@@ -5,7 +5,7 @@
   let direction='toTarget',busy=false,version=0,progressOwner=null,progress=new Map(),progressLoaded=false;
   let active=false,paused=false,elapsedMs=0,runningSince=null,budgetMs=0,sessionGoalMs=0,learningElapsedMs=0,ticker=null;
   let challengeReported=false,sessionOwner=null,sessionLanguage=null,portionSize=10,sessionKind='learn';
-  let focused=false,pendingRating=null,cardHistory=[],historyIndex=null;
+  let focused=false,pendingRating=null,cardHistory=[],historyIndex=null,editing=null;
   const el=id=>document.getElementById(id),scope=window.TooweeStudyScope;
   const available=()=>ready && !saving && Boolean(activeLanguage) && Boolean(account?.userId);
   const settings=['studyScope','studyFolder','studyLanguage','studyDirection','studyCount','studyReading','studyMode','studyDateFrom','studyDateTo','studyMinutes','studyCustomMinutes'];
@@ -75,7 +75,7 @@
     el('studyTimerLabel').textContent=phase==='verify' ? 'Czas weryfikacji' : phase==='review' ? 'Czas powtórki' : budgetMs ? 'Pozostały czas nauki' : 'Czas nauki';
     el('studyTimerValue').textContent=formatTime(phase==='verify' ? used-learningElapsedMs : budgetMs ? budgetMs-used : used);
     el('pauseStudy').textContent=paused ? 'Wznów' : 'Pauza';
-    if(active && budgetMs && used>=budgetMs && !busy){if(pendingRating!==null && revealed)void markCard(pendingRating,false);if(active && phase==='learn')beginVerification('Czas nauki minął.');else if(active && phase==='review' && !busy)void saveResults();}
+    if(active && budgetMs && used>=budgetMs && !busy && !editing){if(pendingRating!==null && revealed)void markCard(pendingRating,false);if(active && phase==='learn')beginVerification('Czas nauki minął.');else if(active && phase==='review' && !busy)void saveResults();}
   }
   function startClock() {
     if(document.hidden) {paused=true;runningSince=null;}else {paused=false;runningSince=Date.now();}
@@ -99,6 +99,7 @@
   }
   function resetStudy() {
     if(focused){setFocus(false);route('#/fiszki');}
+    editing=null;if(el('studyEditDialog').open)el('studyEditDialog').close();
     pendingRating=null;cardHistory=[];historyIndex=null;
     ++version;busy=false;active=false;paused=false;phase='idle';stopTicker();elapsedMs=0;runningSince=null;budgetMs=0;sessionGoalMs=0;learningElapsedMs=0;
     queue=[];pool=[];sessionWords=[];training.clear();verified.clear();originalProgress.clear();verificationIds.clear();revealed=false;attempts=0;verificationTotal=0;challengeReported=false;sessionOwner=null;sessionLanguage=null;
@@ -120,6 +121,7 @@
     el('studyNext').disabled=disabled || !active || paused;
     el('studyNext').textContent='Następny →';
     el('closeStudyFocus').disabled=busy;
+    el('editStudyCard').disabled=disabled || !active || !queue.length || !['learn','verify','review'].includes(phase);
     el('resumeStudy').hidden=!hasSession() || focused;el('resumeStudy').disabled=busy;
     for(const [id,value] of [['knowStudyCard',true],['retryStudyCard',false]]){el(id).classList.toggle('selected-rating',historyIndex===null && pendingRating===value);el(id).setAttribute('aria-pressed',String(historyIndex===null && pendingRating===value));}
 
@@ -252,6 +254,45 @@
   el('continueStudy').onclick=()=>{};el('finishStudy').onclick=()=>{};
   el('studyCard').addEventListener('dragstart',event=>{if(!active||!revealed||busy||paused||historyIndex!==null||!available()||!queue.length){event.preventDefault();return;}event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',queue[0].id);});
   for(const id of ['unknownPile','knownPile']){const pile=el(id);pile.addEventListener('dragover',event=>{if(active&&revealed&&!busy&&!paused&&available()){event.preventDefault();pile.classList.add('drag-over');}});pile.addEventListener('dragleave',()=>pile.classList.remove('drag-over'));pile.addEventListener('drop',event=>{event.preventDefault();pile.classList.remove('drag-over');if(event.dataTransfer.getData('text/plain')===queue[0]?.id)selectRating(id==='knownPile');});}
+  function editedCard(){return historyIndex===null?queue[0]:cardHistory[historyIndex]?.card;}
+  function closeEditor(){
+    if(!editing || busy)return;
+    const previous=editing;editing=null;el('studyEditDialog').close();
+    if(active && !previous.wasPaused && focused && !document.hidden){paused=false;runningSince=Date.now();}
+    if(historyIndex===null)renderCard(true);else showHistory();
+    el('editStudyCard').focus?.({preventScroll:true});
+  }
+  el('editStudyCard').onclick=()=>{
+    if(!available() || busy || !active || editing)return;
+    const card=editedCard();if(!card)return;
+    editing={id:card.id,wasPaused:paused,version,owner:account.userId,card};
+    if(!paused){settleClock();paused=true;}updateStudyControls();
+    for(const [id,key] of [['studyEditWord','word'],['studyEditReading','reading'],['studyEditTranslation','translation'],['studyEditExample','example']])el(id).value=card[key] || '';
+    el('studyEditReadingField').hidden=card.lang!=='Japanese';el('studyEditStatus').textContent='';
+    for(const id of ['studyEditWord','studyEditReading','studyEditTranslation','studyEditExample','saveStudyEdit','cancelStudyEdit'])el(id).disabled=false;
+    el('studyEditDialog').showModal();el('studyEditWord').focus();
+  };
+  el('cancelStudyEdit').onclick=closeEditor;
+  el('studyEditDialog').addEventListener('cancel',event=>{event.preventDefault();closeEditor();});
+  el('studyEditForm').onsubmit=async event=>{
+    event.preventDefault();if(!editing || busy || !available())return;
+    const edit=editing,snapshot={...account};
+    const patch={word:el('studyEditWord').value.trim(),reading:el('studyEditReading').value.trim(),translation:el('studyEditTranslation').value.trim()};
+    const example=el('studyEditExample').value.trim();if(example || edit.card.example)patch.example=example;
+    if(!patch.word || !patch.translation){el('studyEditStatus').textContent='Wpisz słówko i tłumaczenie.';return;}
+    if(patch.word.length>500 || patch.reading.length>500 || patch.translation.length>1000 || example.length>2000){el('studyEditStatus').textContent='Przekroczono maksymalną długość pola.';return;}
+    busy=true;updateStudyControls();el('studyEditStatus').textContent='Zapisywanie…';
+    for(const id of ['studyEditWord','studyEditReading','studyEditTranslation','studyEditExample','saveStudyEdit','cancelStudyEdit'])el(id).disabled=true;
+    try{
+      const {data,error}=await snapshot.client.from('vocabulary_words').update(patch).eq('owner_id',edit.owner).eq('id',edit.id).select('id').single();
+      if(error)throw error;if(!data)throw new Error('Nie znaleziono słówka do aktualizacji.');
+      if(editing!==edit || version!==edit.version || account?.userId!==edit.owner)return;
+      for(const card of [...library.words,...queue,...pool,...sessionWords,...cardHistory.map(item=>item.card)])if(card.id===edit.id)Object.assign(card,patch);
+      renderPiles();if(typeof renderWords==='function')renderWords();
+      busy=false;closeEditor();setNotice('Poprawka zapisana. Możesz kontynuować naukę.');
+    }catch(error){if(editing===edit && version===edit.version && account?.userId===edit.owner)el('studyEditStatus').textContent=typeof dbError==='function'?dbError(error):'Nie udało się zapisać poprawki. '+(error.message || 'Spróbuj ponownie.');}
+    finally{if(version===edit.version && account?.userId===edit.owner){busy=false;updateStudyControls();for(const id of ['studyEditWord','studyEditReading','studyEditTranslation','studyEditExample','saveStudyEdit','cancelStudyEdit'])el(id).disabled=false;}}
+  };
   el('toggleStudyPiles').onclick=()=>{
     const lists=el('studyPiles'),button=el('toggleStudyPiles');
     lists.hidden=!lists.hidden;
