@@ -89,6 +89,10 @@ declare
  pid uuid;secret text;secret_hash text;linked_account uuid;credited integer;game_score integer;delta integer;
  host boolean;member boolean;players integer;answered integer;settled integer;can_next boolean;expired boolean;selected integer;
 begin
+ if p_action='rooms' then
+  if not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Tylko nauczyciel zarządza pokojami.';end if;
+  return jsonb_build_object('rooms',(select coalesce(jsonb_agg(jsonb_build_object('code',r.code,'lang',r.lang,'status',r.status,'created_at',r.created_at,'players',(select count(*) from public.sophie_participants p where p.room_id=r.id)) order by r.created_at desc),'[]') from public.sophie_rooms r where r.host_id=who and r.status<>'finished' and r.expires_at>clock_timestamp()));
+ end if;
  if p_action='create' then
   if not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Tylko nauczyciel może tworzyć rozgrywki.';end if;
   -- Serialize creates per teacher and allow safe retry of the same request.
@@ -96,7 +100,7 @@ begin
   rid:=(p_data->>'request_id')::uuid;
   select * into room from public.sophie_rooms where host_id=who and request_id=rid for update;
   if not found then
-   if (select count(*) from public.sophie_rooms where host_id=who and status<>'finished' and expires_at>clock_timestamp())>=3 then raise exception 'Masz już 3 otwarte pokoje. Zakończ poprzednią grę.';end if;
+   if (select count(*) from public.sophie_rooms where host_id=who and status<>'finished' and expires_at>clock_timestamp())>=3 then raise exception 'Masz już 3 otwarte pokoje. Wybierz „Moje otwarte pokoje” i zakończ poprzednią grę.';end if;
    mode:=coalesce(p_data->>'end_mode',case when coalesce((p_data->>'time_limit')::integer,0)>0 then 'timer' else 'words' end);
    if mode not in ('words','timer') then raise exception 'Wybierz liczbę słówek albo timer.';end if;
    limit_seconds:=case when mode='timer' then (p_data->>'time_limit')::integer else 0 end;

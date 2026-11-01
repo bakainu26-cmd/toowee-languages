@@ -68,3 +68,7 @@ Po zapisaniu błędnej odpowiedzi baza ustawia niezmienny termin pauzy: 5 sekund
 Przy wspólnych rundach zmiana czeka na zakończenie ostatniej aktywnej pauzy. Jeśli w tym czasie kończy się timer całej gry, odpowiedzi nie są już przyjmowane, ale wynik końcowy zaczeka na dokończenie pięciu sekund czytania poprawki. Zakończenie gry przez prowadzącego również nie omija tej krótkiej pauzy. Po upływie pauzy wracają zwykłe zasady szybkiego przechodzenia.
 
 Testy sprawdzają limit 3 tarcz, brak informacji o tarczach w publicznym rankingu, zużycie jednej ochrony na próbę, ponowienie ataku bez podwójnego zużycia, prywatny licznik i komunikat dla atakującego. Osobno sprawdzają 5 sekund poprawki, blokadę klawiatury/kliknięcia, ochronę przed pominięciem przez hosta lub polling oraz ekran prowadzącego bez pytań.
+
+## Otwarte pokoje
+
+W formularzu tworzenia gry „Moje otwarte pokoje” pokazuje wszystkie własne aktywne pokoje (także utworzone na innym urządzeniu). Można otworzyć grę albo zakończyć ją i zwolnić jedno z trzech miejsc. Zakończenie używa istniejącej operacji finish: zachowuje wyniki i respektuje pięciosekundową pauzę po błędzie. Lista nie ujawnia pytań, poprawnych odpowiedzi ani cudzych pokoi. „Otwórz ostatni pokój” działa także ze starszą konfiguracją bazy. Aby włączyć pełną listę, uruchom aktualny multiplayer_setup.sql; migracja zachowuje rozgrywki i wyniki.
