@@ -74,3 +74,16 @@ Testy sprawdzają limit 3 tarcz, brak informacji o tarczach w publicznym ranking
 W formularzu tworzenia gry „Moje otwarte pokoje” pokazuje wszystkie własne aktywne pokoje (także utworzone na innym urządzeniu). Można otworzyć grę albo zakończyć ją i zwolnić jedno z trzech miejsc. Zakończenie używa istniejącej operacji finish: zachowuje wyniki i respektuje pięciosekundową pauzę po błędzie. Lista nie ujawnia pytań, poprawnych odpowiedzi ani cudzych pokoi. „Otwórz ostatni pokój” działa także ze starszą konfiguracją bazy. Aby włączyć pełną listę, uruchom aktualny multiplayer_setup.sql; migracja zachowuje rozgrywki i wyniki.
 
 Gdy limit blokuje utworzenie gry, konfiguracja i identyfikator żądania są zachowywane. Przycisk „Zakończ ostatni pokój i utwórz tę grę” po jawnym kliknięciu sprawdza właściciela ostatniego pokoju zapisanego na urządzeniu, kończy go istniejącą operacją finish i ponawia dokładnie tę samą konfigurację. Nie wymaga nowej migracji; respektuje pauzę po błędnej odpowiedzi. Gdy ostatni kod nie jest dostępny lub należy do innego prowadzącego, należy użyć pełnej listy (wymaga konfiguracji rooms). Tworzenie z profilu używa słownictwa zwróconego przez profile_load, bez ponownego ładowania całej biblioteki.
+
+## Dwa tryby tempa gry
+
+Przy tworzeniu pokoju wybierz „Gra sterowana przez nauczyciela” (teacher) albo „Swobodna gra” (free). Wyboru nie zmienia się po utworzeniu pokoju. Istniejące pokoje zachowują wspólne rundy.
+
+- Sterowana: nauczyciel rozpoczyna i kończy; pytania są wspólne, grupa czeka na odpowiedzi i saszetki pozostałych. Zachowane automatyczne przejście po rozliczeniu grupy lub końcu czasu.
+- Swobodna: nauczyciel rozpoczyna, uczniowie mają osobne pytania i czas odpowiedzi. Kliknięcie tła / spacja / Enter po odpowiedzi i rozliczeniu saszetki przesuwa wyłącznie danego ucznia. Błąd lub brak odpowiedzi: poprawne rozwiązanie i pięć sekund pauzy. Odświeżenie, powrót oraz połączenie gościa z kontem zachowują jego numer pytania.
+- Liczba słówek: każdy kończy własną pulę; ranking pozostaje na żywo, aż ukończą wszyscy lub nauczyciel zakończy pokój. Nieobecnego gracza nie pomijamy automatycznie.
+- Timer: wspólny czas całego pokoju od rozpoczęcia; każdy zapętla pulę we własnym tempie. Po końcu czasu uwzględniamy trwającą pięciosekundową korektę, potem kończymy pokój.
+
+Ranking, saszetki, kradzieże i ukryte tarcze są wspólne również wtedy, gdy gracze są przy innych pytaniach. Nie zmienia to monet świata. Host nadal nie otrzymuje pytań ani rozwiązań.
+
+Uruchom aktualny multiplayer_setup.sql w Supabase SQL Editor. Migracja dodaje play_mode oraz osobisty numer pytania/czas/zakończenie do uczestników, zachowując wyniki i stare gry. Przed utworzeniem swobodnego pokoju klient sprawdza obsługę trybu: starsza baza pokaże instrukcję aktualizacji, nie utworzy przypadkiem pokoju w innym trybie.
