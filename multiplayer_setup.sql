@@ -99,7 +99,7 @@ begin
  update public.sophie_rooms set status='finished',finished_at=coalesce(finished_at,clock_timestamp()) where status<>'finished' and (expires_at<=clock_timestamp() or host_seen_at is null or host_seen_at<clock_timestamp()-interval '2 minutes') and (host_id=who or code=upper(trim(p_data->>'code')));
  if p_action='rooms' then
   if not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Tylko nauczyciel zarządza pokojami.';end if;
-  return jsonb_build_object('play_modes',jsonb_build_array('teacher','free'),'rooms',(select coalesce(jsonb_agg(jsonb_build_object('code',r.code,'lang',r.lang,'status',r.status,'created_at',r.created_at,'players',(select count(*) from public.sophie_participants p where p.room_id=r.id)) order by r.created_at desc),'[]') from public.sophie_rooms r where r.host_id=who and r.status<>'finished' and r.expires_at>clock_timestamp()));
+  return jsonb_build_object('custom_seconds',true,'play_modes',jsonb_build_array('teacher','free'),'rooms',(select coalesce(jsonb_agg(jsonb_build_object('code',r.code,'lang',r.lang,'status',r.status,'created_at',r.created_at,'players',(select count(*) from public.sophie_participants p where p.room_id=r.id)) order by r.created_at desc),'[]') from public.sophie_rooms r where r.host_id=who and r.status<>'finished' and r.expires_at>clock_timestamp()));
  end if;
  if p_action='create' then
   if not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Tylko nauczyciel może tworzyć rozgrywki.';end if;
@@ -115,7 +115,7 @@ begin
    limit_seconds:=case when mode='timer' then (p_data->>'time_limit')::integer else 0 end;
    if mode='timer' and (limit_seconds is null or limit_seconds<60 or limit_seconds>1800) then raise exception 'Timer musi wynosić od 1 do 30 minut.';end if;
    requested:=case when mode='timer' then 1000 else (p_data->>'count')::integer end;duration:=(p_data->>'seconds')::integer;direction:=p_data->>'direction';
-   if (mode='words' and (requested is null or requested not in (6,10,15,20,25))) or duration is null or duration not in (20,30,45,60) or direction is null or direction not in ('to_pl','from_pl') then raise exception 'Nieprawidłowe ustawienia gry.';end if;
+   if (mode='words' and (requested is null or requested not in (6,10,15,20,25))) or duration is null or duration not between 1 and 300 or direction is null or direction not in ('to_pl','from_pl') then raise exception 'Nieprawidłowe ustawienia gry.';end if;
    if p_data->>'lang' is null or p_data->>'lang' not in ('English','Japanese','Spanish') then raise exception 'Wybierz język materiałów.';end if;
    if jsonb_typeof(p_data->'ids') is distinct from 'array' or jsonb_array_length(p_data->'ids')>1000 then raise exception 'Wybierz od 4 do 1000 słówek.';end if;
    select coalesce(jsonb_agg(jsonb_build_object('prompt',prompt,'answer',solution)),'[]') into pool from (

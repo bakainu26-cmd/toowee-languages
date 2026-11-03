@@ -85,3 +85,5 @@ Przy tworzeniu pokoju wybierz „Gra sterowana przez nauczyciela” (teacher) al
 Ranking, saszetki, kradzieże i ukryte tarcze są wspólne również wtedy, gdy gracze są przy innych pytaniach. Nie zmienia to monet świata. Host nadal nie otrzymuje pytań ani rozwiązań.
 
 Uruchom aktualny multiplayer_setup.sql w Supabase SQL Editor. Migracja dodaje play_mode oraz osobisty numer pytania/czas/zakończenie do uczestników, zachowując wyniki i stare gry. Przed utworzeniem swobodnego pokoju klient sprawdza obsługę trybu: starsza baza pokaże instrukcję aktualizacji, nie utworzy przypadkiem pokoju w innym trybie.
+
+Czas na odpowiedź jest polem liczbowym 1–300 sekund, a czas całej gry 1–30 minut. Oba można wpisać ręcznie lub zmieniać strzałkami pola. Czas odpowiedzi spoza dawnych wartości 20/30/45/60 wymaga aktualnej konfiguracji SQL; klient sprawdza obsługę przed utworzeniem pokoju. Liczby muszą być całkowite.
