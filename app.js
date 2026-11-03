@@ -120,7 +120,7 @@ function renderLibrary() {
   byId('wordFolder').value = selected;
   byId('filterFolder').innerHTML = '<option value="">Wszystkie foldery</option>' + options;
   byId('filterFolder').value = filter;
-  byId('folderRows').innerHTML = activeFolders().map(f => '<div class="question">' + safe(f.name) +
+  byId('folderRows').innerHTML = activeFolders().map(f => '<div class="question" data-material-id="'+safe(f.id)+'" data-material-name="'+safe(f.name)+'">' + safe(f.name) +
     ' <span class="tag">' + activeWords().filter(w => w.folder_id === f.id).length + ' słówek</span></div>').join('') || '<p>Brak folderów. Dodaj pierwszy folder powyżej.</p>';
   renderUnassignedFolders();
   if (window.updateStudyFolders) window.updateStudyFolders();
