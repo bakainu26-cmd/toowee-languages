@@ -14,7 +14,7 @@
     el('startGame').disabled=!canPlay();
     for(const id of ['gameCount','gameDirection','gameReading','fallSpeed','fallMode'])el(id).disabled=!canPlay();
     el('gameCount').disabled=!canPlay() || (kind==='falling' && ['endless','survival'].includes(el('fallMode').value));
-    el('gameFolder').disabled=!canPlay() || Boolean(window.getLearningContext?.());
+    el('gameFolder').disabled=!canPlay() || Boolean(window.getLearningContext?.() || window.tooweeTeacherGameContext);
     el('nextGameQuestion').disabled=!inSession() || !answered;
     el('checkGameWrite').disabled=!inSession() || answered;el('gameWriteAnswer').disabled=!inSession() || answered;
     if(window.TooweeEscape)window.TooweeEscape.updateControls();
@@ -129,7 +129,7 @@
   function startGame(){
     if(!canPlay())return;resetGame();const folder=el('gameFolder').value;
     const seenWords=new Set(),seenTranslations=new Set(),normalize=s=>s.trim().normalize('NFKC').toLocaleLowerCase();
-    const words=shuffle((window.filterLearningWords?window.filterLearningWords(activeWords()):activeWords()).filter(w=>!folder || w.folder_id===folder)).filter(w=>{
+    const words=shuffle(((window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.words) || (window.filterLearningWords?window.filterLearningWords(activeWords()):activeWords())).filter(w=>!folder || w.folder_id===folder)).filter(w=>{
       const term=normalize(w.word),meaning=normalize(w.translation);if(!term || !meaning || seenWords.has(term) || seenTranslations.has(meaning))return false;seenWords.add(term);seenTranslations.add(meaning);return true;
     });
     const endless=kind==='falling' && ['endless','survival'].includes(el('fallMode').value);
@@ -149,7 +149,7 @@
   el('startGame').onclick=startGame;el('replayGame').onclick=startGame;el('endGame').onclick=()=>window.openGamesLobby();
   el('nextGameQuestion').onclick=()=>{if(['quiz','write'].includes(kind) && inSession() && answered && questionIndex<questions.length-1){questionIndex++;renderQuestion();}};
   el('gameWriteForm').onsubmit=checkWritten;
-  window.openGamesLobby=(allowWorld=true)=>{const toWorld=allowWorld && window.worldGameMission===true;window.worldGameMission=false;window.closeActivityFocus?.();if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab(toWorld?'world':'games');if(!toWorld)el('games').scrollIntoView?.({block:'start'});};
+  window.openGamesLobby=(allowWorld=true)=>{if(window.returnToTeacherGameCatalog?.())return;const toWorld=allowWorld && window.worldGameMission===true;window.worldGameMission=false;window.closeActivityFocus?.();if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab(toWorld?'world':'games');if(!toWorld)el('games').scrollIntoView?.({block:'start'});};
   window.updateGameControls=updateGameControls;window.updateGameFolders=updateGameFolders;window.resetGame=resetGame;
   updateGameFolders();resetGame();
 })();
