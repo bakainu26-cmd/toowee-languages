@@ -43,6 +43,12 @@ declare who uuid:=auth.uid();profile public.toowee_student_profiles%rowtype;room
  pid uuid;words uuid[];item jsonb;sid uuid; result jsonb; lang text; personal boolean;
 begin
  if who is null then raise exception 'Zaloguj się.';end if;
+ -- History must reconcile abandoned rooms even when nobody reopens the game.
+ if p_action in ('games','profile','game_detail','assign_game') then
+  update public.sophie_rooms set status='finished',finished_at=coalesce(finished_at,clock_timestamp())
+   where host_id=who and status<>'finished'
+   and (expires_at<=clock_timestamp() or host_seen_at is null or host_seen_at<clock_timestamp()-interval '2 minutes');
+ end if;
  if p_action='record_study' then
   sid:=(p_data->>'id')::uuid;
   if exists(select 1 from public.toowee_study_history where id=sid) then
