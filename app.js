@@ -50,7 +50,7 @@ function chooseLanguage(language) {
   byId('wordForm').elements.lang.value = language;
   byId('testLang').value = language;
   byId('studyLanguage').value = language;
-  byId('currentLanguage').textContent = 'Uczysz się ' + languageInfo[language].genitive;
+  byId('currentLanguage').textContent = window.tooweeView==='teacher' ? 'Słownictwo · '+languageInfo[language].name : 'Uczysz się ' + languageInfo[language].genitive;
   byId('languagePicker').hidden = true;
   byId('learningWorkspace').hidden = false;
   tab(window.location?.hash?.startsWith('#/fiszki')?'study':window.tooweeView==='teacher'?'words':'learning');renderLibrary();

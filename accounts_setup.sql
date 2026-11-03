@@ -33,6 +33,18 @@ create table if not exists public.toowee_profile_folders (
  lang text not null check(lang in ('English','Japanese','Spanish')),
  folder_id uuid references public.vocabulary_folders(id) on delete set null, primary key(profile_id,lang), unique(folder_id)
 );
+create table if not exists public.toowee_material_folders (
+ id uuid primary key default gen_random_uuid(),owner_id uuid not null references auth.users(id) on delete cascade,
+ profile_id uuid references public.toowee_student_profiles(id) on delete cascade,
+ name text not null check(length(trim(name)) between 1 and 200),lang text not null check(lang in ('English','Japanese','Spanish')),created_at timestamptz not null default now()
+);
+create table if not exists public.toowee_material_sets (
+ folder_id uuid not null references public.toowee_material_folders(id) on delete cascade,
+ set_id uuid primary key references public.vocabulary_folders(id) on delete cascade
+);
+alter table public.toowee_material_folders enable row level security;
+alter table public.toowee_material_sets enable row level security;
+revoke all on public.toowee_material_folders,public.toowee_material_sets from public,anon,authenticated;
 alter table public.toowee_invites add column if not exists profile_id uuid references public.toowee_student_profiles(id) on delete cascade;
 alter table public.toowee_student_profiles enable row level security;
 alter table public.toowee_profile_folders enable row level security;
@@ -72,10 +84,20 @@ begin
   end if;
   language:=p_data->>'lang';
   if language is null or language not in ('English','Japanese','Spanish') then raise exception 'Wybierz język.';end if;
-  select folder_id into folder from public.toowee_profile_folders where profile_id=profile.id and lang=language;
+  if nullif(p_data->>'set_id','') is not null then
+   select ms.set_id into folder from public.toowee_material_sets ms join public.toowee_material_folders mf on mf.id=ms.folder_id join public.vocabulary_folders vf on vf.id=ms.set_id
+    where ms.set_id=(p_data->>'set_id')::uuid and mf.owner_id=who and mf.profile_id=profile.id and mf.lang=language and vf.owner_id=who and vf.lang=language;
+   if folder is null then raise exception 'Brak dostępu do zestawu ucznia.';end if;
+  else
+   select folder_id into folder from public.toowee_profile_folders where profile_id=profile.id and lang=language;
+  end if;
   if folder is null then
    insert into public.vocabulary_folders(owner_id,name,lang) values(who,left(profile.first_name||' '||profile.last_name||' · Materiały',200),language) returning id into folder;
    insert into public.toowee_profile_folders(profile_id,lang,folder_id) values(profile.id,language,folder) on conflict(profile_id,lang) do update set folder_id=excluded.folder_id;
+  end if;
+  if not exists(select 1 from public.toowee_material_sets where set_id=folder) then
+   insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,profile.id,'Ogólne',language) returning id into pid;
+   insert into public.toowee_material_sets(folder_id,set_id) values(pid,folder);
   end if;
   if p_action='profile_save' then
    rows_json:=p_data->'words';
@@ -110,7 +132,7 @@ begin
   end if;
   insert into public.toowee_connections(teacher_id,student_id) values(other,who) on conflict do nothing;
   if pid is not null then
-   for src in select w.* from public.vocabulary_words w join public.toowee_profile_folders pf on pf.folder_id=w.folder_id and pf.profile_id=pid where w.owner_id=other
+   for src in select w.* from public.vocabulary_words w where w.owner_id=other and (exists(select 1 from public.toowee_profile_folders pf where pf.folder_id=w.folder_id and pf.profile_id=pid) or exists(select 1 from public.toowee_material_sets ms join public.toowee_material_folders mf on mf.id=ms.folder_id where ms.set_id=w.folder_id and mf.profile_id=pid and mf.owner_id=other))
     and not exists(select 1 from public.toowee_assignments a where a.teacher_id=other and a.student_id=who and a.source_word_id=w.id)
    loop
     select id into folder from public.vocabulary_folders where owner_id=who and lang=src.lang and name=left('Od nauczyciela · '||profile.first_name||' '||profile.last_name,200) limit 1;
