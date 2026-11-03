@@ -12,6 +12,7 @@ const languageInfo = Object.freeze({English:{name:'Angielski',genitive:'angielsk
 function activeWords() { return library.words.filter(w => w.lang === activeLanguage && (!window.learningSourceAccepts||window.learningSourceAccepts(w))); }
 function activeFolders() {
   return library.folders.filter(folder=>{
+    if(window.learningFolderAccepts&&!window.learningFolderAccepts(folder))return false;
     if(folder.lang)return folder.lang===activeLanguage;
     // Compatibility before the one-time migration: only infer an unambiguous language.
     const languages=new Set(library.words.filter(w=>w.folder_id===folder.id).map(w=>w.lang));
@@ -280,7 +281,7 @@ byId('exportWords').onclick = () => {
 function makeTest() {
   if (!ready || saving || !activeLanguage) return;
   const lang = byId('testLang').value;
-  quiz = window.filterLearningWords ? window.filterLearningWords(activeWords()) : library.words.filter(w=>w.lang===lang);
+  quiz = window.filterLearningWords ? window.filterLearningWords(activeWords()) : activeWords().filter(w=>w.lang===lang);
   for (let i=quiz.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [quiz[i],quiz[j]]=[quiz[j],quiz[i]]; }
   quiz = quiz.slice(0,10);
   byId('testArea').innerHTML = quiz.length ? quiz.map((w,i)=>'<div class="question"><strong>'+(i+1)+'. '+safe(w.translation)+'</strong><label for="answer'+i+'">Przetłumacz na '+safe(languageInfo[lang]?.target || lang)+'</label><input id="answer'+i+'" autocomplete="off"></div>').join('')+'<button onclick="checkTest()">Sprawdź odpowiedzi</button>' : '<p>Dodaj słówka w tym języku.</p>';

@@ -144,7 +144,7 @@
       const prefix=i===0 ? 'unknownPile' : 'knownPile';el(prefix+'Count').textContent=progressLoaded ? groups[i].length : '—';el(prefix+'Words').replaceChildren();
       for(const word of groups[i]){const li=document.createElement('li');li.textContent=word.word+(word.reading ? ' ('+word.reading+')' : '');el(prefix+'Words').append(li);}
     }
-    const all=library.words.filter(w=>w.lang===activeLanguage),due=all.filter(w=>window.TooweeSRS.category(progress.get(w.id))==='review').length,unseen=all.filter(w=>!progress.has(w.id)).length;
+    const all=library.words.filter(w=>w.lang===activeLanguage&&(!window.learningSourceAccepts||window.learningSourceAccepts(w))),due=all.filter(w=>window.TooweeSRS.category(progress.get(w.id))==='review').length,unseen=all.filter(w=>!progress.has(w.id)).length;
     el('studyDueSummary').textContent=progressLoaded ? 'Zapisany postęp: do powtórki teraz '+due+' • niećwiczone '+unseen+' • do ponownej nauki '+all.filter(w=>progress.get(w.id)?.stage===0).length+' • zaplanowane na później '+all.filter(w=>progress.get(w.id)?.stage>0 && !window.TooweeSRS.isDue(progress.get(w.id))).length+'.' : 'Rozpocznij naukę, aby wczytać zapisany postęp.';
   }
   async function loadProgress(snapshot) {
