@@ -28,6 +28,9 @@ create table if not exists public.toowee_student_profiles (
  first_name text not null, last_name text not null, student_id uuid references auth.users(id) on delete set null,
  created_at timestamptz not null default now(), unique(owner_id,student_id)
 );
+alter table public.toowee_student_profiles add column if not exists blocked boolean not null default false;
+alter table public.toowee_student_profiles add column if not exists languages text[];
+alter table public.toowee_assignments add column if not exists access_disabled boolean not null default false;
 create table if not exists public.toowee_profile_folders (
  profile_id uuid not null references public.toowee_student_profiles(id) on delete cascade,
  lang text not null check(lang in ('English','Japanese','Spanish')),
@@ -62,6 +65,16 @@ alter table public.toowee_invites enable row level security;
 alter table public.toowee_assignments enable row level security;
 revoke all on public.toowee_accounts,public.toowee_connections,public.toowee_invites,public.toowee_assignments from public,anon,authenticated;
 alter table public.vocabulary_words add column if not exists example text not null default '';
+-- A restrictive policy also covers direct API reads of teacher copies.
+create or replace function public.toowee_word_access(word uuid) returns boolean
+language sql stable security definer set search_path=public,pg_temp as $$
+ select not exists(select 1 from public.toowee_assignments where word_id=word and student_id=auth.uid() and access_disabled)
+$$;
+revoke all on function public.toowee_word_access(uuid) from public,anon;
+grant execute on function public.toowee_word_access(uuid) to authenticated;
+drop policy if exists "Teacher material access" on public.vocabulary_words;
+create policy "Teacher material access" on public.vocabulary_words as restrictive for all to authenticated
+using(public.toowee_word_access(id)) with check(public.toowee_word_access(id));
 create or replace function public.toowee_portal(p_action text default 'load',p_data jsonb default '{}')
 returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
 declare who uuid:=auth.uid(); me public.toowee_accounts%rowtype; other uuid; code text; folder uuid; copied uuid; src record; n integer:=0; result jsonb; oldrole text; profile public.toowee_student_profiles%rowtype; pid uuid; item jsonb; language text; rows_json jsonb; all_words jsonb;
@@ -81,12 +94,33 @@ begin
   end if;
   if p_action='profile_create' then
    if coalesce(length(trim(p_data->>'first_name')),0) not between 1 and 100 or coalesce(length(trim(p_data->>'last_name')),0) not between 1 and 100 then raise exception 'Podaj imię i nazwisko (do 100 znaków).';end if;
-   insert into public.toowee_student_profiles(owner_id,first_name,last_name) values(who,trim(p_data->>'first_name'),trim(p_data->>'last_name')) returning * into profile;
+   insert into public.toowee_student_profiles(owner_id,first_name,last_name,languages) values(who,trim(p_data->>'first_name'),trim(p_data->>'last_name'),case when p_data->>'lang' in ('Japanese','English','Spanish') then array[p_data->>'lang'] else null end) returning * into profile;
    return to_jsonb(profile);
   end if;
   select * into profile from public.toowee_student_profiles where id=(p_data->>'profile_id')::uuid and owner_id=who for update;
   if not found then raise exception 'Brak dostępu do profilu.';end if;
+  if p_action='profile_edit' then
+   if coalesce(length(trim(p_data->>'first_name')),0) not between 1 and 100 or coalesce(length(trim(p_data->>'last_name')),0) not between 1 and 100 then raise exception 'Podaj imię i nazwisko.';end if;
+   if jsonb_typeof(p_data->'languages') is distinct from 'array' or jsonb_array_length(p_data->'languages') not between 1 and 3 or exists(select 1 from jsonb_array_elements_text(p_data->'languages') l where l is null or l not in ('Japanese','English','Spanish')) then raise exception 'Wybierz co najmniej jeden język.';end if;
+   update public.toowee_student_profiles set first_name=trim(p_data->>'first_name'),last_name=trim(p_data->>'last_name'),languages=array(select distinct jsonb_array_elements_text(p_data->'languages')) where id=profile.id returning * into profile;
+   return to_jsonb(profile);
+  elsif p_action='profile_block' then
+   if profile.student_id=who then raise exception 'Nie możesz zablokować własnego konta.';end if;
+   if jsonb_typeof(p_data->'blocked') is distinct from 'boolean' then raise exception 'Podaj stan blokady.';end if;
+   update public.toowee_student_profiles set blocked=(p_data->>'blocked')::boolean where id=profile.id returning * into profile;
+   update public.toowee_assignments set access_disabled=profile.blocked where teacher_id=who and student_id=profile.student_id;
+   return to_jsonb(profile);
+  elsif p_action='profile_delete' then
+   if p_data->>'confirm_id' is distinct from profile.id::text or p_data->>'confirmation' is distinct from 'USUN' then raise exception 'Potwierdź usunięcie profilu dwa razy.';end if;
+   update public.toowee_assignments set access_disabled=true where teacher_id=who and student_id=profile.student_id;
+   delete from public.toowee_connections where teacher_id=who and student_id=profile.student_id;
+   -- Keep teacher vocabulary and historical game results; detach profile folders.
+   update public.toowee_material_folders set profile_id=null where owner_id=who and profile_id=profile.id;
+   delete from public.toowee_student_profiles where id=profile.id;
+   return jsonb_build_object('deleted',true);
+  end if;
   if p_action='profile_invite' then
+   if profile.blocked then raise exception 'Odblokuj ucznia przed wysłaniem zaproszenia.';end if;
    if profile.student_id is not null then raise exception 'Profil jest już połączony z kontem.';end if;
    code:=replace(gen_random_uuid()::text,'-','')||replace(gen_random_uuid()::text,'-','');
    insert into public.toowee_invites(token,teacher_id,profile_id) values(code,who,profile.id);
@@ -123,12 +157,12 @@ begin
    perform public.toowee_portal('assign',jsonb_build_object('student_id',profile.student_id,'lang',language,'folder_id',folder,'name',profile.first_name||' '||profile.last_name));
   end if;
   select coalesce(jsonb_agg(to_jsonb(w) order by w.created_at,w.id),'[]') into all_words from public.vocabulary_words w
-   where w.owner_id=who and w.lang=language and (
+   where w.owner_id=who and public.toowee_word_access(w.id) and w.lang=language and (
     exists(select 1 from public.toowee_material_sets ms join public.toowee_material_folders mf on mf.id=ms.folder_id where ms.set_id=w.folder_id and mf.owner_id=who and mf.profile_id=profile.id)
     or exists(select 1 from public.toowee_assignments a join public.toowee_connections c on c.teacher_id=a.teacher_id and c.student_id=a.student_id where a.teacher_id=who and a.student_id=profile.student_id and a.source_word_id=w.id)
     or (profile.student_id=who and not exists(select 1 from public.toowee_material_sets ms join public.toowee_material_folders mf on mf.id=ms.folder_id where ms.set_id=w.folder_id and mf.profile_id is not null and mf.profile_id<>profile.id)));
   if coalesce((p_data->>'all')::boolean,false) then return jsonb_build_object('folder_id',folder,'default_set_id',(select folder_id from public.toowee_profile_folders where profile_id=profile.id and lang=language),'all',true,'all_count',jsonb_array_length(all_words),'added',n,'words',all_words);end if;
-  return jsonb_build_object('default_set_id',(select folder_id from public.toowee_profile_folders where profile_id=profile.id and lang=language),'all_count',jsonb_array_length(all_words),'folder_id',folder,'added',n,'words',(select coalesce(jsonb_agg(to_jsonb(w) order by w.created_at),'[]') from public.vocabulary_words w where w.owner_id=who and w.folder_id=folder));
+  return jsonb_build_object('default_set_id',(select folder_id from public.toowee_profile_folders where profile_id=profile.id and lang=language),'all_count',jsonb_array_length(all_words),'folder_id',folder,'added',n,'words',(select coalesce(jsonb_agg(to_jsonb(w) order by w.created_at),'[]') from public.vocabulary_words w where w.owner_id=who and public.toowee_word_access(w.id) and w.folder_id=folder));
  elsif p_action='become_teacher' then
   update public.toowee_accounts set role=case when role='admin' then 'admin' else 'teacher' end where id=who returning * into me;
  elsif p_action='invite' then
@@ -143,7 +177,7 @@ begin
   select profile_id into pid from public.toowee_invites where token=code;
   if pid is not null then
    select * into profile from public.toowee_student_profiles where id=pid and owner_id=other for update;
-   if not found or profile.student_id is not null or exists(select 1 from public.toowee_student_profiles where owner_id=other and student_id=who) then raise exception 'Profil jest już połączony. Skontaktuj się z nauczycielem.';end if;
+   if not found or profile.blocked or profile.student_id is not null or exists(select 1 from public.toowee_student_profiles where owner_id=other and student_id=who) then raise exception 'Profil jest już połączony. Skontaktuj się z nauczycielem.';end if;
    update public.toowee_student_profiles set student_id=who where id=pid;
   end if;
   insert into public.toowee_connections(teacher_id,student_id) values(other,who) on conflict do nothing;
@@ -169,12 +203,13 @@ begin
   -- Lock the connection: a concurrent disconnect cannot race with an assignment.
   perform 1 from public.toowee_connections where teacher_id=who and student_id=other for update;
   if not found then raise exception 'Połączenie z uczniem zostało usunięte.';end if;
-  for src in select w.* from public.vocabulary_words w where w.owner_id=who and w.lang=p_data->>'lang' and (nullif(p_data->>'folder_id','') is null or w.folder_id=(p_data->>'folder_id')::uuid)
+  for src in select w.* from public.vocabulary_words w where w.owner_id=who and public.toowee_word_access(w.id) and w.lang=p_data->>'lang' and (nullif(p_data->>'folder_id','') is null or w.folder_id=(p_data->>'folder_id')::uuid)
     and not exists(select 1 from public.toowee_assignments a where a.teacher_id=who and a.student_id=other and a.source_word_id=w.id) limit 500
   loop
    if folder is null then insert into public.vocabulary_folders(owner_id,name,lang) values(other,left('Od: '||me.display_name||' · '||coalesce(nullif(p_data->>'name',''),'Materiały z lekcji'),200),p_data->>'lang') returning id into folder;end if;
    insert into public.vocabulary_words(owner_id,lang,word,reading,translation,example,folder_id) values(other,src.lang,src.word,src.reading,src.translation,src.example,folder) returning id into copied;
    insert into public.toowee_assignments(teacher_id,student_id,source_word_id,word_id) values(who,other,src.id,copied);
+   update public.toowee_assignments set access_disabled=true where word_id=copied and exists(select 1 from public.toowee_student_profiles where owner_id=who and student_id=other and blocked);
    n:=n+1;
   end loop;
   return jsonb_build_object('assigned',n);
@@ -189,7 +224,7 @@ begin
   'profiles',(select coalesce(jsonb_agg(to_jsonb(p) order by p.last_name,p.first_name),'[]') from public.toowee_student_profiles p where p.owner_id=who),
   'students',(select coalesce(jsonb_agg(jsonb_build_object('id',a.id,'name',a.display_name)),'[]') from public.toowee_connections c join public.toowee_accounts a on a.id=c.student_id where c.teacher_id=who),
   'teachers',(select coalesce(jsonb_agg(jsonb_build_object('id',a.id,'name',a.display_name)),'[]') from public.toowee_connections c join public.toowee_accounts a on a.id=c.teacher_id where c.student_id=who),
-  'sources',(select coalesce(jsonb_agg(jsonb_build_object('word_id',s.word_id,'teacher_id',s.teacher_id,'teacher_name',a.display_name)),'[]') from public.toowee_assignments s join public.toowee_accounts a on a.id=s.teacher_id where s.student_id=who));
+  'sources',(select coalesce(jsonb_agg(jsonb_build_object('word_id',s.word_id,'teacher_id',s.teacher_id,'teacher_name',a.display_name)),'[]') from public.toowee_assignments s join public.toowee_accounts a on a.id=s.teacher_id where s.student_id=who and not s.access_disabled));
 end $$;
 revoke all on function public.toowee_portal(text,jsonb) from public;
 grant execute on function public.toowee_portal(text,jsonb) to authenticated;

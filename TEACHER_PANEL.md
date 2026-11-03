@@ -26,3 +26,6 @@ Domyślny widok „Całe słownictwo” jest wirtualną listą, a nie kopią dan
 
 
 Panel zaczyna się od wyboru Japanese/English/Spanish lub widoków wszystkich uczniów, grup i słownictwa. Języki ucznia wynikają z jego folderów materiałów; nowy profil otwarty w wybranym języku tworzy własny pusty zestaw tego języka. Istniejącego ucznia można otworzyć z widoku wszystkich uczniów i wybrać kolejny język. Grupy zapisują lang; starsze grupy bez języka pozostają w widoku wszystkich grup do edycji. Globalna baza czyta wyłącznie własne vocabulary_words, stronicuje wyniki i pozwala wyszukiwać bez powielania danych. Uruchom najnowszy teacher_setup.sql przez aktualizację panelu.
+
+
+Menu ⋯ profilu: edycja imienia/nazwiska i listy języków, blokada/odblokowanie i dwustopniowe usunięcie. Jawne languages zastępuje wnioskowanie z pustych folderów; istniejące słówka nie zmieniają języka. Blokada ustawia access_disabled na kopiach przypisanych przez danego nauczyciela; restrykcyjna polityka RLS blokuje ich odczyt/edycję. Odblokowanie przywraca te same rekordy i postępy. Usunięcie odłącza profil, zamyka zaproszenia i zachowuje materiały nauczyciela jako ogólne oraz oryginalne gry. Dane pobrane wcześniej przez ucznia nie mogą zostać zdalnie wymazane; biblioteka stosuje blokadę po ponownym odczycie. Przycisk własnego profilu i ręczne odświeżanie połączeń ukryte w widoku nauczyciela.
