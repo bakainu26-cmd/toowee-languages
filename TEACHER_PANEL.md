@@ -12,3 +12,7 @@ Dotychczasowy jeden zestaw ucznia zostaje zachowany jako zestaw w folderze Ogól
 
 ## Konfiguracja
 Przycisk Aktualizuj panel nauczyciela pobiera całość: accounts_setup.sql, multiplayer_setup.sql, statistics_setup.sql, teacher_setup.sql. Uruchom komplet w Supabase SQL Editor. Migracja jest powtarzalna, zachowuje uczniów, słówka, połączenia i wyniki. Nowe tabele grup i organizacji materiałów są prywatne; RPC sprawdza rolę oraz własność profili, grup, folderów i zestawów.
+
+## Zakres gry z profilu ucznia
+
+Kliknięcie Wygeneruj grę dla ucznia otwiera konfigurację Saszetek bez wymogu słówek w aktualnie otwartym zestawie. Pobieramy metadane folderów/zestawów tego profilu oraz słówka wyłącznie z tych zestawów, z filtrem właściciela i paginacją. W konfiguracji są trzy zakresy: całe słownictwo ucznia (w języku gry), wybrany folder (wszystkie jego zestawy), wybrany zestaw. Lista nie zawiera materiałów innych profili ani prywatnych zestawów nauczyciela. Gdy bieżący język ma pusty zestaw, ale uczeń ma słówka w innym języku, konfiguracja wybiera dostępny język ze słówkami. Pusta lub zbyt mała pula ma czytelny licznik i blokuje utworzenie gry (wymagane co najmniej cztery różne pytania/odpowiedzi). Zmiana zakresu usuwa nieaktualny szkic tworzenia pokoju. Poprawka działa z już zainstalowanym teacher_setup.sql i nie dodaje migracji.
