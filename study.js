@@ -5,7 +5,7 @@
   let direction='toTarget',busy=false,version=0,progressOwner=null,progress=new Map(),progressLoaded=false;
   let active=false,paused=false,elapsedMs=0,runningSince=null,budgetMs=0,sessionGoalMs=0,learningElapsedMs=0,ticker=null;
   let challengeReported=false,sessionOwner=null,sessionLanguage=null,portionSize=10,sessionKind='learn';
-  let worldRewardId=null,rewardSeconds=0,rewardLastElapsed=0;
+  let statisticsId=null,statisticsStarted=null;let worldRewardId=null,rewardSeconds=0,rewardLastElapsed=0;
   let focused=false,pendingRating=null,cardHistory=[],historyIndex=null,editing=null;
   const el=id=>document.getElementById(id),scope=window.TooweeStudyScope;
   const available=()=>ready && !saving && Boolean(activeLanguage) && Boolean(account?.userId);
@@ -172,7 +172,7 @@
   async function startStudy() {
     if(!available()||busy)return;const invalid=validateSettings();if(invalid){setNotice(invalid);return;}
     if(active&&!confirm('Rozpocząć nową sesję? Bieżąca sesja nie zapisała jeszcze końcowej weryfikacji.'))return;
-    resetStudy();worldRewardId=window.newWorldEventId?.();budgetMs=getBudget();sessionGoalMs=budgetMs;const current=version,snapshot={...account};busy=true;updateStudyControls();setNotice('Wczytywanie zapisanych powtórek…');
+    resetStudy();statisticsId=window.crypto?.randomUUID?.();statisticsStarted=new Date().toISOString();worldRewardId=window.newWorldEventId?.();budgetMs=getBudget();sessionGoalMs=budgetMs;const current=version,snapshot={...account};busy=true;updateStudyControls();setNotice('Wczytywanie zapisanych powtórek…');
     try{
       const loaded=await loadProgress(snapshot);if(current!==version||account?.userId!==snapshot.userId)return;
       progress=loaded;originalProgress=new Map(loaded);progressOwner=snapshot.userId;progressLoaded=true;let rows=selectedWords();
@@ -235,7 +235,7 @@
     const payload=reviewed.map(w=>({owner_id:sessionOwner,word_id:w.id,...window.TooweeSRS.next(originalProgress.get(w.id),verified.get(w.id)===true)}));
     try{
       if(payload.length){const {data,error}=await snapshot.client.from('vocabulary_progress').upsert(payload,{onConflict:'owner_id,word_id'}).select('*');if(error)throw error;if(current!==version||account?.userId!==sessionOwner)return;data.forEach(p=>progress.set(p.word_id,p));}
-      if(current!==version)return;phase='finished';
+      if(current!==version)return;if(payload.length&&window.recordStudyStatistics)await window.recordStudyStatistics({id:statisticsId||(statisticsId=window.crypto.randomUUID()),lang:sessionLanguage,mode:sessionKind==='review'?'review':'learn',started_at:statisticsStarted||new Date().toISOString(),seconds:Math.min(86400,Math.floor(elapsedMs/1000)),attempts,words:reviewed.map(w=>({word_id:w.id,known:verified.get(w.id)===true}))});if(current!==version)return;phase='finished';
       const yes=confirmedCount(),no=reviewed.length-yes,untouched=sessionWords.length-reviewed.length;
       el('studySummaryText').textContent=(sessionKind==='review'?'Powtórka: umiem ':'Końcowa weryfikacja: umiem ')+yes+' • do ponownej nauki '+no+(untouched?' • nieprzećwiczone '+untouched:'')+'. Czas nauki: '+formatTime(learningElapsedMs)+', weryfikacji: '+formatTime(elapsedMs-learningElapsedMs)+'. '+(payload.length?'Wynik i terminy powtórek zapisane.':'Nie oceniono żadnej fiszki.');
       setNotice(sessionKind==='review'?'Powtórka zapisana. „Nie umiem” wraca do nauki. Listy poniżej zachowują Twój wynik.':'Listy poniżej pokazują wynik końcowej weryfikacji.');

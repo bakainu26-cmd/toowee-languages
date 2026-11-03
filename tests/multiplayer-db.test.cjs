@@ -54,7 +54,7 @@ await as(student);const oldTotal=(await rpc('load',{code})).personal_points;cons
 // Host can find every open room, including rooms created on another device, and free a slot.
 await as(host);await db.query("update sophie_rooms set status='finished' where host_id=$1",[host]);
 const openCodes=[];for(let i=0;i<3;i++)openCodes.push((await rpc('create',{...payload,request_id:randomUUID()})).code);
-await assert.rejects(rpc('create',{...payload,request_id:randomUUID()}),/3 otwarte pokoje/);
+const fourth=(await rpc('create',{...payload,request_id:randomUUID()})).code;await rpc('close',{code:fourth});
 const openRooms=(await rpc('rooms')).rooms;assert.equal(openRooms.length,3);assert.deepEqual(new Set(openRooms.map(r=>r.code)),new Set(openCodes));assert(!JSON.stringify(openRooms).includes('questions'));assert(!JSON.stringify(openRooms).includes('correct'));
 await as(student);await assert.rejects(rpc('rooms'));await as('');await assert.rejects(rpc('rooms'));await as(otherTeacher);assert.equal((await rpc('rooms')).rooms.length,0);await assert.rejects(rpc('finish',{code:openCodes[0]}));
 await as(host);await rpc('finish',{code:openCodes[0]});assert.equal((await rpc('rooms')).rooms.length,2);await rpc('create',{...payload,request_id:randomUUID()});assert.equal((await rpc('rooms')).rooms.length,3);

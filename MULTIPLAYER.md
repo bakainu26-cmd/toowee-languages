@@ -69,11 +69,9 @@ Przy wspólnych rundach zmiana czeka na zakończenie ostatniej aktywnej pauzy. J
 
 Testy sprawdzają limit 3 tarcz, brak informacji o tarczach w publicznym rankingu, zużycie jednej ochrony na próbę, ponowienie ataku bez podwójnego zużycia, prywatny licznik i komunikat dla atakującego. Osobno sprawdzają 5 sekund poprawki, blokadę klawiatury/kliknięcia, ochronę przed pominięciem przez hosta lub polling oraz ekran prowadzącego bez pytań.
 
-## Otwarte pokoje
+## Zamykanie i wyniki
 
-W formularzu tworzenia gry „Moje otwarte pokoje” pokazuje wszystkie własne aktywne pokoje (także utworzone na innym urządzeniu). Można otworzyć grę albo zakończyć ją i zwolnić jedno z trzech miejsc. Zakończenie używa istniejącej operacji finish: zachowuje wyniki i respektuje pięciosekundową pauzę po błędzie. Lista nie ujawnia pytań, poprawnych odpowiedzi ani cudzych pokoi. „Otwórz ostatni pokój” działa także ze starszą konfiguracją bazy. Aby włączyć pełną listę, uruchom aktualny multiplayer_setup.sql; migracja zachowuje rozgrywki i wyniki.
-
-Gdy limit blokuje utworzenie gry, konfiguracja i identyfikator żądania są zachowywane. Przycisk „Zakończ ostatni pokój i utwórz tę grę” po jawnym kliknięciu sprawdza właściciela ostatniego pokoju zapisanego na urządzeniu, kończy go istniejącą operacją finish i ponawia dokładnie tę samą konfigurację. Nie wymaga nowej migracji; respektuje pauzę po błędnej odpowiedzi. Gdy ostatni kod nie jest dostępny lub należy do innego prowadzącego, należy użyć pełnej listy (wymaga konfiguracji rooms). Tworzenie z profilu używa słownictwa zwróconego przez profile_load, bez ponownego ładowania całej biblioteki.
+Prowadzący zamyka grę przyciskiem lub Escape: pokój kończy się, a odpowiedzi pozostają w bazie. Nie trzeba zarządzać ostatnimi pokojami. Nie ma limitu trzech otwartych pokoi. Zerwane połączenie prowadzącego wykrywane jest po dwóch minutach przy kolejnym żądaniu. Historia i statystyki gier oraz przypisywanie gości do uczniów: patrz STATISTICS.md.
 
 ## Dwa tryby tempa gry
 

@@ -1,0 +1,12 @@
+# Statystyki i zamykanie gier
+
+Prowadzący zamyka grę przyciskiem zamknięcia lub Escape: operacja close natychmiast kończy pokój, także w poczekalni. Wyniki i odpowiedzi pozostają w historii. Uczeń zamykający swój widok nie kończy gry całej grupie. Zniknął limit trzech pokoi oraz zwykły interfejs zarządzania starymi pokojami. Przy utracie połączenia prowadzącego serwer wykrywa brak heartbeat od dwóch minut przy kolejnym odczycie lub tworzeniu pokoju i kończy opuszczoną grę. pagehide próbuje wysłać close, ale przeglądarka nie gwarantuje wykonania żądania przy nagłym zamknięciu karty.
+
+Profil ucznia → Statystyki: stan do nauki, krótkotrwały (etapy 1–3), długotrwały (etapy 4–6), historia zapisanych sesji fiszek, słówka z lapses > 0, historia Saszetek. Nauczyciel widzi tylko postęp własnych przypisanych materiałów w wybranym języku; prywatna biblioteka i materiały innych nauczycieli są wykluczone. Profil bez konta nie otrzymuje zmyślonych statystyk pamięci.
+
+Historia i statystyki gier: ostatnie 100 zakończonych pokoi, każdy gracz ma punkty, poprawne/udzielone odpowiedzi, procent i listę błędnych pytań z poprawnymi odpowiedziami. Wyniki istniejących gier odczytywane są z zapisanych odpowiedzi. Wynik zalogowanego ucznia jest automatycznie powiązany z jego profilem u tego prowadzącego. Wyniki gości można jawnie przypisać do profilu; pseudonim nie służy do zgadywania tożsamości. Odłączenie konta zachowuje zapisane przypisanie gry, ale odbiera dostęp do bieżących fiszek ucznia. 
+
+Szczegółowa historia sesji fiszek zaczyna się po aktualizacji. Rejestrujemy zakończony zapis weryfikacji/powtórki, daty, aktywny czas sesji oraz własne ocenione słówka. Identyfikator sesji chroni przed duplikacją. Niezapisana historia czeka w kolejce na ponowienie na tym urządzeniu, niezależnie od już zapisanego SRS. Nie odtwarzamy nieistniejącej historii dawnych sesji. Obecne etapy i lapses pozostają dostępne. 
+
+## Aktualizacja
+Przycisk „Aktualizuj statystyki” kopiuje komplet accounts_setup.sql + multiplayer_setup.sql + statistics_setup.sql w tej kolejności. Uruchom całość w Supabase SQL Editor. Ten sam komplet pobierają przyciski konfiguracji kont i multiplayer. Migracje są powtarzalne i zachowują wyniki. Statystyki używają RPC toowee_statistics; tabele są prywatne, a nauczyciel musi być właścicielem profilu/pokoju. Nowe rozszerzenie obejmuje Saszetki Sophie; nie dopisuje historii innych gier solo.
