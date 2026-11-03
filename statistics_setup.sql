@@ -82,16 +82,22 @@ begin
   select * into profile from public.toowee_student_profiles where id=(p_data->>'profile_id')::uuid and owner_id=who;
   if not found or not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Brak dostępu do profilu ucznia.';end if;
   lang:=nullif(p_data->>'lang','');
+  if profile.student_id=who then
+   -- The teacher sees their own learning without creating duplicate word copies.
+   select coalesce(array_agg(w.id),'{}') into words from public.vocabulary_words w where w.owner_id=who and (lang is null or w.lang=lang)
+    and not exists(select 1 from public.toowee_material_sets ms join public.toowee_material_folders mf on mf.id=ms.folder_id where ms.set_id=w.folder_id and mf.profile_id is not null and mf.profile_id<>profile.id);
+  else
   select coalesce(array_agg(w.id),'{}') into words from public.toowee_assignments a join public.vocabulary_words w on w.id=a.word_id and w.owner_id=profile.student_id
    where a.teacher_id=who and a.student_id=profile.student_id and exists(select 1 from public.toowee_connections c where c.teacher_id=who and c.student_id=profile.student_id) and (lang is null or w.lang=lang);
-  return jsonb_build_object('linked',profile.student_id is not null,'memory',(select jsonb_build_object('new',count(*) filter(where coalesce(v.stage,0)=0),'short',count(*) filter(where v.stage between 1 and 3),'long',count(*) filter(where v.stage>=4)) from public.vocabulary_words w left join public.vocabulary_progress v on v.word_id=w.id and v.owner_id=profile.student_id where w.id=any(words)),
+  end if;
+  return jsonb_build_object('self',profile.student_id=who,'linked',profile.student_id is not null,'memory',(select jsonb_build_object('new',count(*) filter(where coalesce(v.stage,0)=0),'short',count(*) filter(where v.stage between 1 and 3),'long',count(*) filter(where v.stage>=4)) from public.vocabulary_words w left join public.vocabulary_progress v on v.word_id=w.id and v.owner_id=profile.student_id where w.id=any(words)),
    'difficult',(select coalesce(jsonb_agg(to_jsonb(t)),'[]') from (select w.word,w.reading,w.translation,v.lapses,v.reviews,v.last_reviewed_at from public.vocabulary_words w join public.vocabulary_progress v on v.word_id=w.id and v.owner_id=profile.student_id where w.id=any(words) and v.lapses>0 order by v.lapses desc,v.last_reviewed_at desc limit 100)t),
    'study',(select coalesce(jsonb_agg(to_jsonb(t)),'[]') from (select h.id,h.started_at,h.finished_at,h.mode,count(*) as words,count(*) filter(where hw.known) as known,count(*) filter(where not hw.known) as difficult from public.toowee_study_history h join public.toowee_study_history_words hw on hw.session_id=h.id where h.owner_id=profile.student_id and hw.word_id=any(words) group by h.id order by h.finished_at desc limit 100)t),
    'games',(select coalesce(jsonb_agg(to_jsonb(t)),'[]') from (select r.code,r.created_at,r.finished_at,r.lang,r.play_mode,p.public_id as player_id,p.nickname,public.sophie_game_score(r.id,p.player_id) as score,
     (select count(*) from public.sophie_round_answers a where a.room_id=r.id and a.player_id=p.player_id) as answered,
     (select count(*) from public.sophie_round_answers a where a.room_id=r.id and a.player_id=p.player_id and a.correct) as correct
     from public.sophie_rooms r join public.sophie_participants p on p.room_id=r.id left join public.toowee_game_students g on g.room_id=r.id and g.player_id=p.player_id
-    where r.host_id=who and r.status='finished' and (lang is null or r.lang=lang) and (g.profile_id=profile.id or (g.profile_id is null and profile.student_id is not null and p.account_id=profile.student_id and exists(select 1 from public.toowee_connections c where c.teacher_id=who and c.student_id=profile.student_id))) order by coalesce(r.finished_at,r.created_at) desc limit 100)t));
+    where r.host_id=who and r.status='finished' and (lang is null or r.lang=lang) and (g.profile_id=profile.id or (g.profile_id is null and profile.student_id is not null and p.account_id=profile.student_id and (profile.student_id=who or exists(select 1 from public.toowee_connections c where c.teacher_id=who and c.student_id=profile.student_id)))) order by coalesce(r.finished_at,r.created_at) desc limit 100)t));
  elsif p_action='games' then
   if not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Tylko nauczyciel widzi historię gier.';end if;
   return jsonb_build_object('games',(select coalesce(jsonb_agg(to_jsonb(t)),'[]') from(select code,lang,play_mode,created_at,finished_at,(select count(*) from public.sophie_participants p where p.room_id=r.id) as players from public.sophie_rooms r where host_id=who and status='finished' order by coalesce(finished_at,created_at) desc limit 100)t));

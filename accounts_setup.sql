@@ -69,6 +69,12 @@ begin
  select * into me from public.toowee_accounts where id=who for update;
  if p_action like 'profile_%' then
   if me.role not in ('teacher','admin') then raise exception 'Tylko nauczyciel zarządza profilami.';end if;
+  if p_action='profile_self' then
+   insert into public.toowee_student_profiles(owner_id,first_name,last_name,student_id)
+   values(who,coalesce(nullif(split_part(trim(me.display_name),' ',1),''),'Mój profil'),trim(regexp_replace(trim(me.display_name),'^[^ ]+ *','')),who)
+   on conflict(owner_id,student_id) do update set student_id=excluded.student_id returning * into profile;
+   return to_jsonb(profile);
+  end if;
   if p_action='profile_create' then
    if coalesce(length(trim(p_data->>'first_name')),0) not between 1 and 100 or coalesce(length(trim(p_data->>'last_name')),0) not between 1 and 100 then raise exception 'Podaj imię i nazwisko (do 100 znaków).';end if;
    insert into public.toowee_student_profiles(owner_id,first_name,last_name) values(who,trim(p_data->>'first_name'),trim(p_data->>'last_name')) returning * into profile;
@@ -109,7 +115,7 @@ begin
     end if;
    end loop;
   elsif p_action not in ('profile_load','profile_sync') then raise exception 'Nieznana operacja profilu.';end if;
-  if profile.student_id is not null then
+  if profile.student_id is not null and profile.student_id<>who then
    perform public.toowee_portal('assign',jsonb_build_object('student_id',profile.student_id,'lang',language,'folder_id',folder,'name',profile.first_name||' '||profile.last_name));
   end if;
   return jsonb_build_object('folder_id',folder,'added',n,'words',(select coalesce(jsonb_agg(to_jsonb(w) order by w.created_at),'[]') from public.vocabulary_words w where w.owner_id=who and w.folder_id=folder));
