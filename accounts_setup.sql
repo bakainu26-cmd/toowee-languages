@@ -6,6 +6,7 @@ create table if not exists public.toowee_accounts (
  role text not null check(role in ('student','teacher','admin')),
  display_name text not null default '',created_at timestamptz not null default now()
 );
+alter table public.toowee_accounts add column if not exists preferences jsonb not null default '{}';
 alter table public.toowee_accounts drop constraint if exists toowee_accounts_role_check;
 alter table public.toowee_accounts add constraint toowee_accounts_role_check check(role in ('student','teacher','admin'));
 create table if not exists public.toowee_connections (
@@ -84,6 +85,18 @@ begin
  insert into public.toowee_accounts(id,role,display_name)
  select id,case when raw_user_meta_data->>'role'='teacher' then 'teacher' else 'student' end,left(coalesce(raw_user_meta_data->>'display_name','Użytkownik'),100) from auth.users where id=who on conflict do nothing;
  select * into me from public.toowee_accounts where id=who for update;
+ if p_action='settings_save' then
+  if me.role not in ('teacher','admin') then raise exception 'Tylko konto nauczyciela.';end if;
+  if coalesce(length(trim(p_data->>'display_name')),0) not between 1 and 100 then raise exception 'Podaj nazwę profilu (1–100 znaków).';end if;
+  result:=p_data->'preferences';
+  if jsonb_typeof(result) is distinct from 'object' or length(result::text)>2000 or jsonb_typeof(result->'languages') is distinct from 'array' then raise exception 'Nieprawidłowe ustawienia.';end if;
+  if jsonb_array_length(result->'languages') not between 1 and 3 or exists(select 1 from jsonb_array_elements_text(result->'languages') l where l is null or l not in ('Japanese','English','Spanish')) or (select count(distinct l) from jsonb_array_elements_text(result->'languages') l)<>jsonb_array_length(result->'languages') then raise exception 'Wybierz języki bez powtórzeń.';end if;
+  if coalesce(result->>'play_mode','') not in ('free','teacher') or coalesce(result->>'end_mode','') not in ('words','timer') or coalesce(result->>'japanese','') not in ('both','kana','kanji') or length(coalesce(result->>'brand',''))>200 then raise exception 'Nieprawidłowe preferencje.';end if;
+  if coalesce(result->>'seconds','') !~ '^[0-9]+$' or coalesce(result->>'count','') !~ '^[0-9]+$' or coalesce(result->>'minutes','') !~ '^[0-9]+$' then raise exception 'Wpisz pełne liczby.';end if;
+  if (result->>'seconds')::int not between 1 and 300 or (result->>'count')::int not between 1 and 1000 or (result->>'minutes')::int not between 1 and 30 then raise exception 'Ustawienia gry poza zakresem.';end if;
+  update public.toowee_accounts set display_name=trim(p_data->>'display_name'),preferences=result where id=who;
+  return jsonb_build_object('saved',true);
+ end if;
  if p_action like 'profile_%' then
   if me.role not in ('teacher','admin') then raise exception 'Tylko nauczyciel zarządza profilami.';end if;
   if p_action='profile_self' then
