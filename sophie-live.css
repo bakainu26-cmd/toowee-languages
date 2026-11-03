@@ -10,3 +10,6 @@ body.sophie-live-open{overflow:hidden}
 .sophie-wrong-delay{background:#fff1d6;border:1px solid #e5c384;border-radius:16px;padding:14px 18px;font-size:clamp(16px,2vw,22px);font-weight:800;color:#785618}
 
 .sophie-own-shields{background:#e6f0ed;color:#356455;padding:8px 12px;border-radius:12px;font-size:14px;font-weight:800;white-space:nowrap}
+
+/* A fixed vertical order prevents timer/word-count switches from moving fields across columns. */
+.sophie-timing-settings{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}.sophie-timing-settings>div{min-width:0}.sophie-timing-settings small{display:block;margin-top:5px}
