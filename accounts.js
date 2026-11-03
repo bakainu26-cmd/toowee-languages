@@ -1,6 +1,9 @@
 'use strict';
 (() => {
  const el=id=>document.getElementById(id);let snapshot=null,revision=0,working=false,selected=null,sources=new Map(),portal=null,adminView='admin',studentSection='list',profileSelected=null,profileData=null,profileSetId=null,profileAll=true;
+ // Keep the admin view switch outside the collapsible account/settings panel.
+ document.querySelector('header').append(el('adminViewPanel'));
+ for(const [id,label] of [['adminOwnerView','Admin'],['adminTeacherView','Nauczyciel'],['adminStudentView','Uczeń']])el(id).textContent=label;
  const wordEditor=document.createElement('div');wordEditor.id='profileWordEditor';wordEditor.hidden=true;const vocabularyPanel=el('profileVocabularyPanel');for(const n of [...vocabularyPanel.children])if(n.id!=='studentMaterialFolders')wordEditor.append(n);vocabularyPanel.append(wordEditor);el('profileVocabularyTab').textContent='Foldery';el('profileStatisticsTab').textContent='Statystyki';el('profileGamesTab').textContent='Wygeneruj grę';
  const status=text=>{el('portalStatus').textContent=text;};
  window.learningSourceAccepts=word=>{const value=el('materialSource').value;if(value==='all')return true;const source=sources.get(word.id);return value==='private'?!source:source?.teacher_id===value;};
