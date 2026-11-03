@@ -18,11 +18,13 @@ create table if not exists public.toowee_material_deliveries (
  kind text not null,source_id uuid not null,
  primary key(owner_id,profile_id,kind,source_id)
 );
+alter table public.toowee_material_deliveries add column if not exists target_folder_id uuid;
+alter table public.toowee_material_deliveries add column if not exists target_set_ids uuid[] not null default '{}';
 alter table public.toowee_material_deliveries enable row level security;
 revoke all on public.toowee_material_deliveries from public,anon,authenticated;
 create or replace function public.toowee_teacher(p_action text default 'load',p_data jsonb default '{}') returns jsonb
 language plpgsql security definer set search_path=public,pg_temp as $$
-declare who uuid:=auth.uid();gid uuid;pid uuid;fid uuid;sid uuid;item jsonb;bucket public.toowee_material_folders%rowtype; source_ids uuid[];target_folder uuid;new_set uuid;target_profile public.toowee_student_profiles%rowtype;material_lang text;material_name text;source record;
+declare who uuid:=auth.uid();gid uuid;pid uuid;fid uuid;sid uuid;item jsonb;bucket public.toowee_material_folders%rowtype; source_ids uuid[];target_folder uuid;new_set uuid;target_profile public.toowee_student_profiles%rowtype;material_lang text;material_name text;source record; copied_sets uuid[]:='{}';recipient jsonb;
 begin
  if who is null or not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Wybierz konto nauczyciela.';end if;
  perform 1 from public.toowee_accounts where id=who for update;
@@ -31,6 +33,17 @@ begin
   insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,(item->>'profile_id')::uuid,'Słówka bez zestawu',item->>'lang') returning id into fid;
   insert into public.toowee_material_sets values(fid,(item->>'folder_id')::uuid) on conflict do nothing;
  end loop;
+ if p_action='material_assign_many' then
+  if jsonb_typeof(p_data->'profile_ids') is distinct from 'array' then raise exception 'Zaznacz uczniów.';end if;
+  if jsonb_array_length(p_data->'profile_ids') not between 1 and 100 then raise exception 'Wybierz od 1 do 100 uczniów.';end if;
+  for recipient in select distinct value from jsonb_array_elements(p_data->'profile_ids') loop
+   if not exists(select 1 from public.toowee_student_profiles where id=(recipient#>>'{}')::uuid and owner_id=who and not blocked) then raise exception 'Brak dostępu do ucznia lub uczeń zablokowany.';end if;
+  end loop;
+  for recipient in select distinct value from jsonb_array_elements(p_data->'profile_ids') loop
+   perform public.toowee_teacher('material_assign',(p_data-'profile_ids')||jsonb_build_object('profile_id',recipient));
+  end loop;
+  return public.toowee_teacher('load');
+ end if;
  if p_action in ('material_edit','material_delete','material_assign') then
   if p_data->>'kind'='folder' then
    select * into bucket from public.toowee_material_folders where id=(p_data->>'id')::uuid and owner_id=who for update;
@@ -47,11 +60,29 @@ begin
    if p_data->>'kind'='folder' then update public.toowee_material_folders set name=trim(p_data->>'name') where id=bucket.id;
    else update public.vocabulary_folders set name=trim(p_data->>'name') where id=any(source_ids) and owner_id=who;end if;
   elsif p_action='material_delete' then
-   if p_data->>'confirm_id' is distinct from p_data->>'id' then raise exception 'Potwierdź usunięcie materiałów.';end if;
-   update public.toowee_assignments a set access_disabled=true where a.teacher_id=who and a.source_word_id in(select w.id from public.vocabulary_words w where w.owner_id=who and w.folder_id=any(source_ids));
-   delete from public.vocabulary_words where owner_id=who and folder_id=any(source_ids);
-   delete from public.vocabulary_folders where owner_id=who and id=any(source_ids);
-   if p_data->>'kind'='folder' then delete from public.toowee_material_folders where id=bucket.id and owner_id=who;end if;
+   if p_data->>'confirm_id' is distinct from p_data->>'id' or p_data->>'confirmation' is distinct from 'DELETE' or coalesce(p_data->>'delete_scope','') not in ('student','permanent') then raise exception 'Wybierz zakres i potwierdź usunięcie ponownie.';end if;
+   if p_data->>'delete_scope'='student' then
+    pid:=nullif(p_data->>'profile_id','')::uuid;
+    if pid is null or not exists(select 1 from public.toowee_student_profiles where id=pid and owner_id=who) then raise exception 'Wybierz własny profil ucznia.';end if;
+    if p_data->>'kind'='folder' then
+     if bucket.profile_id is distinct from pid then raise exception 'Folder nie należy do tego ucznia.';end if;
+    elsif not exists(select 1 from public.toowee_material_sets ms join public.toowee_material_folders mf on mf.id=ms.folder_id where ms.set_id=any(source_ids) and mf.owner_id=who and mf.profile_id=pid) then raise exception 'Zestaw nie należy do tego ucznia.';end if;
+    update public.toowee_assignments a set access_disabled=true where a.teacher_id=who and a.student_id=(select student_id from public.toowee_student_profiles where id=pid) and a.source_word_id in(select w.id from public.vocabulary_words w where w.owner_id=who and w.folder_id=any(source_ids));
+    delete from public.toowee_profile_folders where profile_id=pid and folder_id=any(source_ids);
+    delete from public.toowee_material_deliveries where owner_id=who and profile_id=pid and (target_set_ids && source_ids or target_folder_id=bucket.id);
+    if p_data->>'kind'='folder' then
+     update public.toowee_material_folders set profile_id=null where id=bucket.id and owner_id=who;
+    else
+     insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,null,material_name,material_lang) returning id into target_folder;
+     update public.toowee_material_sets set folder_id=target_folder where set_id=any(source_ids);
+    end if;
+   else
+    update public.toowee_assignments a set access_disabled=true where a.teacher_id=who and a.source_word_id in(select w.id from public.vocabulary_words w where w.owner_id=who and w.folder_id=any(source_ids));
+    delete from public.toowee_material_deliveries where owner_id=who and (target_set_ids && source_ids or target_folder_id=bucket.id);
+    delete from public.vocabulary_words where owner_id=who and folder_id=any(source_ids);
+    delete from public.vocabulary_folders where owner_id=who and id=any(source_ids);
+    if p_data->>'kind'='folder' then delete from public.toowee_material_folders where id=bucket.id and owner_id=who;end if;
+   end if;
   else
    select * into target_profile from public.toowee_student_profiles where id=(p_data->>'profile_id')::uuid and owner_id=who for update;
    if not found then raise exception 'Brak dostępu do ucznia.';end if;
@@ -62,12 +93,12 @@ begin
    insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,target_profile.id,material_name,material_lang) returning id into target_folder;
    for source in select * from public.vocabulary_folders where owner_id=who and id=any(source_ids) loop
     insert into public.vocabulary_folders(owner_id,name,lang) values(who,source.name,material_lang) returning id into new_set;
-    insert into public.toowee_material_sets(folder_id,set_id) values(target_folder,new_set);
+    insert into public.toowee_material_sets(folder_id,set_id) values(target_folder,new_set);copied_sets:=array_append(copied_sets,new_set);
     insert into public.vocabulary_words(owner_id,lang,word,reading,translation,example,folder_id) select who,lang,word,reading,translation,example,new_set from public.vocabulary_words where owner_id=who and folder_id=source.id;
     if target_profile.student_id is not null and target_profile.student_id<>who then loop item:=public.toowee_portal('assign',jsonb_build_object('student_id',target_profile.student_id,'lang',material_lang,'folder_id',new_set,'name',source.name));exit when (item->>'assigned')::int<500;end loop;end if;
    end loop;
    if target_profile.languages is not null and not material_lang=any(target_profile.languages) then update public.toowee_student_profiles set languages=array_append(languages,material_lang) where id=target_profile.id;end if;
-   insert into public.toowee_material_deliveries values(who,target_profile.id,p_data->>'kind',(p_data->>'id')::uuid);
+   insert into public.toowee_material_deliveries(owner_id,profile_id,kind,source_id,target_folder_id,target_set_ids) values(who,target_profile.id,p_data->>'kind',(p_data->>'id')::uuid,target_folder,copied_sets);
   end if;
  elsif p_action in ('group_create','group_save') then
   if length(trim(coalesce(p_data->>'name',''))) not between 1 and 200 then raise exception 'Podaj nazwę grupy.';end if;
