@@ -19,7 +19,7 @@ begin
  perform 1 from public.toowee_accounts where id=who for update;
  -- Bring pre-existing pupil sets into a folder without moving or copying vocabulary.
  for item in select to_jsonb(pf) from public.toowee_profile_folders pf join public.toowee_student_profiles p on p.id=pf.profile_id where p.owner_id=who and pf.folder_id is not null and not exists(select 1 from public.toowee_material_sets ms where ms.set_id=pf.folder_id) loop
-  insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,(item->>'profile_id')::uuid,'Ogólne',item->>'lang') returning id into fid;
+  insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,(item->>'profile_id')::uuid,'Słówka bez zestawu',item->>'lang') returning id into fid;
   insert into public.toowee_material_sets values(fid,(item->>'folder_id')::uuid) on conflict do nothing;
  end loop;
  if p_action in ('group_create','group_save') then

@@ -8,7 +8,7 @@ Pięć osobnych zakładek: Moi uczniowie, Grupy, Gry, Statystyki, Słownictwo. W
 - Statystyki: liczby uczniów, grup, zestawów, słówek i zakończonych gier, przejście do ucznia i pełna dotychczasowa historia gier.
 - Słownictwo: Klasy jako kontenery zestawów, Zestawy oraz pełna Baza słów. Nowy zestaw można utworzyć w klasie, istniejący zestaw ogólny przypisać do klasy. Zestaw ucznia pozostaje w jego profilu. Materiały można kopiować do profilu ucznia (maks. 500 słówek); oryginał i jego postęp nie zmieniają się.
 
-Dotychczasowy jeden zestaw ucznia zostaje zachowany jako zestaw w folderze Ogólne. Nie zmieniamy jego identyfikatora ani postępu. Zaproszenie do profilu kopiuje także nowe zestawy. Po połączeniu konta dodawane materiały synchronizują się istniejącym przypisaniem; zasady prywatności statystyk pozostają bez zmian.
+Dotychczasowy jeden zestaw ucznia zostaje zachowany jako zestaw przechowujący słówka bez zestawu. Nie zmieniamy jego identyfikatora ani postępu. Zaproszenie do profilu kopiuje także nowe zestawy. Po połączeniu konta dodawane materiały synchronizują się istniejącym przypisaniem; zasady prywatności statystyk pozostają bez zmian.
 
 ## Konfiguracja
 Przycisk Aktualizuj panel nauczyciela pobiera całość: accounts_setup.sql, multiplayer_setup.sql, statistics_setup.sql, teacher_setup.sql. Uruchom komplet w Supabase SQL Editor. Migracja jest powtarzalna, zachowuje uczniów, słówka, połączenia i wyniki. Nowe tabele grup i organizacji materiałów są prywatne; RPC sprawdza rolę oraz własność profili, grup, folderów i zestawów.
@@ -20,3 +20,6 @@ Kliknięcie Wygeneruj grę dla ucznia otwiera listę dostępnych gier. Obecnie j
 ## Nauczyciel jako własny uczeń
 
 W Moi uczniowie przycisk „Dodaj mnie jako ucznia” tworzy jeden profil powiązany z bieżącym kontem, oznaczony (Ty). Ponowienie nie tworzy duplikatu; rola teacher/admin pozostaje bez zmian. Nie tworzymy połączenia teacher→self ani drugiego konta. Materiały dodawane w tym profilu zapisują się bezpośrednio jako własne słówka, bez kopiowania assignmentów. Statystyki własnej nauki obejmują własną bibliotekę z pominięciem materiałów przygotowanych w profilach innych uczniów. Przycisk dodawania znika, gdy profil już istnieje. Wymaga aktualnej konfiguracji kont/statystyk z przycisku Aktualizuj panel nauczyciela.
+
+## Całe słownictwo ucznia
+Domyślny widok „Całe słownictwo” jest wirtualną listą, a nie kopią danych. RPC profile_load z all=true łączy słówka nauczyciela z folderów i zestawów tego profilu oraz źródła dodatkowych materiałów przypisanych temu uczniowi przez tego nauczyciela. Nie obejmuje prywatnych materiałów nauczyciela, innych profili, cudzych nauczycieli ani innego języka. Własny profil nauczyciela obejmuje także jego własną bibliotekę z wyłączeniem materiałów przygotowanych dla innych uczniów. Konkretne zestawy pozostają osobno dostępne. Słówka i import dodawane z widoku zbiorczego trafiają do fizycznego zestawu bez zestawu i od razu są widoczne w całości. Nazwa dawnego systemowego folderu Ogólne wyświetla się jako Słówka bez zestawu; nie sugeruje już, że to cała biblioteka. Zmiana wymaga aktualizacji accounts_setup.sql przez przycisk Aktualizuj panel nauczyciela.

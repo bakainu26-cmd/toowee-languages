@@ -45,6 +45,10 @@ create table if not exists public.toowee_material_sets (
 alter table public.toowee_material_folders enable row level security;
 alter table public.toowee_material_sets enable row level security;
 revoke all on public.toowee_material_folders,public.toowee_material_sets from public,anon,authenticated;
+-- Rename only the old system default container; the all-words list is a virtual view.
+update public.toowee_material_folders mf set name='Słówka bez zestawu'
+ where mf.name='Ogólne' and mf.profile_id is not null and exists(
+  select 1 from public.toowee_material_sets ms join public.toowee_profile_folders pf on pf.folder_id=ms.set_id and pf.profile_id=mf.profile_id where ms.folder_id=mf.id);
 alter table public.toowee_invites add column if not exists profile_id uuid references public.toowee_student_profiles(id) on delete cascade;
 alter table public.toowee_student_profiles enable row level security;
 alter table public.toowee_profile_folders enable row level security;
@@ -60,7 +64,7 @@ revoke all on public.toowee_accounts,public.toowee_connections,public.toowee_inv
 alter table public.vocabulary_words add column if not exists example text not null default '';
 create or replace function public.toowee_portal(p_action text default 'load',p_data jsonb default '{}')
 returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
-declare who uuid:=auth.uid(); me public.toowee_accounts%rowtype; other uuid; code text; folder uuid; copied uuid; src record; n integer:=0; result jsonb; oldrole text; profile public.toowee_student_profiles%rowtype; pid uuid; item jsonb; language text; rows_json jsonb;
+declare who uuid:=auth.uid(); me public.toowee_accounts%rowtype; other uuid; code text; folder uuid; copied uuid; src record; n integer:=0; result jsonb; oldrole text; profile public.toowee_student_profiles%rowtype; pid uuid; item jsonb; language text; rows_json jsonb; all_words jsonb;
 begin
  if who is null then raise exception 'Zaloguj się.';end if;
  -- A role is a workspace type, never an entitlement to a paid subscription or administrator access.
@@ -102,7 +106,7 @@ begin
    insert into public.toowee_profile_folders(profile_id,lang,folder_id) values(profile.id,language,folder) on conflict(profile_id,lang) do update set folder_id=excluded.folder_id;
   end if;
   if not exists(select 1 from public.toowee_material_sets where set_id=folder) then
-   insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,profile.id,'Ogólne',language) returning id into pid;
+   insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,profile.id,'Słówka bez zestawu',language) returning id into pid;
    insert into public.toowee_material_sets(folder_id,set_id) values(pid,folder);
   end if;
   if p_action='profile_save' then
@@ -118,7 +122,13 @@ begin
   if profile.student_id is not null and profile.student_id<>who then
    perform public.toowee_portal('assign',jsonb_build_object('student_id',profile.student_id,'lang',language,'folder_id',folder,'name',profile.first_name||' '||profile.last_name));
   end if;
-  return jsonb_build_object('folder_id',folder,'added',n,'words',(select coalesce(jsonb_agg(to_jsonb(w) order by w.created_at),'[]') from public.vocabulary_words w where w.owner_id=who and w.folder_id=folder));
+  select coalesce(jsonb_agg(to_jsonb(w) order by w.created_at,w.id),'[]') into all_words from public.vocabulary_words w
+   where w.owner_id=who and w.lang=language and (
+    exists(select 1 from public.toowee_material_sets ms join public.toowee_material_folders mf on mf.id=ms.folder_id where ms.set_id=w.folder_id and mf.owner_id=who and mf.profile_id=profile.id)
+    or exists(select 1 from public.toowee_assignments a join public.toowee_connections c on c.teacher_id=a.teacher_id and c.student_id=a.student_id where a.teacher_id=who and a.student_id=profile.student_id and a.source_word_id=w.id)
+    or (profile.student_id=who and not exists(select 1 from public.toowee_material_sets ms join public.toowee_material_folders mf on mf.id=ms.folder_id where ms.set_id=w.folder_id and mf.profile_id is not null and mf.profile_id<>profile.id)));
+  if coalesce((p_data->>'all')::boolean,false) then return jsonb_build_object('folder_id',folder,'default_set_id',(select folder_id from public.toowee_profile_folders where profile_id=profile.id and lang=language),'all',true,'all_count',jsonb_array_length(all_words),'added',n,'words',all_words);end if;
+  return jsonb_build_object('default_set_id',(select folder_id from public.toowee_profile_folders where profile_id=profile.id and lang=language),'all_count',jsonb_array_length(all_words),'folder_id',folder,'added',n,'words',(select coalesce(jsonb_agg(to_jsonb(w) order by w.created_at),'[]') from public.vocabulary_words w where w.owner_id=who and w.folder_id=folder));
  elsif p_action='become_teacher' then
   update public.toowee_accounts set role=case when role='admin' then 'admin' else 'teacher' end where id=who returning * into me;
  elsif p_action='invite' then
