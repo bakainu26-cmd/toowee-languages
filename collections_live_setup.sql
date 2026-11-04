@@ -14,6 +14,8 @@ create table if not exists public.toowee_collection_quiz(
  review bool not null default false, review_until timestamptz, deadline timestamptz,
  primary key(room_id,player_id,cycle),foreign key(room_id,player_id) references public.toowee_collection_players(room_id,id) on delete cascade
 );
+alter table public.toowee_collection_quiz add column if not exists elapsed_ms bigint not null default 0;
+alter table public.toowee_collection_quiz add column if not exists question_started_at timestamptz not null default clock_timestamp();
 alter table public.toowee_collection_quiz enable row level security;
 revoke all on public.toowee_collection_quiz from public,anon,authenticated;
 -- Keep the previous engine available only to this owner-defined dispatcher.
@@ -64,11 +66,45 @@ begin
  return jsonb_set(s,'{baskets}',baskets);
 end $$;
 
+create or replace function public.toowee_collection_matches(board jsonb,card jsonb) returns jsonb language plpgsql set search_path=public as $$
+declare options jsonb:='[]';cells jsonb;seq jsonb:=card->'sequence';start_cell int;step int;j int;len int;fits bool;
+begin
+ len:=jsonb_array_length(seq);if len is null or len<2 or len>5 then return options;end if;
+ for start_cell in 0..24 loop foreach step in array array[1,5] loop
+ if (step=1 and start_cell%5+len>5) or (step=5 and start_cell/5+len>5) then continue;end if;
+ fits:=true;cells:='[]';for j in 0..len-1 loop
+ if board->>(start_cell+j*step) is distinct from seq->>j then fits:=false;exit;end if;
+ cells:=cells||to_jsonb(start_cell+j*step);end loop;
+ if fits then options:=options||jsonb_build_array(cells);end if;
+ end loop;end loop;return options;
+end $$;
+create or replace function public.toowee_collection_live_resolve(p jsonb,chosen int default null) returns jsonb language plpgsql set search_path=public as $$
+declare cards jsonb:=p->'cards';board jsonb:=p->'board';options jsonb;cells jsonb;card jsonb;cell text;i int;passes int;matched bool;
+begin
+ p:=p-'pending_match';
+ for passes in 1..32 loop
+ matched:=false;
+ for i in 0..2 loop
+ card:=cards->i;options:=public.toowee_collection_matches(board,card);
+ if jsonb_array_length(options)=0 then continue;end if;
+ if jsonb_array_length(options)>1 then
+ if chosen is null then return p||jsonb_build_object('board',board,'cards',cards,'pending_match',jsonb_build_object('card_id',card->>'id','options',options));end if;
+ if chosen<0 or chosen>=jsonb_array_length(options) then raise exception 'Wybierz podświetlony układ.';end if;
+ cells:=options->chosen;chosen:=null;
+ else cells:=options->0;end if;
+ for cell in select jsonb_array_elements_text(cells) loop board:=jsonb_set(board,array[cell],'-1');end loop;
+ p:=p||jsonb_build_object('score',(p->>'score')::int+(card->>'points')::int,'completed',(p->>'completed')::int+1);
+ cards:=jsonb_set(cards,array[i::text],public.toowee_collection_card());matched:=true;exit;
+ end loop;exit when not matched;
+ end loop;return p||jsonb_build_object('board',board,'cards',cards);
+end $$;
+revoke all on function public.toowee_collection_matches(jsonb,jsonb),public.toowee_collection_live_resolve(jsonb,int) from public,anon,authenticated;
+
 create or replace function public.toowee_collection_live_cycle(rid uuid,cycle_number int) returns void language plpgsql set search_path=public as $$
 declare r public.toowee_collection_rooms%rowtype;player jsonb;
 begin
  select * into r from public.toowee_collection_rooms where id=rid for update;
- r.state:=jsonb_set(jsonb_set(r.state,'{cycle}',to_jsonb(cycle_number)),'{draw_index}','0');
+ r.state:=jsonb_set(jsonb_set(r.state,'{cycle}',to_jsonb(cycle_number)),'{draw_index}','0')-'turn_order';
  r.state:=public.toowee_collection_balance(r.state);
  for player in select value from jsonb_array_elements(r.state->'players') loop
  insert into public.toowee_collection_quiz(room_id,player_id,cycle,question,deadline)
@@ -85,7 +121,7 @@ begin
  if q.q_no>=r.questions_per_turn then
  update public.toowee_collection_quiz set done=true,review=false,deadline=null where room_id=rid and player_id=pid and cycle=q.cycle;
  else
- update public.toowee_collection_quiz set q_no=q_no+1,question=public.toowee_collection_question(r.words)||jsonb_build_object('id',gen_random_uuid()),review=false,review_until=null,deadline=case when r.seconds>0 then clock_timestamp()+make_interval(secs=>r.seconds) end where room_id=rid and player_id=pid and cycle=q.cycle;
+ update public.toowee_collection_quiz set question_started_at=clock_timestamp(),q_no=q_no+1,question=public.toowee_collection_question(r.words)||jsonb_build_object('id',gen_random_uuid()),review=false,review_until=null,deadline=case when r.seconds>0 then clock_timestamp()+make_interval(secs=>r.seconds) end where room_id=rid and player_id=pid and cycle=q.cycle;
  end if;
 end $$;
 create or replace function public.toowee_collection_quiz_answer(rid uuid,pid uuid,choice int) returns void language plpgsql set search_path=public as $$
@@ -94,6 +130,7 @@ begin
  select * into r from public.toowee_collection_rooms where id=rid;
  select * into q from public.toowee_collection_quiz where room_id=rid and player_id=pid and cycle=(r.state->>'cycle')::int for update;
  if q.done or q.review then return;end if;
+ update public.toowee_collection_quiz set elapsed_ms=elapsed_ms+greatest(0,floor(extract(epoch from (clock_timestamp()-q.question_started_at))*1000))::bigint where room_id=rid and player_id=pid and cycle=q.cycle;
  selected:=case when choice is null then null else q.question->'options'->>choice end;correct:=coalesce(selected=q.question->>'solution',false);
  insert into public.toowee_collection_answers(room_id,player_id,turn_no,q_no,prompt,solution,answer,correct)
  values(rid,pid,q.cycle,q.q_no,q.question->>'prompt',q.question->>'solution',selected,correct) on conflict do nothing;
@@ -108,6 +145,8 @@ create or replace function public.toowee_collection_live_next(rid uuid) returns 
 declare r public.toowee_collection_rooms%rowtype;idx int;n int;cycle_number int;
 begin
  select * into r from public.toowee_collection_rooms where id=rid for update;
+ r.state:=jsonb_set(r.state,'{players}',(select jsonb_agg(value||jsonb_build_object('fresh_remaining',0) order by ord) from jsonb_array_elements(r.state->'players') with ordinality z(value,ord)));
+ update public.toowee_collection_rooms set state=r.state where id=rid;
  idx:=(r.state->>'draw_index')::int;n:=jsonb_array_length(r.state->'players');cycle_number:=(r.state->>'cycle')::int;
  if idx+1<n then
  r.state:=jsonb_set(r.state,'{draw_index}',to_jsonb(idx+1));
@@ -193,12 +232,12 @@ begin
  if p_action='finish_cycle' and r.phase<>'time_decision' then raise exception 'Ta decyzja jest dostępna po upływie czasu.';end if;
  resume:=coalesce(r.state->>'resume_phase','questions');paused_at:=coalesce((r.state->>'paused_at')::timestamptz,clock_timestamp());pause_duration:=clock_timestamp()-paused_at;
  if r.phase in ('time_decision','finished') then
- update public.toowee_collection_quiz set deadline=deadline+pause_duration,review_until=review_until+pause_duration where room_id=r.id and cycle=(r.state->>'cycle')::int;
+ update public.toowee_collection_quiz set question_started_at=question_started_at+pause_duration,deadline=deadline+pause_duration,review_until=review_until+pause_duration where room_id=r.id and cycle=(r.state->>'cycle')::int;
  end if;
  s:=r.state||jsonb_build_object('finish_after_cycle',p_action='finish_cycle');s:=s-'paused_at'-'resume_phase';
  if p_action='add_time' then
- extra:=coalesce((p_data->>'minutes')::int,2);if extra not between 1 and 30 then raise exception 'Dodaj od 1 do 30 minut.';end if;
- update public.toowee_collection_rooms set state=s,status='playing',phase=resume,end_mode='timer',game_deadline=greatest(clock_timestamp(),coalesce(game_deadline,clock_timestamp()))+make_interval(secs=>extra*60),finished_at=null,deadline=case when r.deadline is not null then r.deadline+pause_duration end,revision=revision+1 where id=r.id;
+ extra:=coalesce((p_data->>'seconds')::int,(p_data->>'minutes')::int*60,120);if extra not between 1 and 1800 then raise exception 'Dodaj od 1 sekundy do 30 minut.';end if;
+ update public.toowee_collection_rooms set state=s,status='playing',phase=resume,end_mode='timer',game_deadline=greatest(clock_timestamp(),coalesce(game_deadline,clock_timestamp()))+make_interval(secs=>extra),finished_at=null,deadline=case when r.deadline is not null then r.deadline+pause_duration end,revision=revision+1 where id=r.id;
  elsif p_action='add_round' then
  extra:=coalesce((p_data->>'rounds')::int,1);if extra not between 1 and 10 then raise exception 'Dodaj od 1 do 10 rund.';end if;
  update public.toowee_collection_rooms set state=s,status='playing',phase=resume,end_mode='rounds',rounds=least(300,(r.state->>'cycle')::int+extra),game_deadline=null,finished_at=null,deadline=case when r.deadline is not null then r.deadline+pause_duration end,revision=revision+1 where id=r.id;
@@ -237,21 +276,31 @@ begin
  end loop;
  end if;
  if not exists(select 1 from public.toowee_collection_quiz where room_id=r.id and cycle=(r.state->>'cycle')::int and (not done or review)) then
- update public.toowee_collection_rooms set phase='draw',deadline=null,revision=revision+1 where id=r.id;
+ select jsonb_agg(to_jsonb(qz.player_id::text) order by qz.correct_count desc,qz.elapsed_ms asc,pz.ord) into result
+ from jsonb_array_elements(r.state->'players') with ordinality pz(value,ord)
+ join public.toowee_collection_quiz qz on qz.player_id=(pz.value->>'id')::uuid and qz.room_id=r.id and qz.cycle=(r.state->>'cycle')::int;
+ update public.toowee_collection_rooms set state=jsonb_set(state,'{turn_order}',result),phase='draw',deadline=null,revision=revision+1 where id=r.id;
  end if;
  elsif r.status='playing' and r.phase in ('draw','place') then
- idx:=(r.state->>'draw_index')::int;p:=r.state->'players'->idx;target:=(p->>'id')::uuid;
+ target:=coalesce(r.state->'turn_order'->>((r.state->>'draw_index')::int),r.state->'players'->((r.state->>'draw_index')::int)->>'id')::uuid;
+ select ord-1,value into idx,p from jsonb_array_elements(r.state->'players') with ordinality z(value,ord) where value->>'id'=target::text;
  select * into q from public.toowee_collection_quiz where room_id=r.id and player_id=target and cycle=(r.state->>'cycle')::int;
- if r.phase='place' and r.deadline is not null and clock_timestamp()>=r.deadline then
+ if r.phase='place' and r.deadline is not null and clock_timestamp()>=r.deadline and p->'pending_match' is null then
  perform public.toowee_collection_live_next(r.id);
  elsif p_action='skip' then
  if r.host_id is distinct from who then raise exception 'Tylko prowadzący pomija turę.';end if;
  if (p_data->>'revision')::int is distinct from r.revision then raise exception 'Tura się zmieniła.';end if;
  perform public.toowee_collection_live_next(r.id);
- elsif p_action in ('draw','put','move','remove','end_turn') then
+ elsif p_action in ('draw','put','move','remove','choose_match','end_turn') then
  if pid is distinct from target or (p_data->>'revision')::int is distinct from r.revision then raise exception 'To nie Twoja kolej lub plansza się zmieniła.';end if;
  select array_agg(value::int order by ord) into stash from jsonb_array_elements_text(p->'stash') with ordinality x(value,ord);free_slots:=greatest(0,5-(select sum(t) from unnest(stash) t));
- if p_action='draw' then
+ if p->'pending_match' is not null and p_action<>'choose_match' then raise exception 'Najpierw wybierz, które zabawki zdjąć z planszy.';end if;
+ if p_action='choose_match' then
+ if p->'pending_match' is null then raise exception 'Nie ma układu do wybrania.';end if;
+ if p_data->>'option' is null then raise exception 'Wybierz podświetlony układ.';end if;
+ p:=public.toowee_collection_live_resolve(p,(p_data->>'option')::int);
+ update public.toowee_collection_rooms set state=public.toowee_collection_balance(jsonb_set(state,array['players',idx::text],p)),deadline=case when placement_seconds>0 then clock_timestamp()+make_interval(secs=>placement_seconds) end,revision=revision+1 where id=r.id;
+ elsif p_action='draw' then
  if r.phase<>'draw' or q.correct_count=0 then raise exception 'Nie możesz już dobierać zabawek w tej turze.';end if;
  if free_slots=0 then raise exception 'Nie masz miejsca w schowku. Zakończ turę albo połóż zabawkę ze schowka — po położeniu nie można już dobierać.';end if;
  toy:=(p_data->>'toy')::int;basket:=(p_data->>'basket')::int;
@@ -260,7 +309,7 @@ begin
  amount:=least(available,free_slots);stash[toy+1]:=stash[toy+1]+amount;
  s:=jsonb_set(r.state,array['baskets',basket::text,toy::text],to_jsonb(available-amount));
  if not exists(select 1 from jsonb_array_elements_text(s->'baskets'->basket) piece(value) where piece.value::int>0) then s:=jsonb_set(s,array['baskets',basket::text],public.toowee_collection_supply(s,basket));end if;
- p:=jsonb_set(p,'{stash}',to_jsonb(stash));s:=jsonb_set(s,array['players',idx::text],p);s:=public.toowee_collection_balance(s);
+ p:=jsonb_set(p,'{stash}',to_jsonb(stash))||jsonb_build_object('fresh_toy',toy,'fresh_remaining',amount,'stash_order',jsonb_build_array(toy)||coalesce((select jsonb_agg(value) from jsonb_array_elements(coalesce(p->'stash_order','[0,1,2,3,4]')) where value::int<>toy),'[]'));s:=jsonb_set(s,array['players',idx::text],p);s:=public.toowee_collection_balance(s);
  update public.toowee_collection_rooms set state=s,phase='place',deadline=case when placement_seconds>0 then clock_timestamp()+make_interval(secs=>placement_seconds) end,revision=revision+1 where id=r.id;
  elsif p_action='end_turn' then
  if r.phase='draw' and free_slots>0 and q.correct_count>0 then raise exception 'Najpierw dobierz zabawki albo połóż zabawkę ze schowka.';end if;
@@ -270,8 +319,9 @@ begin
  if cell is null or cell not between 0 and 24 then raise exception 'Wybierz pole planszy.';end if;
  if p_action='put' then
  toy:=(p_data->>'toy')::int;
+ if coalesce((p->>'fresh_remaining')::int,0)>0 and toy is distinct from (p->>'fresh_toy')::int then raise exception 'Najpierw połóż nowe zabawki z koszyka.';end if;
  if toy is null or toy not between 0 and 4 or stash[toy+1]<=0 or (board->>cell)::int<>-1 then raise exception 'Wybierz swoją zabawkę i puste pole.';end if;
- stash[toy+1]:=stash[toy+1]-1;p:=jsonb_set(p,'{stash}',to_jsonb(stash));board:=jsonb_set(board,array[cell::text],to_jsonb(toy));
+ stash[toy+1]:=stash[toy+1]-1;p:=p||jsonb_build_object('fresh_remaining',greatest(0,coalesce((p->>'fresh_remaining')::int,0)-1));p:=jsonb_set(p,'{stash}',to_jsonb(stash));board:=jsonb_set(board,array[cell::text],to_jsonb(toy));
  else
  cost:=case when p_action='move' then 2 else 1 end;
  if (p->>'score')::int<cost then raise exception 'Za mało punktów: potrzeba % pkt.',cost;end if;
@@ -282,7 +332,7 @@ begin
  else if (board->>cell)::int not between 0 and 4 then raise exception 'To pole jest puste.';end if;board:=jsonb_set(board,array[cell::text],'-1');end if;
  p:=jsonb_set(p,'{score}',to_jsonb((p->>'score')::int-cost));
  end if;
- p:=public.toowee_collection_resolve(jsonb_set(p,'{board}',board));s:=public.toowee_collection_balance(jsonb_set(r.state,array['players',idx::text],p));
+ p:=public.toowee_collection_live_resolve(jsonb_set(p,'{board}',board));s:=public.toowee_collection_balance(jsonb_set(r.state,array['players',idx::text],p));
  update public.toowee_collection_rooms set state=s,phase='place',deadline=case when r.phase='draw' and placement_seconds>0 then clock_timestamp()+make_interval(secs=>placement_seconds) else deadline end,revision=revision+1 where id=r.id;
  end if;
  end if;
@@ -300,7 +350,7 @@ begin
  'quiz_progress',(select coalesce(jsonb_agg(jsonb_build_object('id',player_id,'done',done,'q_no',q_no,'review',review)),'[]') from public.toowee_collection_quiz where room_id=r.id and cycle=coalesce((r.state->>'cycle')::int,1)),
  'feedback',(select jsonb_build_object('correct',a.correct,'prompt',a.prompt,'solution',a.solution,'answer',a.answer,'turn_no',a.turn_no,'q_no',a.q_no) from public.toowee_collection_answers a where a.room_id=r.id and a.player_id=pid order by a.turn_no desc,a.q_no desc limit 1),
  'results',case when r.status='finished' then jsonb_build_object('ranking',stats,'answers',answer_rows) end,
- 'draw_correct',case when r.phase in ('draw','place') then (select correct_count from public.toowee_collection_quiz where room_id=r.id and cycle=(r.state->>'cycle')::int and player_id=(r.state->'players'->((r.state->>'draw_index')::int)->>'id')::uuid) end);
+ 'draw_correct',case when r.phase in ('draw','place') then (select correct_count from public.toowee_collection_quiz where room_id=r.id and cycle=(r.state->>'cycle')::int and player_id=coalesce(r.state->'turn_order'->>((r.state->>'draw_index')::int),r.state->'players'->((r.state->>'draw_index')::int)->>'id')::uuid) end);
 end $$;
 revoke all on function public.toowee_collection_supply(jsonb,int),public.toowee_collection_balance(jsonb),public.toowee_collection_live_cycle(uuid,int),public.toowee_collection_quiz_step(uuid,uuid),public.toowee_collection_quiz_answer(uuid,uuid,int),public.toowee_collection_live_next(uuid) from public,anon,authenticated;
 revoke all on function public.toowee_collections(text,jsonb) from public;

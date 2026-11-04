@@ -53,3 +53,11 @@ Gra kończy się po ustalonej liczbie rund albo po czasie. Upływ czasu zatrzymu
 Schowek mieści 5 zabawek, bez kar i odrzucania między turami. Częściowe dobranie wypełnia tylko wolne miejsca. Przy pełnym schowku można zakończyć turę albo zacząć układać. Po pierwszej czynności na planszy nie można już dobrać. Nowe koszyki zawierają trzy rodzaje w ilościach 2–4. Losowanie uwzględnia aktywne cele; po zmianach uzupełnia brakujące potrzebne rodzaje we wspólnej puli.
 
 Sprawdzenie: `tests/collections-live-db.test.cjs` i `tests/collections-live-ui.test.cjs`, a także istniejące testy starszego silnika, interfejsu, nauczyciela i statystyk. Podgląd przeglądarkowy obejmuje planszę i pytania na ekranie 1280×600, okno poprawki odpowiedzi oraz ekran wyników.
+
+### Kolejna aktualizacja reguł
+
+Kolejka dobierania powstaje na nowo po pytaniach każdej rundy: malejąco według liczby poprawnych odpowiedzi, przy remisie rosnąco według sumy czasu odpowiadania. Czas poprawek błędów i przerw prowadzącego jest wyłączony. Identyczny wynik i czas zachowuje kolejność dołączenia. Kolejka jest zapisana oddzielnie od tablicy graczy i ich plansz.
+
+Nowo dobrany rodzaj jest pierwszy w schowku i należy układać go przed starszymi zabawkami. Można pozostawić zabawki na przyszłą turę. Gdy kilka linii realizuje ten sam cel, silnik zapisuje `pending_match` bez naliczania punktów i usuwania czegokolwiek. Gracz zatwierdza komunikat i wybiera podświetlony wariant; serwer ponownie weryfikuje wybór pod blokadą pokoju. Pozostałe działania gracza są wtedy zablokowane. Jednoznaczne cele nadal rozliczają się automatycznie.
+
+Przycisk „Jak grać?” otwiera sześć ilustrowanych kroków. Przedłużenie gry ma oddzielne pola minut/sekund (00:01–30:00) oraz liczby rund (1–10). Nagłówki poprawnych odpowiedzi są pastelowoniebieskie, błędnych pastelowoczerwone. Ponownie uruchom konfigurację po aktualizacji. Testy nowych reguł: `collections-choice-db.test.cjs` oraz rozszerzone `collections-live-ui.test.cjs`.

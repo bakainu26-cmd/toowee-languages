@@ -32,7 +32,7 @@ await db.query('update toowee_collection_quiz set correct_count=1 where player_i
 // Keep all five between rounds, without an overflow penalty.
 await as(host);r=await rpc('finish',{code});assert(r.results.answers.some(a=>!a.correct));await as(student);let details=await rpc('details',{code});assert(details.answers.every(a=>a.player_id===first));await as(host);r=await rpc('add_round',{code});assert.deepEqual(r.state.players[0].stash,[4,0,0,1,0]);r=await rpc('load',{code});
 // Put a carried toy before the draw: the draw opportunity is closed.
-await as(student);r=await rpc('put',{code,revision:r.revision,cell:24,toy:0});assert.equal(r.phase,'place');await assert.rejects(rpc('draw',{code,revision:r.revision,basket:0,toy:3}),/już dobierać/);
+await as(student);r=await rpc('put',{code,revision:r.revision,cell:24,toy:3});assert.equal(r.phase,'place');await assert.rejects(rpc('draw',{code,revision:r.revision,basket:0,toy:3}),/już dobierać/);
 // Demand balancing restores every needed kind, in useful stacks.
 let fixture=r.state;fixture.baskets=Array.from({length:5},()=>[2,2,2,0,2]);fixture.players.forEach(p=>p.cards.forEach(c=>{c.need=[0,0,0,4,0];c.sequence=[3,3,3,3];}));let balanced=(await db.query('select toowee_collection_balance($1) s',[fixture])).rows[0].s;assert(balanced.baskets.reduce((n,b)=>n+b[3],0)>=2);
 // Unauthorized users cannot inspect quiz solutions or operate teacher controls.
