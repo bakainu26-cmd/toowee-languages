@@ -13,3 +13,7 @@ Weryfikacja: testy `group-vocabulary-db.test.cjs`, `group-vocabulary-ui.test.cjs
 ## Układ widoku grupy
 
 W zakładce Grupy widoczna jest lista nazw grup i liczba członków. Wybranie grupy otwiera zakładki Uczniowie i Słownictwo, domyślnie Uczniowie. „Edytuj” osadza dotychczasowy formularz nazwy, języka i członków grupy; zapis wraca do listy jej uczniów. W Słownictwie domyślnie widać foldery i zestawy, a formularze otwierają się przyciskami Dodaj folder / Dodaj zestaw. Zestaw ma jawny wybór folderu. W bazie nauczyciela widoczne są te same foldery grupowe i zestawy, bez dodatkowej kopii oryginału. Historia panelu zachowuje grupę, zakładkę i wybrany zestaw. Zmiana układu nie wymaga nowej migracji SQL. Testy integracji: group-tabs-ui.test.cjs.
+
+## Gry dla grupy
+
+Trzecia zakładka „Wygeneruj grę dla grupy” otwiera wybór Saszetek Sophie lub Kolekcji Sophisi, tak jak profil ucznia. Przy wyborze gry ponownie pobierane jest wspólne słownictwo grupy. Kontekst zawiera wyłącznie źródłowe foldery, zestawy i słówka tej grupy w jej języku; nie scala prywatnych materiałów członków. Dotychczasowe formularze gry wybierają całość, folder lub zestaw i ustawienia rozgrywki. Zakładka jest zapisywana w historii panelu. Aktualizacja korzysta z istniejącego API grup i gier, bez nowej migracji SQL.
