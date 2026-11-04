@@ -9,6 +9,7 @@ create table if not exists public.toowee_group_students (
  profile_id uuid not null references public.toowee_student_profiles(id) on delete cascade,primary key(group_id,profile_id)
 );
 alter table public.toowee_groups add column if not exists lang text check(lang in ('Japanese','English','Spanish'));
+alter table public.toowee_material_folders add column if not exists group_id uuid references public.toowee_groups(id) on delete cascade;
 alter table public.toowee_groups enable row level security;
 alter table public.toowee_group_students enable row level security;
 revoke all on public.toowee_groups,public.toowee_group_students from public,anon,authenticated;
@@ -110,7 +111,7 @@ begin
   if p_action='group_create' then insert into public.toowee_groups(owner_id,name,lang) values(who,trim(p_data->>'name'),p_data->>'lang') returning id into gid;
   else select id into gid from public.toowee_groups where id=(p_data->>'id')::uuid and owner_id=who for update;
    if gid is null then raise exception 'Brak dostępu do grupy.';end if;
-   update public.toowee_groups set name=trim(p_data->>'name'),lang=coalesce(p_data->>'lang',lang) where id=gid;delete from public.toowee_group_students where group_id=gid;
+   update public.toowee_groups set name=trim(p_data->>'name'),lang=coalesce(p_data->>'lang',lang) where id=gid;delete from public.toowee_group_students where group_id=gid and profile_id::text not in(select jsonb_array_elements_text(p_data->'students'));
   end if;
   insert into public.toowee_group_students(group_id,profile_id) select gid,value::uuid from jsonb_array_elements_text(p_data->'students') on conflict do nothing;
  elsif p_action='folder_create' then
@@ -148,7 +149,7 @@ begin
   'profile_languages',(select coalesce(jsonb_agg(x),'[]') from (select p.id as profile_id,unnest(p.languages) as lang from public.toowee_student_profiles p where p.owner_id=who and p.languages is not null union select m.profile_id,m.lang from public.toowee_material_folders m join public.toowee_student_profiles p on p.id=m.profile_id where m.owner_id=who and p.languages is null union select pf.profile_id,pf.lang from public.toowee_profile_folders pf join public.toowee_student_profiles p on p.id=pf.profile_id where p.owner_id=who and p.languages is null) x),
   'groups',(select coalesce(jsonb_agg(jsonb_build_object('id',g.id,'name',g.name,'lang',g.lang,'students',(select coalesce(jsonb_agg(s.profile_id),'[]') from public.toowee_group_students s where s.group_id=g.id)) order by g.name),'[]') from public.toowee_groups g where g.owner_id=who),
   'folders',(select coalesce(jsonb_agg(to_jsonb(m) order by m.name),'[]') from public.toowee_material_folders m where m.owner_id=who),
-  'sets',(select coalesce(jsonb_agg(jsonb_build_object('id',v.id,'name',v.name,'lang',v.lang,'folder_id',ms.folder_id,'profile_id',m.profile_id,'words',(select count(*) from public.vocabulary_words w where w.owner_id=who and w.folder_id=v.id)) order by v.name),'[]') from public.vocabulary_folders v left join public.toowee_material_sets ms on ms.set_id=v.id left join public.toowee_material_folders m on m.id=ms.folder_id where v.owner_id=who));
+  'sets',(select coalesce(jsonb_agg(jsonb_build_object('id',v.id,'name',v.name,'lang',v.lang,'folder_id',ms.folder_id,'profile_id',m.profile_id,'group_id',m.group_id,'words',(select count(*) from public.vocabulary_words w where w.owner_id=who and w.folder_id=v.id)) order by v.name),'[]') from public.vocabulary_folders v left join public.toowee_material_sets ms on ms.set_id=v.id left join public.toowee_material_folders m on m.id=ms.folder_id where v.owner_id=who));
 end $$;
 revoke all on function public.toowee_teacher(text,jsonb) from public,anon;
 grant execute on function public.toowee_teacher(text,jsonb) to authenticated;
