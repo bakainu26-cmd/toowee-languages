@@ -1,0 +1,16 @@
+const {JSDOM}=require(process.env.TOOWEE_JSDOM_MODULE||'jsdom'),fs=require('fs'),assert=require('node:assert/strict');
+(async()=>{for(const [lang,word,translation,next] of [['Japanese','猫','kot','犬'],['English','cat','kot','dog'],['Spanish','gato','kot','perro']]){
+ const dom=new JSDOM('<div id="teacherPanel-groups"><h3>Grupy</h3><div id="teacherGroupsList"></div><form id="teacherGroupForm" hidden></form></div>',{runScripts:'outside-only'}),w=dom.window,d=w.document,tick=()=>new Promise(r=>setTimeout(r,10));
+ const data={group:{id:'g-'+lang,name:'Grupa '+lang,lang},folders:[{id:'f',name:'Lekcje'}],sets:[{id:'s',folder_id:'f',name:'Zestaw'}],words:[]},calls=[];
+ const client={rpc:async(_,{p_action:action,p_data:params})=>{calls.push({action,params});if(action==='words_save')for(const row of params.words)data.words.push({...row,id:'w'+data.words.length,lang,folder_id:params.set_id});return{data:structuredClone(data)};}};
+ w.tooweeView='teacher';for(const file of ['import-parser.js','group-vocabulary.js'])w.eval(fs.readFileSync(__dirname+'/../'+file,'utf8'));w.dispatchEvent(new w.CustomEvent('toowee-account',{detail:{userId:'teacher',client}}));
+ const group={...data.group,students:[]};await w.openTeacherGroup(group,{tab:'vocabulary'});
+ const click=text=>{const b=[...d.querySelectorAll('button')].find(b=>b.textContent===text);assert(b,'Missing '+text);b.click();};
+ click('Dodaj słowo');await tick();assert.equal(w.captureGroupVocabularyNavigation().mode,'word');assert(!d.getElementById('groupWordForm'),'Choose an explicit target before entering words');
+ let choose=d.getElementById('groupWordTargetSet');assert(choose);choose.value='s';choose.dispatchEvent(new w.Event('change'));await tick();
+ let form=d.getElementById('groupWordForm'),inputs=form.querySelectorAll('input');assert.equal(inputs[1].parentElement.hidden,lang!=='Japanese');inputs[0].value=word;inputs[1].value=lang==='Japanese'?'ねこ':'';inputs[2].value=translation;form.dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.equal(data.words.length,1);assert.equal(data.words[0].word,word);
+ const details=d.querySelector('.group-word-entry-editor>details');assert(details.open);const text=details.querySelector('textarea');text.value=next+'\tpies';text.closest('form').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.equal(data.words.length,2);assert(calls.filter(c=>c.action==='words_save').every(c=>c.params.group_id==='g-'+lang&&c.params.set_id==='s'));
+ const state=w.captureGroupVocabularyNavigation();await w.openTeacherGroup(group,state);assert(d.getElementById('groupWordForm'),'History restores word entry view');click('← Foldery i zestawy');await tick();assert.equal(w.captureGroupVocabularyNavigation().mode,null);assert(d.querySelector('.group-vocabulary-folders'));
+ data.sets=[];data.words=[];await w.openTeacherGroup(group,{tab:'vocabulary'});click('Dodaj słowo');await tick();assert(!d.getElementById('groupWordForm'));assert(d.querySelector('.group-word-entry-page').textContent.includes('Najpierw utwórz zestaw'));click('Utwórz pierwszy zestaw');await tick();assert(!d.getElementById('groupSetForm').hidden);
+ w.close();
+}console.log('PASS group word entry: manual and import, explicit set, all three languages, empty group and history restore');})().catch(e=>{console.error(e);process.exitCode=1});

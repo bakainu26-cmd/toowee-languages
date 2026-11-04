@@ -17,3 +17,7 @@ W zakładce Grupy widoczna jest lista nazw grup i liczba członków. Wybranie gr
 ## Gry dla grupy
 
 Trzecia zakładka „Wygeneruj grę dla grupy” otwiera wybór Saszetek Sophie lub Kolekcji Sophisi, tak jak profil ucznia. Przy wyborze gry ponownie pobierane jest wspólne słownictwo grupy. Kontekst zawiera wyłącznie źródłowe foldery, zestawy i słówka tej grupy w jej języku; nie scala prywatnych materiałów członków. Dotychczasowe formularze gry wybierają całość, folder lub zestaw i ustawienia rozgrywki. Zakładka jest zapisywana w historii panelu. Aktualizacja korzysta z istniejącego API grup i gier, bez nowej migracji SQL.
+
+## Dodawanie słówek z poziomu grupy
+
+Obok Dodaj folder i Dodaj zestaw znajduje się Dodaj słowo. Otwiera osobny widok z jawnym wyborem docelowego zestawu, ręcznym formularzem i rozwiniętym importem listy. Korzysta z tego samego API i parsera dla japońskiego, angielskiego i hiszpańskiego; słówka trafiają do materiałów grupy. Gdy nie ma zestawu, widok prowadzi do jego utworzenia. Historia zapamiętuje ten widok. Test: `tests/group-word-entry-ui.test.cjs`. Bez migracji SQL.

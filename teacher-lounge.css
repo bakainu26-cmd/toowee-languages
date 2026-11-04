@@ -168,3 +168,37 @@ body[data-portal-mode=teacher] #accountPanel h2{font-family:Georgia,serif;color:
 
 body[data-portal-mode=teacher] #teacherControls .material-view-switch button{background:#eee3ee;color:#694861;border-radius:20px}
 body[data-portal-mode=teacher] #teacherControls .material-view-switch button[aria-pressed=true]{background:#79516f;color:#fff}
+
+.group-word-entry-page{margin:20px 0}.group-word-entry-page>label{max-width:650px}.group-word-entry-page>h4{margin-bottom:10px}
+body[data-portal-mode=teacher] .group-word-entry-editor{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;align-items:start;margin-top:22px;background:#f2e8f3}
+.group-word-entry-editor>h4,.group-word-entry-editor>.material-word-items{grid-column:1/-1}.group-word-entry-editor>h4{margin:0}.group-word-entry-editor>form{margin:0!important}.group-word-entry-editor>details{margin:0;padding:18px;background:#fffaf5;border:1px solid #e2d4df;border-radius:16px;min-width:0}.group-word-entry-editor>details summary{cursor:pointer;font-family:Georgia,serif;color:#633b61;font-size:19px}.group-word-entry-editor textarea{min-height:160px}
+@media(max-width:850px){body[data-portal-mode=teacher] .group-word-entry-editor{grid-template-columns:1fr}}
+
+/* Consistent hierarchy: page > section > card title > item and controls. */
+body[data-portal-mode=teacher]{--teacher-page-title:clamp(28px,2.8vw,36px);--teacher-section-title:26px;--teacher-subsection-title:22px;--teacher-card-title:19px;--teacher-item-title:16px}
+body[data-portal-mode=teacher]:not(.teacher-lounge-open) #connectionsTitle,body[data-portal-mode=teacher] #teacherControls .teacher-pupil-title h3{font-size:var(--teacher-page-title)}
+body[data-portal-mode=teacher] #teacherControls h3{font-size:var(--teacher-section-title)}
+body[data-portal-mode=teacher] #teacherControls h4{font-size:var(--teacher-subsection-title)}
+body[data-portal-mode=teacher] #teacherControls .teacher-group-heading,body[data-portal-mode=teacher] #teacherControls #studentProfileTitle{font-size:24px}
+body[data-portal-mode=teacher] #teacherControls .group-section-toolbar h4{font-size:var(--teacher-subsection-title)}
+body[data-portal-mode=teacher] #teacherControls .group-students-list>button{font-size:17px;font-family:Georgia,serif;font-weight:600;background:#eee2ef!important;color:#563454!important}
+body[data-portal-mode=teacher] #teacherControls #teacherStudentList .pupil-card-name{font-size:22px}
+body[data-portal-mode=teacher] #teacherControls .teacher-pupil-title #teacherStudentCount{font-size:12px;font-family:Inter,system-ui,sans-serif;font-weight:500;line-height:1.4}
+body[data-portal-mode=teacher] #teacherControls .teacher-group-open{font-size:var(--teacher-card-title)}
+body[data-portal-mode=teacher] #teacherControls .material-folder-card>h4,body[data-portal-mode=teacher] #teacherControls .material-folder-title{font-size:19px}
+body[data-portal-mode=teacher] #teacherControls .material-set-card{font-size:15px}
+body[data-portal-mode=teacher] #teacherControls .material-word-card,body[data-portal-mode=teacher] #teacherControls .material-view[data-material-view=tiles] td:first-child{font-size:16px}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-choice{font-size:20px}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-student{font-size:17px;background:#eee2ef}
+body[data-portal-mode=teacher] #teacherControls :is(#profileGamesPanel,#groupGamesPanel) .sophie-launch h3{font-size:20px}
+body[data-portal-mode=teacher] #teacherControls .cozy-settings-card legend{font-size:var(--teacher-subsection-title)}
+@media(max-width:600px){body[data-portal-mode=teacher]{--teacher-page-title:27px;--teacher-section-title:23px;--teacher-subsection-title:20px;--teacher-card-title:18px}body[data-portal-mode=teacher] #teacherControls .teacher-group-heading,body[data-portal-mode=teacher] #teacherControls #studentProfileTitle{font-size:22px}body[data-portal-mode=teacher] #teacherControls #teacherStudentList .pupil-card-name{font-size:21px}}
+body[data-portal-mode=teacher] #teacherControls .group-workspace-tabs button,body[data-portal-mode=teacher] #studentProfileWorkspace>[role=group] button{font-size:18px;font-weight:600}
+body[data-portal-mode=teacher] #teacherControls .material-set-card{font-size:17px}
+body[data-portal-mode=teacher] #teacherControls .group-word-entry-editor>h4{font-size:19px}
+/* Groups use the same full watercolor banner as the student list. */
+body[data-portal-mode=teacher][data-teacher-section=groups]:not(.teacher-lounge-open) #connectionsTitle{min-height:235px;padding:34px 38% 34px 32px;background:#fbf6ef url('assets/teacher-cozy-banner.webp') center/cover no-repeat;border-radius:24px}
+body[data-portal-mode=teacher][data-teacher-section=groups] #connectionsTitle:after{content:'';display:block;width:110px;height:6px;border-bottom:3px solid #b58ca9;border-radius:50%;transform:rotate(-3deg);margin:13px 0 0 45px}
+@media(max-width:1150px){body[data-portal-mode=teacher][data-teacher-section=groups]:not(.teacher-lounge-open) #connectionsTitle{min-height:210px;padding:25px 41% 25px 25px}}
+@media(max-width:760px){body[data-portal-mode=teacher][data-teacher-section=groups]:not(.teacher-lounge-open) #connectionsTitle{min-height:190px;padding:20px 38% 20px 20px;border-radius:18px;background-position:62% center}}
+@media(max-width:480px){body[data-portal-mode=teacher][data-teacher-section=groups]:not(.teacher-lounge-open) #connectionsTitle{min-height:165px;background-position:58% center}body[data-portal-mode=teacher][data-teacher-section=groups] #connectionsTitle:after{margin-left:10px;width:75px}}
