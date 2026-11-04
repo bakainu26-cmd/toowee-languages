@@ -41,3 +41,15 @@ Przeglądarka: podgląd reprezentatywnej planszy na szerokim ekranie i w ramce 3
 Podczas aktywnej gry dialog wypełnia viewport (100dvh) i nie przewija się. Wysokość planszy jest obliczana z pozostałego miejsca; na telefonie panel pytań jest na dole. Konfiguracja i raporty mogą przewijać się poza aktywną grą. Informacja o poprzedniej odpowiedzi ma stale zarezerwowany obszar na dole panelu, a jej długość nie przesuwa pytań ani planszy. Sprawdzone w przeglądarce: 1363 × 936, 1280 × 600, telefon 390 × 844.
 
 Nowe testy: wymagana dokładna kolejność w obu kierunkach, brak kwadratów/odwróconych sekwencji, natychmiastowe uzupełnienie jednego pustego koszyka, zakaz kończenia przed dobraniem, koszt i uprawnienia move/remove, ochrona przed powtórzeniem opłaty, zdobycie punktów po przesunięciu, zachowanie danych przy aktualizacji board-v2 do board-v3.
+
+## Wersja live-v4 (listopad 2026)
+
+Konfiguracja: uruchom `collections_setup.sql`, potem `collections_live_setup.sql` (przycisk aktualizacji statystyk kopiuje oba). Nowe pokoje wysyłają `protocol: 4`; bez aktualizacji interfejs prosi o konfigurację. Poprzednie pokoje zachowują dotychczasowy silnik.
+
+W nowej rundzie każdy uczeń odpowiada równocześnie na własne pytania. Błąd pokazuje poprawną odpowiedź w oknie „Zapamiętaj słowo”; potwierdzenie jest możliwe po 3 sekundach. Po zakończeniu pytań wszyscy kolejno dobierają i układają zabawki. Nauczyciel może pominąć pozostałe pytania nieobecnych (są zapisywane jako brak odpowiedzi).
+
+Gra kończy się po ustalonej liczbie rund albo po czasie. Upływ czasu zatrzymuje grę na decyzję prowadzącego: zakończyć lub dokończyć bieżącą rundę wszystkim graczom. Można dodać 1–30 minut lub jedną rundę, także po zakończeniu; zachowane są plansze, punkty i odpowiedzi. Wyniki obejmują podium, punkty, liczbę poprawnych/błędnych odpowiedzi i obie listy słów. Nauczyciel ma historię, uczeń widzi własne odpowiedzi i wspólny ranking.
+
+Schowek mieści 5 zabawek, bez kar i odrzucania między turami. Częściowe dobranie wypełnia tylko wolne miejsca. Przy pełnym schowku można zakończyć turę albo zacząć układać. Po pierwszej czynności na planszy nie można już dobrać. Nowe koszyki zawierają trzy rodzaje w ilościach 2–4. Losowanie uwzględnia aktywne cele; po zmianach uzupełnia brakujące potrzebne rodzaje we wspólnej puli.
+
+Sprawdzenie: `tests/collections-live-db.test.cjs` i `tests/collections-live-ui.test.cjs`, a także istniejące testy starszego silnika, interfejsu, nauczyciela i statystyk. Podgląd przeglądarkowy obejmuje planszę i pytania na ekranie 1280×600, okno poprawki odpowiedzi oraz ekran wyników.
