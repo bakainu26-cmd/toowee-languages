@@ -32,3 +32,139 @@ body[data-portal-mode=teacher] #teacherStudentList>.teacher-pupil-card>button:no
 body.teacher-lounge-open #portalStatus.lounge-default-status{display:none}body.teacher-lounge-open .site-header{padding-top:6px;padding-bottom:6px;min-height:68px;background:#fffaf5;border-bottom:1px solid #ebdfdf}body.teacher-lounge-open .site-logo-button{background:transparent;padding:0}body.teacher-lounge-open .site-logo-button img{width:56px;height:56px}body.teacher-lounge-open .site-header h1{font-family:Georgia,serif;font-size:20px;color:#63335f}body.teacher-lounge-open .site-header small{font-size:10px}body[data-portal-mode=teacher] #teacherStudentList>.teacher-pupil-card:before{content:'✿';position:absolute;top:66px;right:22px;font-family:Georgia,serif;font-size:54px;color:#c394ae;opacity:.23;pointer-events:none;transform:rotate(12deg)}body[data-portal-mode=teacher] #teacherStudentList>.teacher-pupil-card:nth-child(3n+2):before{content:'❧';color:#8a9871;font-size:70px;top:62px}body[data-portal-mode=teacher] #teacherStudentList>.teacher-pupil-card:nth-child(3n):before{content:'✧';color:#bd8866}
 
 body.teacher-lounge-open .site-header #teacherAccountButton{margin-left:auto}
+
+/* Shared watercolor language for every teacher workspace. */
+body[data-portal-mode=teacher]{--cozy-lavender:#eee2ef;--cozy-sage:#e7ead7;--cozy-peach:#f8e1cd;--cozy-border:#e3d6dd;--cozy-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%238a7582' opacity='.08' filter='url(%23n)' d='M0 0h140v140H0z'/%3E%3C/svg%3E")}
+body[data-portal-mode=teacher] main{max-width:1540px;padding:0 14px;margin-top:14px}
+body[data-portal-mode=teacher] #connectionsPanel{background:transparent;border:0;box-shadow:none;padding:0}
+body[data-portal-mode=teacher] .site-header{padding-top:6px;padding-bottom:6px;min-height:68px;background:#fffaf5;border-color:#ebdfdf}
+body[data-portal-mode=teacher] .site-logo-button{background:transparent;padding:0}
+body[data-portal-mode=teacher] .site-logo-button img{width:56px;height:56px}
+body[data-portal-mode=teacher] .site-header h1{font-family:Georgia,serif;font-size:20px;color:#63335f}
+body[data-portal-mode=teacher] .site-header small{font-size:10px}
+body[data-portal-mode=teacher] .site-header #teacherAccountButton{margin-left:auto}
+body[data-portal-mode=teacher]:not(.teacher-lounge-open) #connectionsTitle{font-family:Georgia,serif;color:#4d2449;font-size:clamp(23px,2.2vw,33px);line-height:1.3;min-height:140px;padding:36px 40% 30px 28px;background:#fbf1e5 url('assets/teacher-cozy-banner.webp') center/cover no-repeat;border-radius:22px;margin:0 0 20px;display:flex;align-items:center}
+body[data-portal-mode=teacher] #teacherControls h3,body[data-portal-mode=teacher] #teacherControls h4{font-family:Georgia,serif;color:#4d2449;line-height:1.3}
+body[data-portal-mode=teacher] #teacherControls h3{font-size:26px;font-weight:600}
+body[data-portal-mode=teacher] #teacherControls h4{font-size:20px;font-weight:600}
+body[data-portal-mode=teacher] #teacherPanel-groups>h3,body[data-portal-mode=teacher] #teacherPanel-statistics>h3,body[data-portal-mode=teacher] #teacherPanel-vocabulary>h3,body[data-portal-mode=teacher] #teacherSettings>h3{display:none}
+body[data-portal-mode=teacher] #teacherControls p{line-height:1.65;color:#796675}
+body[data-portal-mode=teacher] #teacherControls button:where(:not(.alt):not(.danger):not(.material-menu-toggle):not(.material-set-open):not(.teacher-group-open):not(.pupil-profile-open)){background-color:#693b66}
+body[data-portal-mode=teacher] #teacherControls button.alt{background-color:#eee3ee;color:#633b61}
+body[data-portal-mode=teacher] #teacherControls button[aria-pressed=true],body[data-portal-mode=teacher] #teacherControls button[aria-selected=true]{background-color:#74506f;color:white}
+body[data-portal-mode=teacher] #teacherControls button.danger{background:#f8dfe1;color:#9e3f50}
+body[data-portal-mode=teacher] #teacherControls input,body[data-portal-mode=teacher] #teacherControls textarea,body[data-portal-mode=teacher] #teacherControls select,body[data-portal-mode=teacher] #teacherMaterialDialog input,body[data-portal-mode=teacher] #teacherMaterialDialog select{border:1px solid #dacabf;background:#fffdf8;border-radius:11px;color:#49344b;min-width:0}
+body[data-portal-mode=teacher] #teacherControls input[type=checkbox],body[data-portal-mode=teacher] #teacherControls input[type=radio]{accent-color:#79516f}
+body[data-portal-mode=teacher] #teacherControls input:focus-visible,body[data-portal-mode=teacher] #teacherControls textarea:focus-visible,body[data-portal-mode=teacher] #teacherControls select:focus-visible,body[data-portal-mode=teacher] #teacherControls button:focus-visible{outline:3px solid #bf9fbd;outline-offset:3px}
+body[data-portal-mode=teacher] #teacherControls :is(.hint,.group-vocabulary-hint){background:#eee4ee;border:1px solid #e2d4e2;border-radius:16px;padding:16px 20px;color:#70556e}
+body[data-portal-mode=teacher] #teacherWelcome{padding:24px;background:var(--cozy-sage);border-radius:20px}
+/* Groups and members */
+body[data-portal-mode=teacher] #teacherGroupsList{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;margin:22px 0}
+body[data-portal-mode=teacher] #teacherGroupsList .teacher-group-card{min-width:0;min-height:160px;margin:0;padding:22px 24px;background:var(--cozy-lavender);background-image:var(--cozy-grain);border:1px solid #e2d4e2;border-radius:23px 18px 22px 18px;box-shadow:0 4px 0 #77547412}
+body[data-portal-mode=teacher] #teacherGroupsList .teacher-group-card:nth-child(3n+2){background-color:var(--cozy-sage);border-color:#dce0cb}
+body[data-portal-mode=teacher] #teacherGroupsList .teacher-group-card:nth-child(3n){background-color:var(--cozy-peach);border-color:#ead2c0}
+body[data-portal-mode=teacher] .teacher-group-open{font-family:Georgia,serif;font-size:23px;color:#4d2449!important;line-height:1.25;overflow-wrap:anywhere;white-space:normal}
+body[data-portal-mode=teacher] .teacher-group-card>p{font-size:12px;margin:12px 0 0}
+body[data-portal-mode=teacher] #teacherGroupForm,body[data-portal-mode=teacher] .group-members-editor{background:#fffaf4;border:1px solid var(--cozy-border);padding:24px;border-radius:20px}
+body[data-portal-mode=teacher] .group-workspace-tabs{border:0;gap:8px;flex-wrap:wrap;margin:22px 0}
+body[data-portal-mode=teacher] .group-workspace-tabs button,body[data-portal-mode=teacher] #studentProfileWorkspace>.actions button{border-radius:20px;padding:10px 17px}
+body[data-portal-mode=teacher] .group-students-list>button{background:var(--cozy-lavender)!important;color:#563454!important;border:1px solid #e1d3e1;border-radius:18px;padding:22px;font-family:Georgia,serif;font-size:19px}
+body[data-portal-mode=teacher] .group-students-list>button:nth-child(3n+2){background:var(--cozy-sage)!important}
+body[data-portal-mode=teacher] .group-students-list>button:nth-child(3n){background:var(--cozy-peach)!important}
+/* Folders, sets and word cards keep their tile/list modes. */
+body[data-portal-mode=teacher] :is(.material-folder-card,.group-word-editor){background:#f4eaf2;background-image:var(--cozy-grain);border:1px solid #e4d5df;border-radius:20px;padding:20px}
+body[data-portal-mode=teacher] .material-folder-card:nth-of-type(3n+2){background-color:#edf0e0;border-color:#dce1cc}
+body[data-portal-mode=teacher] .material-folder-card:nth-of-type(3n){background-color:#faeada;border-color:#eddbca}
+body[data-portal-mode=teacher] .material-folder-title{font-family:Georgia,serif;font-size:20px;color:#573450}
+body[data-portal-mode=teacher] .material-set-card{background:#fffaf3dc!important;color:#62455c!important;border-color:#dfcfd8!important;border-radius:14px;box-shadow:0 2px 2px #76546608}
+body[data-portal-mode=teacher] .material-menu-toggle{color:#795673!important}
+body[data-portal-mode=teacher] :is(.material-menu-options,.student-profile-options){background:#fffcf7;border-color:#e3d2dc;border-radius:15px;box-shadow:0 8px 24px #5d3e591a}
+body[data-portal-mode=teacher] .material-view-switch button{background:#eee3ee;color:#6b4867;border-radius:20px}
+body[data-portal-mode=teacher] .material-view-switch button[aria-pressed=true]{background:#79516f;color:white}
+body[data-portal-mode=teacher] .material-view[data-material-view=tiles] :is(tr,.material-word-card){background:#fffaf4;border-color:#e8d8df;border-radius:17px}
+body[data-portal-mode=teacher] .material-word-card{border-color:#e4d7df}
+body[data-portal-mode=teacher] #teacherControls table{background:#fffaf6;border-radius:16px;border-collapse:separate;border-spacing:0;margin:16px 0}
+body[data-portal-mode=teacher] #teacherControls th{background:#eee2ef;color:#62415e;font-size:12px}
+body[data-portal-mode=teacher] #teacherControls td{border-bottom:1px solid #eadfe4;color:#4e3b50}
+body[data-portal-mode=teacher] #teacherControls tr:last-child td{border-bottom:0}
+body[data-portal-mode=teacher] #teacherControls table.material-view td,body[data-portal-mode=teacher] #teacherControls table:has(tbody[data-material-view=tiles]) td{background:transparent}
+body[data-portal-mode=teacher] :is(.group-vocabulary-forms form,#profileWordEditor,#teacherAddStudentPanel){background:#fffaf4;border:1px solid var(--cozy-border);border-radius:20px;padding:24px}
+body[data-portal-mode=teacher] #teacherAddStudentPanel{max-width:850px;margin:20px 0}
+body[data-portal-mode=teacher] #profileWordEditor{margin:20px 0}
+body[data-portal-mode=teacher] #profileWordEditor>h4{margin-top:0}
+body[data-portal-mode=teacher] #teacherAddStudentPanel details,body[data-portal-mode=teacher] #profileWordEditor details{background:#f3ebef;padding:16px;border-radius:14px;margin-top:20px}
+/* Game catalog and profile/group game launch cards. */
+body[data-portal-mode=teacher] #teacherGameCatalog>.game-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px;margin:24px 0}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;min-width:0;min-height:185px;text-align:center;padding:22px 18px;font-family:Georgia,serif;font-size:22px;line-height:1.3;background:var(--cozy-lavender);background-image:var(--cozy-grain);color:#512b4f;border:1px solid #e2d4e1;border-radius:23px 18px 23px 18px;box-shadow:0 3px 0 #77547412}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-choice:nth-child(3n+2){background-color:var(--cozy-sage);border-color:#dce0cb}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-choice:nth-child(3n){background-color:var(--cozy-peach);border-color:#ead2c0}
+.cozy-game-choice:before{content:'';display:block;width:74px;height:74px;background:url('assets/sofi-book.webp') center/contain no-repeat;pointer-events:none}
+.cozy-game-choice[data-teacher-game-kind=sophie]:before{background-image:url('assets/sophie-pouch-fish.webp')}
+.cozy-game-choice[data-teacher-game-kind=collections]:before{background-image:url('assets/sofi-box.webp')}
+.cozy-game-choice[data-teacher-game-kind=escape]:before{background-image:url('assets/sofi-wizard.webp')}
+.cozy-game-choice[data-teacher-game-kind=falling]:before{background-image:url('assets/sofi-sleep.webp')}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-student{min-width:180px;margin:8px 10px 8px 0;padding:22px;background:#ede3ee;color:#593554;border:1px solid #e0d0df;border-radius:18px;font-family:Georgia,serif;font-size:19px}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-student:nth-of-type(3n){background-color:var(--cozy-sage)}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-student:nth-of-type(3n+1){background-color:var(--cozy-peach)}
+body[data-portal-mode=teacher] :is(#profileGamesPanel,#groupGamesPanel)>.sophie-launch{background:var(--cozy-lavender);background-image:var(--cozy-grain);border:1px solid #e1d2df;border-radius:22px;padding:22px;box-shadow:0 3px 0 #77547410}
+body[data-portal-mode=teacher] :is(#profileGamesPanel,#groupGamesPanel)>.sophie-launch:nth-of-type(even){background-color:var(--cozy-sage);border-color:#dce0cc}
+body[data-portal-mode=teacher] #teacherControls .profile-game-select{background:#6e436a!important;color:white;border-radius:12px}
+/* Results, history and profile summaries. */
+body[data-portal-mode=teacher] #teacherOverview{padding:22px;background:var(--cozy-sage);border:1px solid #dce1cd;border-radius:19px;color:#566149;font-size:15px}
+body[data-portal-mode=teacher] .game-history-day{margin:20px 0;padding:20px 22px;background:#fffaf4;border:1px solid #e6d7df;border-radius:21px}
+body[data-portal-mode=teacher] .game-history-day h4{margin-top:0}
+body[data-portal-mode=teacher] #teacherControls .game-history-entry{background:#eee2ef;color:#593553;border-radius:14px;padding:16px 18px}
+body[data-portal-mode=teacher] .game-player-statistics{background:#f6ecf3;border:1px solid #e2d2df;border-radius:20px;padding:22px}
+body[data-portal-mode=teacher] #studentProfileState{background:#eee3ee;border-radius:14px;padding:12px 17px;color:#6a4f65}
+body[data-portal-mode=teacher] #studentProfileWorkspace>h3{font-size:30px;margin-top:24px}
+body[data-portal-mode=teacher] #studentProfileWorkspace>label{max-width:340px}
+body[data-portal-mode=teacher] #profileStatisticsContent>.hint{background:var(--cozy-sage)}
+/* Settings become four comfortable sections inside the same original form. */
+body[data-portal-mode=teacher] #teacherPreferencesForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;max-width:none;align-items:start}
+.cozy-settings-card{min-width:0;margin:0;padding:22px 24px 24px;border:1px solid #e0d2df;border-radius:22px;background:#f1e6f0;background-image:var(--cozy-grain)}
+.cozy-settings-card:nth-child(2){background-color:#e9eddc;border-color:#dbe0cc}
+.cozy-settings-card:nth-child(3){background-color:#f8e7d7;border-color:#ead9c8}
+.cozy-settings-card:nth-child(4){background-color:#eee6f0}
+.cozy-settings-card legend{font-family:Georgia,serif;font-size:23px;font-weight:600;color:#573251;padding:0 8px}
+.cozy-settings-card label{margin:12px 0;color:#624e60;line-height:1.5}
+.cozy-settings-card p{font-size:13px}
+.cozy-settings-card input,.cozy-settings-card select{margin-top:6px}
+.cozy-settings-card>button[type=submit]{margin-top:22px}
+body[data-portal-mode=teacher] #teacherSettingsLanguages .actions{background:#fffdf575;padding:7px 10px;border-radius:12px;gap:5px}
+body[data-portal-mode=teacher] #teacherSettingsLanguages .actions button{padding:6px 10px;min-height:30px}
+body[data-portal-mode=teacher] #teacherSettings>div:not([role]){background:#fffaf4;border:1px solid var(--cozy-border);padding:20px 24px;border-radius:20px}
+body[data-portal-mode=teacher] #teacherSettings .teacher-settings-form:not(#teacherPreferencesForm){padding:18px;background:#f3ebf0;border-radius:16px;max-width:650px}
+body[data-portal-mode=teacher] #teacherSettings>div h4{margin-top:0}
+body[data-portal-mode=teacher] #teacherMaterialDialog{background:#fffaf4;border-color:#ddc9d9;border-radius:23px;color:#573451}
+body[data-portal-mode=teacher] #teacherMaterialDialog h3{font-family:Georgia,serif;font-size:27px}
+body[data-portal-mode=teacher] #teacherMaterialDialog button{background:#74496e}
+body[data-portal-mode=teacher] #teacherMaterialDialog button.alt{background:#ede2ed;color:#694462}
+body[data-portal-mode=teacher] #teacherMaterialDialog::backdrop{background:#49334966}
+/* Setup forms in existing game dialogs adopt the palette, without changing play layouts. */
+body[data-portal-mode=teacher] .collection-config,body[data-portal-mode=teacher] #sophieHostSetup{background:#fffaf4;border:1px solid #e3d2dd;border-radius:20px;padding:22px;box-sizing:border-box}
+body[data-portal-mode=teacher] .collection-config :is(input,select),body[data-portal-mode=teacher] #sophieHostSetup :is(input,select){background:#fffdf8;border-color:#deccd8;border-radius:11px}
+@media(hover:hover){body[data-portal-mode=teacher] :is(.cozy-game-choice,.cozy-game-student,.teacher-group-card){transition:box-shadow .18s,transform .18s}body[data-portal-mode=teacher] :is(.cozy-game-choice,.cozy-game-student,.teacher-group-card):hover{box-shadow:0 7px 18px #76536e18;transform:translateY(-2px)}}
+@media(max-width:1000px){body[data-portal-mode=teacher] #teacherPreferencesForm{grid-template-columns:1fr}body[data-portal-mode=teacher]:not(.teacher-lounge-open) #connectionsTitle{padding:28px 38% 28px 22px;font-size:25px;min-height:135px}}
+@media(max-width:760px){body[data-portal-mode=teacher] main{padding:0 14px;margin:14px auto}body[data-portal-mode=teacher]:not(.teacher-lounge-open) #connectionsTitle{font-size:23px;padding:25px 35% 25px 18px;min-height:130px}body[data-portal-mode=teacher] #teacherGroupsList{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}body[data-portal-mode=teacher] #teacherControls h3{font-size:24px}.cozy-settings-card{padding:18px}.cozy-settings-card legend{font-size:21px}}
+@media(max-width:480px){body[data-portal-mode=teacher] #teacherGroupsList,body[data-portal-mode=teacher] #teacherGameCatalog>.game-types{grid-template-columns:1fr}body[data-portal-mode=teacher]:not(.teacher-lounge-open) #connectionsTitle{font-size:21px;padding:22px 32% 22px 18px;background-position:57% center}body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-choice{min-height:145px;flex-direction:row;text-align:left;justify-content:flex-start;font-size:21px}.cozy-game-choice:before{width:58px;height:58px;flex:none}}
+@media(prefers-reduced-motion:reduce){body[data-portal-mode=teacher] :is(.cozy-game-choice,.cozy-game-student,.teacher-group-card){transition:none!important;transform:none!important}}
+
+/* Preserve the cream shortcut buttons and underline links on the original student cards. */
+body[data-portal-mode=teacher] #teacherControls #teacherStudentList .pupil-shortcuts button{background:#fffaf2cb;color:#593253}
+body[data-portal-mode=teacher] #teacherControls #teacherStudentList .pupil-shortcuts button:hover{background:#fffdf9}
+body[data-portal-mode=teacher] #teacherControls #teacherStudentList .pupil-profile-open{background:transparent;color:#51284e}
+body[data-portal-mode=teacher] #teacherControls .teacher-pupil-title h3{font-size:clamp(26px,2.5vw,35px);margin:0}
+
+body[data-portal-mode=teacher]{min-height:100dvh}
+body[data-portal-mode=teacher] #portalStatus.lounge-default-status,body[data-portal-mode=teacher] #connectionsPanel>p:not([role]){display:none}
+body[data-portal-mode=teacher]:has(#teacherControls:not([hidden])) #portalUpdateSetup{display:none}
+body[data-portal-mode=teacher]:not(.teacher-lounge-open) #connectionsTitle{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;background-image:linear-gradient(90deg,#fbf1e5 58%,#fbf1e500 78%),url('assets/teacher-cozy-banner.webp');background-position:center,right center;background-size:100% 100%,auto 100%;background-repeat:no-repeat}
+body[data-portal-mode=teacher]:not(.teacher-lounge-open) #connectionsTitle:before{content:attr(data-cozy-context);font-family:Inter,system-ui,sans-serif;font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#8b657c;margin-bottom:10px}
+body[data-portal-mode=teacher] #sophieJoinEntry{max-width:500px;margin:28px 10px 16px;background:transparent;border:1px dashed #dfd0d7;box-shadow:none;padding:16px 18px}
+body[data-portal-mode=teacher] #sophieJoinEntry h3{font-size:14px;margin:0 0 12px;color:#74566e}
+body[data-portal-mode=teacher] #sophieJoinEntry button{font-size:12px;padding:9px 12px;background:#ebe0eb;color:#694865}
+body[data-portal-mode=teacher] #accountPanel{background:#fffaf4;border-color:#e2d3dd;border-radius:22px;box-shadow:none}
+body[data-portal-mode=teacher] #accountPanel h2{font-family:Georgia,serif;color:#56334f}
+
+body[data-portal-mode=teacher] #teacherControls .material-view-switch button{background:#eee3ee;color:#694861;border-radius:20px}
+body[data-portal-mode=teacher] #teacherControls .material-view-switch button[aria-pressed=true]{background:#79516f;color:#fff}
