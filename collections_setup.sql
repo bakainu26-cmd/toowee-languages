@@ -30,7 +30,7 @@ revoke all on public.toowee_collection_rooms,public.toowee_collection_players,pu
 create index if not exists toowee_collection_host_idx on public.toowee_collection_rooms(host_id,created_at desc);
 
 create or replace function public.toowee_collection_card() returns jsonb language plpgsql set search_path=public as $$
-declare need int[]:=array[0,0,0,0,0]; kind int:=floor(random()*6); a int:=1+floor(random()*5); b int; points int; title text;
+declare need int[]:=array[0,0,0,0,0]; kind int:=floor(random()*6); a int:=1+floor(random()*5); b int; points int; title text; sequence int[]:='{}';i int;j int;
 begin
  b:=1+(a+floor(random()*4)::int)%5;
  if kind=0 then need[a]:=2;points:=3;title:='Mała kolekcja';
@@ -39,30 +39,54 @@ begin
  elsif kind=3 then need:=array[1,1,1,1,1];points:=9;title:='Po trochu wszystkiego';
  elsif kind=4 then need[a]:=5;points:=11;title:='Wielka kolekcja';
  else need[a]:=3;need[b]:=1;points:=6;title:='Trzy plus jedna';end if;
- return jsonb_build_object('id',gen_random_uuid(),'title',title,'need',need,'have',array[0,0,0,0,0],'points',points,'shape',case when kind in (2,5) then 'square' else 'line' end);
+ for i in 1..5 loop for j in 1..need[i] loop sequence:=array_append(sequence,i-1);end loop;end loop;
+ select array_agg(x order by random()) into sequence from unnest(sequence) x;
+ return jsonb_build_object('id',gen_random_uuid(),'title',title,'need',need,'have',array[0,0,0,0,0],'points',points,'shape','line','sequence',sequence);
 end $$;
 -- Match an exact multiset in a contiguous horizontal/vertical line or a 2x2 square.
 -- Returned positions are zero-based; crossing a row boundary is never a line.
 create or replace function public.toowee_collection_match(board jsonb, goal jsonb) returns int[] language plpgsql set search_path=public as $$
-declare need int[]; counts int[]; cells int[]; amount int; row int; col int; direction int; step int; position int; toy int; good bool;
+declare need int[]; counts int[]; cells int[]; amount int; row int; col int; direction int; step int; position int; toy int; good bool; ordered int[];n int;
 begin
  if jsonb_array_length(board)<>25 then return null;end if;
  select array_agg(value::int order by ord) into need from jsonb_array_elements_text(goal->'need') with ordinality x(value,ord);
  select sum(x) into amount from unnest(need) x;
+ if goal ? 'sequence' then select array_agg(value::int order by ord) into ordered from jsonb_array_elements_text(goal->'sequence') with ordinality x(value,ord);amount:=array_length(ordered,1);end if;
+ if amount is null or amount not between 2 and 5 then return null;end if;
  for row in 0..4 loop for col in 0..4 loop for direction in 0..1 loop
  cells:='{}';
- if goal->>'shape'='square' then
+ if ordered is null and goal->>'shape'='square' then
  if row=4 or col=4 or direction=1 then continue;end if;
  cells:=array[row*5+col,row*5+col+1,(row+1)*5+col,(row+1)*5+col+1];
  else
  if (direction=0 and col+amount>5) or (direction=1 and row+amount>5) then continue;end if;
  for step in 0..amount-1 loop cells:=array_append(cells,row*5+col+step*case when direction=0 then 1 else 5 end);end loop;
  end if;
- counts:=array[0,0,0,0,0];good:=true;
- foreach position in array cells loop toy:=(board->>position)::int;if toy is null or toy not between 0 and 4 then good:=false;exit;end if;counts[toy+1]:=counts[toy+1]+1;end loop;
- if good and counts=need then return cells;end if;
+ counts:=array[0,0,0,0,0];good:=true;n:=0;
+ foreach position in array cells loop toy:=(board->>position)::int;if toy is null or toy not between 0 and 4 then good:=false;exit;end if;counts[toy+1]:=counts[toy+1]+1;n:=n+1;if ordered is not null and toy<>ordered[n] then good:=false;exit;end if;end loop;
+ if good and (ordered is not null or counts=need) then return cells;end if;
  end loop;end loop;end loop;
  return null;
+end $$;
+
+-- All mutations use the same resolver, so moving cannot duplicate collection rewards.
+create or replace function public.toowee_collection_resolve(player jsonb) returns jsonb language plpgsql set search_path=public as $$
+declare board jsonb:=player->'board';c jsonb;positions int[];position int;card int;cycles int;matched bool;
+begin
+ for cycles in 1..12 loop
+ matched:=false;
+ for card in 0..2 loop
+ c:=player->'cards'->card;positions:=public.toowee_collection_match(board,c);
+ if positions is not null then
+ foreach position in array positions loop board:=jsonb_set(board,array[position::text],'-1');end loop;
+ player:=jsonb_set(player,'{score}',to_jsonb((player->>'score')::int+(c->>'points')::int));
+ player:=jsonb_set(player,'{completed}',to_jsonb((player->>'completed')::int+1));
+ player:=jsonb_set(player,array['cards',card::text],public.toowee_collection_card());matched:=true;exit;
+ end if;
+ end loop;
+ exit when not matched;
+ end loop;
+ return jsonb_set(player,'{board}',board);
 end $$;
 
 create or replace function public.toowee_collection_baskets() returns jsonb language plpgsql set search_path=public as $$
@@ -101,7 +125,7 @@ end $$;
 create or replace function public.toowee_collections(p_action text,p_data jsonb default '{}') returns jsonb language plpgsql security definer set search_path=public as $$
 declare who uuid:=auth.uid(); r public.toowee_collection_rooms%rowtype; pid uuid; target uuid; token text:=p_data->>'guest_token';
  actor bool; timedout bool:=false; idx int; players jsonb; p jsonb; c jsonb; baskets jsonb; stash int[]; have int[]; need int[];
- cell int; positions int[]; position int; matched bool; cycles int; gameboard jsonb;
+ from_cell int;cost int;cell int; positions int[]; position int; matched bool; cycles int; gameboard jsonb;
  wordpool jsonb; selected text; correct bool; toy int; basket int; card int; count_toys int; i int; result jsonb; rows_json jsonb; req uuid; roomcode text;
 begin
  if p_action='history' then
@@ -148,7 +172,7 @@ begin
  if r.status='lobby' then
  select jsonb_agg(jsonb_build_object('id',id,'name',nickname,'score',0,'completed',0,'stash',array[0,0,0,0,0],'board',to_jsonb(array_fill(-1,array[25])),'cards',jsonb_build_array(public.toowee_collection_card(),public.toowee_collection_card(),public.toowee_collection_card())) order by joined_at,id) into players from public.toowee_collection_players where room_id=r.id;
  if players is null then raise exception 'Poczekaj na co najmniej jednego gracza.';end if;
- update public.toowee_collection_rooms set state=jsonb_build_object('layout','board-v2','players',players,'baskets',public.toowee_collection_baskets()),status='playing' where id=r.id;
+ update public.toowee_collection_rooms set state=jsonb_build_object('layout','board-v3','players',players,'baskets',public.toowee_collection_baskets()),status='playing' where id=r.id;
  perform public.toowee_collection_next(r.id);
  end if;
  elsif p_action='skip' then
@@ -164,9 +188,9 @@ begin
  idx:=(r.turn_no-1)%jsonb_array_length(r.state->'players');p:=r.state->'players'->idx;target:=(p->>'id')::uuid;actor:=pid=target;
  if r.deadline is not null and clock_timestamp()>=r.deadline then
  timedout:=true;
- if r.phase='question' then p_action:='answer';else perform public.toowee_collection_next(r.id);p_action:='load';end if;
+ if r.phase='question' then p_action:='answer';elsif r.phase='draw' then update public.toowee_collection_rooms set deadline=null where id=r.id;p_action:='load';else perform public.toowee_collection_next(r.id);p_action:='load';end if;
  end if;
- if p_action in ('answer','draw','put','end_turn') then
+ if p_action in ('answer','draw','put','move','remove','end_turn') then
  if not timedout and (not coalesce(actor,false) or (p_data->>'revision')::int is distinct from r.revision) then raise exception 'Widok gry się zmienił. Odśwież grę.';end if;
  if p_action='answer' then
  if r.phase<>'question' then raise exception 'Teraz wybierasz zabawki.';end if;
@@ -178,7 +202,7 @@ begin
  if r.q_no<r.questions_per_turn then
  update public.toowee_collection_rooms set q_no=q_no+1,correct_count=correct_count+correct::int,question=public.toowee_collection_question(words),deadline=case when seconds>0 then clock_timestamp()+make_interval(secs=>seconds) end,revision=revision+1 where id=r.id;
  elsif r.correct_count+correct::int>0 then
- update public.toowee_collection_rooms set correct_count=correct_count+correct::int,phase='draw',question=null,deadline=case when placement_seconds>0 then clock_timestamp()+make_interval(secs=>placement_seconds) end,revision=revision+1 where id=r.id;
+ update public.toowee_collection_rooms set correct_count=correct_count+correct::int,phase='draw',question=null,deadline=null,revision=revision+1 where id=r.id;
  else perform public.toowee_collection_next(r.id);end if;
  elsif p_action='draw' then
  if r.phase<>'draw' then raise exception 'Zabawki już dobrano.';end if;
@@ -188,11 +212,12 @@ begin
  if count_toys<=0 then raise exception 'Nie ma już tych zabawek.';end if;
  select array_agg(value::int order by ord) into stash from jsonb_array_elements_text(p->'stash') with ordinality x(value,ord);stash[toy+1]:=stash[toy+1]+count_toys;
  r.state:=jsonb_set(r.state,array['players',idx::text,'stash'],to_jsonb(stash));r.state:=jsonb_set(r.state,array['baskets',basket::text,toy::text],'0');
- update public.toowee_collection_rooms set state=r.state,phase='place',revision=revision+1 where id=r.id;
+ if not exists(select 1 from jsonb_array_elements_text(r.state->'baskets'->basket) x where x::int>0) then r.state:=jsonb_set(r.state,array['baskets',basket::text],public.toowee_collection_baskets()->0);end if;
+ update public.toowee_collection_rooms set state=r.state,phase='place',deadline=case when placement_seconds>0 then clock_timestamp()+make_interval(secs=>placement_seconds) end,revision=revision+1 where id=r.id;
  elsif p_action='put' then
  if r.phase<>'place' then raise exception 'Najpierw dobierz zabawki.';end if;
  toy:=(p_data->>'toy')::int;
- if r.state->>'layout'='board-v2' then
+ if r.state->>'layout' in ('board-v2','board-v3') then
  cell:=(p_data->>'cell')::int;
  if toy is null or cell is null or toy not between 0 and 4 or cell not between 0 and 24 then raise exception 'Wybierz zabawkę i puste pole planszy.';end if;
  gameboard:=p->'board';
@@ -201,20 +226,7 @@ begin
  if stash[toy+1]<=0 then raise exception 'Nie masz tej zabawki w schowku.';end if;
  stash[toy+1]:=stash[toy+1]-1;gameboard:=jsonb_set(gameboard,array[cell::text],to_jsonb(toy));
  p:=jsonb_set(p,'{stash}',to_jsonb(stash));
- -- Resolve overlapping goals in card order; consumed toys cannot score twice.
- for cycles in 1..12 loop
- matched:=false;
- for card in 0..2 loop
- c:=p->'cards'->card;positions:=public.toowee_collection_match(gameboard,c);
- if positions is not null then
- foreach position in array positions loop gameboard:=jsonb_set(gameboard,array[position::text],'-1');end loop;
- p:=jsonb_set(p,'{score}',to_jsonb((p->>'score')::int+(c->>'points')::int));p:=jsonb_set(p,'{completed}',to_jsonb((p->>'completed')::int+1));
- p:=jsonb_set(p,array['cards',card::text],public.toowee_collection_card());matched:=true;exit;
- end if;
- end loop;
- exit when not matched;
- end loop;
- p:=jsonb_set(p,'{board}',gameboard);r.state:=jsonb_set(r.state,array['players',idx::text],p);
+ p:=public.toowee_collection_resolve(jsonb_set(p,'{board}',gameboard));r.state:=jsonb_set(r.state,array['players',idx::text],p);
  update public.toowee_collection_rooms set state=r.state,revision=revision+1 where id=r.id;
  else
  toy:=(p_data->>'toy')::int;card:=(p_data->>'card')::int;
@@ -233,8 +245,27 @@ begin
  p:=jsonb_set(p,array['cards',card::text],c);r.state:=jsonb_set(r.state,array['players',idx::text],p);
  update public.toowee_collection_rooms set state=r.state,revision=revision+1 where id=r.id;
  end if;
+ elsif p_action in ('move','remove') then
+ if r.phase<>'place' or r.state->>'layout' not in ('board-v2','board-v3') then raise exception 'Zabawki można zmieniać podczas własnego układania.';end if;
+ cell:=(p_data->>'cell')::int;cost:=case when p_action='move' then 2 else 1 end;
+ if cell is null or cell not between 0 and 24 then raise exception 'Wybierz pole planszy.';end if;
+ if (p->>'score')::int<cost then raise exception 'Za mało punktów: potrzeba % pkt.',cost;end if;
+ gameboard:=p->'board';
+ if p_action='move' then
+ from_cell:=(p_data->>'from')::int;
+ if from_cell is null or from_cell not between 0 and 24 or from_cell=cell then raise exception 'Wybierz zabawkę i inne puste pole.';end if;
+ toy:=(gameboard->>from_cell)::int;
+ if toy not between 0 and 4 or (gameboard->>cell)::int<>-1 then raise exception 'Przesuń istniejącą zabawkę na puste pole.';end if;
+ gameboard:=jsonb_set(jsonb_set(gameboard,array[from_cell::text],'-1'),array[cell::text],to_jsonb(toy));
+ else
+ if (gameboard->>cell)::int not between 0 and 4 then raise exception 'To pole jest puste.';end if;
+ gameboard:=jsonb_set(gameboard,array[cell::text],'-1');
+ end if;
+ p:=jsonb_set(p,'{score}',to_jsonb((p->>'score')::int-cost));p:=public.toowee_collection_resolve(jsonb_set(p,'{board}',gameboard));
+ r.state:=jsonb_set(r.state,array['players',idx::text],p);
+ update public.toowee_collection_rooms set state=r.state,revision=revision+1 where id=r.id;
  elsif p_action='end_turn' then
- if r.phase not in ('draw','place') then raise exception 'Najpierw odpowiedz na pytania.';end if;
+ if r.phase<>'place' then raise exception 'Najpierw wybierz zabawki z koszyka.';end if;
  perform public.toowee_collection_next(r.id);
  end if;
  end if;
@@ -245,6 +276,26 @@ begin
  'question',case when r.status='playing' and r.phase='question' and pid=(r.state->'players'->((r.turn_no-1)%jsonb_array_length(r.state->'players'))->>'id')::uuid then r.question-'solution' else null end,
  'feedback',(select jsonb_build_object('correct',a.correct,'prompt',a.prompt,'solution',a.solution,'answer',a.answer,'turn_no',a.turn_no,'q_no',a.q_no) from public.toowee_collection_answers a where a.room_id=r.id and a.player_id=pid order by a.turn_no desc,a.q_no desc limit 1));
 end $$;
+do $$
+declare r record;updated_state jsonb;player jsonb;goal jsonb;sequence jsonb;i int;j int;t int;amount int;
+begin
+ for r in select id,state from public.toowee_collection_rooms where state->>'layout'='board-v2' for update loop
+ updated_state:=r.state;
+ for i in 0..jsonb_array_length(updated_state->'players')-1 loop
+ player:=updated_state->'players'->i;
+ for j in 0..2 loop
+ goal:=player->'cards'->j;sequence:='[]';
+ for t in 0..4 loop for amount in 1..(goal->'need'->>t)::int loop sequence:=sequence||to_jsonb(t);end loop;end loop;
+ goal:=jsonb_set(jsonb_set(goal,'{shape}','"line"'),'{sequence}',sequence);
+ player:=jsonb_set(player,array['cards',j::text],goal);
+ end loop;
+ updated_state:=jsonb_set(updated_state,array['players',i::text],player);
+ end loop;
+ updated_state:=jsonb_set(updated_state,'{layout}','"board-v3"');
+ update public.toowee_collection_rooms set state=updated_state,revision=revision+1 where id=r.id;
+ end loop;
+end $$;
+revoke all on function public.toowee_collection_resolve(jsonb) from public,anon,authenticated;
 revoke all on function public.toowee_collection_match(jsonb,jsonb) from public,anon,authenticated;
 revoke all on function public.toowee_collection_card(),public.toowee_collection_baskets(),public.toowee_collection_question(jsonb),public.toowee_collection_next(uuid) from public,anon,authenticated;
 revoke all on function public.toowee_collections(text,jsonb) from public;
