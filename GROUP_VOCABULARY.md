@@ -9,3 +9,7 @@ Wspólny oryginał jest powiązany z grupą. Prywatne tabele mapują jego folder
 Oryginały grup nie trafiają do własnego profilu ucznia administratora. Jeśli administrator jest członkiem grupy, jego profil otrzymuje własne przypisanie jak inni członkowie. Każda operacja nauczyciela sprawdza właściciela grupy, język i przynależność zestawu. Bezpośredni dostęp klientów do tabel synchronizacji jest zablokowany; pomocnicze funkcje nie mają publicznych uprawnień. Grupa posiadająca materiały zachowuje swój język.
 
 Weryfikacja: testy `group-vocabulary-db.test.cjs`, `group-vocabulary-ui.test.cjs`, istniejące testy nauczyciela, kont, samodzielnych profili i statystyk. Podgląd przeglądarkowy sprawdza wejście z grupy, foldery/zestawy oraz edytor i import. Nawigacja zapisuje otwartą grupę i zestaw w dotychczasowym mechanizmie historii panelu.
+
+## Układ widoku grupy
+
+W zakładce Grupy widoczna jest lista nazw grup i liczba członków. Wybranie grupy otwiera zakładki Uczniowie i Słownictwo, domyślnie Uczniowie. „Edytuj” osadza dotychczasowy formularz nazwy, języka i członków grupy; zapis wraca do listy jej uczniów. W Słownictwie domyślnie widać foldery i zestawy, a formularze otwierają się przyciskami Dodaj folder / Dodaj zestaw. Zestaw ma jawny wybór folderu. W bazie nauczyciela widoczne są te same foldery grupowe i zestawy, bez dodatkowej kopii oryginału. Historia panelu zachowuje grupę, zakładkę i wybrany zestaw. Zmiana układu nie wymaga nowej migracji SQL. Testy integracji: group-tabs-ui.test.cjs.
