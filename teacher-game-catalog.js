@@ -17,6 +17,7 @@
  lang.onchange=ranges;scope.onchange=apply;catalog.append(text('p','Wybierz język i zakres słownictwa ucznia, następnie ustaw parametry gry.'),lang,scope);catalog.append(solo);solo.hidden=false;solo.querySelector('.game-types').hidden=true;el('gameFolder').parentElement.hidden=true;el('gameType-'+kind).click();ranges();
  }
  const legacy=panel.querySelector('.sophie-launch');if(legacy)legacy.hidden=true;panel.querySelector('h3').hidden=true;
+ window.openTeacherGameKind=kind=>{if(Object.hasOwn(names,kind))listStudents(kind);};
  window.openTeacherGameCatalog=scope=>{language=scope;listGames();};
  window.addEventListener('toowee-account',reset);
  window.addEventListener('toowee-profile',()=>{if(window.tooweeView!=='teacher')reset();});
