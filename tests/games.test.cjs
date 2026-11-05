@@ -64,3 +64,7 @@ h=setup();h.words.splice(0,h.words.length,{id:'s1',lang:'Spanish',word:'teléfon
 // Common end action returns from a completed game to a clean games lobby.
 h=setup();h.start();for(const button of h.els.gameWords.children){button.click();h.els.gameTranslations.children.find(b=>b.dataset.id===button.dataset.id).click();}assert.equal(h.els.gameResult.hidden,false);h.els.endGame.onclick();assert.equal(h.c.tabbed,'games');assert.equal(h.els.gameResult.hidden,true);assert.equal(h.els.gameWords.children.length,0);assert.equal(h.els.gameMatch.hidden,true);
 console.log('PASS: matching, memory locks/completion/reset, quiz scoring/directions/reading, category/folder/language isolation, insufficient words, duplicate labels, owner changes, text safety, written kanji/kana answers, blank/incorrect answers, double-submit protection; no database writes');
+{
+ const x=setup();let launched;x.c.TooweeMagicDice={reset(){},updateControls(){},start(words,opts){launched={words,opts}}};x.choose('dice');assert.equal(x.els.magicDiceSettings.hidden,false);assert.equal(x.els.gameCountField.hidden,true);x.els.magicDiceSize.value='4';x.els.magicDiceQuota.value='3';x.start();assert.equal(launched.opts.size,'4');assert.equal(launched.opts.quota,'3');assert.equal(launched.words.length,4);assert.equal(launched.opts.owner,'owner');launched.opts.onFinish('Magic Dice 10 pkt');assert.equal(x.els.gameResult.hidden,false);
+}
+console.log('PASS Magic Dice integration: selection, setup, word scope and shared game completion');
