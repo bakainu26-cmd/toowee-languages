@@ -12,6 +12,7 @@
   function shuffle(rows){const out=[...rows];for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
   function updateGameControls(){
     el('startGame').disabled=!canPlay();
+    const stop=el('teacherEndGameNow');if(stop){stop.hidden=window.tooweeView!=='teacher'||!pairs.length||finished;stop.disabled=!inSession();}
     const share=el('shareMagicDice');if(share){share.hidden=kind!=='dice'||window.tooweeView!=='teacher';share.disabled=!canPlay();}
     for(const id of ['gameCount','gameDirection','gameReading','fallSpeed','fallMode'])el(id).disabled=!canPlay();
     el('gameCount').disabled=!canPlay() || (kind==='falling' && ['endless','survival'].includes(el('fallMode').value));
@@ -53,6 +54,7 @@
     if(side==='target' && activeLanguage==='Japanese' && word.reading && el('gameReading').checked){const reading=document.createElement('small');reading.textContent=word.reading;button.append(reading);}
   }
   function finish(text){
+    if(finished)return;
     if(!finished && kind==='match' && matched.size>=6 && matched.size===pairs.length && worldRewardId && window.recordWorldGame)void window.recordWorldGame({event_id:worldRewardId,owner:sessionOwner,language:sessionLanguage,ids:[...matched]});
     finished=true;el('gameResult').hidden=false;el('gameResultText').textContent=text+' Czas: '+Math.max(0,Math.floor((Date.now()-startedAt)/1000))+' s.';
     status('Gra zakończona! Zagraj ponownie lub kliknij „Koniec gry”, aby wrócić do wyboru gier.');updateGameControls();el('gameResult').scrollIntoView?.({block:'nearest'});
@@ -134,9 +136,9 @@
   shareDice.onclick=async()=>{if(kind!=='dice'||!canPlay())return;shareDice.disabled=true;shareResult.hidden=false;shareResult.replaceChildren();try{
     const folder=el('gameFolder').value,seen=new Set(),meanings=new Set();
     const words=((window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.words)||(window.filterLearningWords?window.filterLearningWords(activeWords()):activeWords())).filter(w=>!folder||w.folder_id===folder).filter(w=>{const term=w.word.trim().normalize('NFKC').toLocaleLowerCase(),meaning=w.translation.trim().normalize('NFKC').toLocaleLowerCase();if(!term||!meaning||seen.has(term)||meanings.has(meaning))return false;seen.add(term);meanings.add(meaning);return true;});
-    const url=await window.MagicDiceShare.create({language:activeLanguage,words,size:Number(el('magicDiceSize').value),quota:Number(el('magicDiceQuota').value),direction:el('gameDirection').value});
-    const label=document.createElement('label');label.textContent='Link dla ucznia';const input=document.createElement('input');input.readOnly=true;input.value=url;input.setAttribute('aria-label','Link do Magic Dice dla ucznia');input.onclick=()=>input.select();label.append(input);const copy=document.createElement('button');copy.type='button';copy.textContent='Kopiuj link';copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);copy.textContent='Skopiowano!';}catch{input.focus();input.select();copy.textContent='Zaznaczono — skopiuj link';}};const open=document.createElement('a');open.href=url;open.target='_blank';open.rel='noopener';open.textContent='Otwórz grę ucznia';const note=document.createElement('p');note.textContent='Uczeń gra samodzielnie, bez logowania. Link zawiera wybrane słówka i ustawienia; każdy, kto go otrzyma, może je otworzyć. Wynik tej gry wyświetla się uczniowi na koniec.';shareResult.append(label,copy,open,note);
-  }catch(error){shareResult.textContent=error.message;}finally{shareDice.disabled=!canPlay();}};
+    const url=await window.MagicDiceClassroom.create({language:activeLanguage,words,size:Number(el('magicDiceSize').value),quota:Number(el('magicDiceQuota').value),direction:el('gameDirection').value},account.client,account.userId,shareResult);
+    const label=document.createElement('label');label.textContent='Link dla ucznia';const input=document.createElement('input');input.readOnly=true;input.value=url;input.setAttribute('aria-label','Link do Magic Dice dla ucznia');input.onclick=()=>input.select();label.append(input);const copy=document.createElement('button');copy.type='button';copy.textContent='Kopiuj link';copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);copy.textContent='Skopiowano!';}catch{input.focus();input.select();copy.textContent='Zaznaczono — skopiuj link';}};const open=document.createElement('a');open.href=url;open.target='_blank';open.rel='noopener';open.textContent='Otwórz grę ucznia';const note=document.createElement('p');note.textContent='Uczeń dołącza bez logowania. W panelu nauczyciela możesz zakończyć grę i zobaczyć zapisane statystyki. Każdy, kto otrzyma link, może dołączyć.';shareResult.append(label,copy,open,note);
+  }catch(error){const errorNote=document.createElement('p');errorNote.textContent=error.message;shareResult.append(errorNote);}finally{shareDice.disabled=!canPlay();}};
   function startGame(){
     if(!canPlay())return;resetGame();const folder=el('gameFolder').value;
     const seenWords=new Set(),seenTranslations=new Set(),normalize=s=>s.trim().normalize('NFKC').toLocaleLowerCase();
@@ -149,6 +151,7 @@
     worldRewardId=window.newWorldEventId?.();sessionOwner=account.userId;sessionLanguage=activeLanguage;startedAt=Date.now();
     window.openActivityFocus?.('games',names[kind],true,kind);
     status('Grasz: '+names[kind]+(endless?' · Endless. Pula: ':'. W tej grze: ')+pairs.length+' słówek'+(!endless && pairs.length<count?' (tyle jest dostępnych)':'')+'.');
+    updateGameControls();
     if(kind==='dice'){window.TooweeMagicDice.start(pairs,{owner:sessionOwner,language:sessionLanguage,size:el('magicDiceSize').value,quota:el('magicDiceQuota').value,direction:el('gameDirection').value,onFinish:finish});}
     else if(kind==='falling'){if(window.TooweeFalling)window.TooweeFalling.start(pairs,{owner:sessionOwner,language:sessionLanguage,direction:el('gameDirection').value,speed:el('fallSpeed').value,mode:el('fallMode').value,onFinish:finish});else status('Odśwież stronę, aby wczytać grę.');}
     else if(kind==='escape'){if(window.TooweeEscape)window.TooweeEscape.start(pairs,{owner:sessionOwner,language:sessionLanguage,onFinish:finish});else status('Odśwież stronę, aby wczytać escape room.');}
@@ -158,6 +161,7 @@
   }
   for(const key of Object.keys(names))el('gameType-'+key).onclick=()=>{kind=key;resetGame();window.openActivityFocus?.('games',names[kind],false,kind);};
   for(const id of ['gameFolder','gameCount','gameDirection','gameReading','fallSpeed','fallMode','magicDiceSize','magicDiceQuota'])el(id).onchange=resetGame;
+  el('teacherEndGameNow').onclick=()=>{if(window.tooweeView!=='teacher'||!inSession())return;if(kind==='dice'){window.TooweeMagicDice.finish('Nauczyciel zakończył grę.');return;}if(kind==='falling'){window.TooweeFalling.finish();return;}if(kind==='escape'){window.TooweeEscape.finish();return;}if(hideTimer!==null){clearTimeout(hideTimer);hideTimer=null;}const summary=['match','memory'].includes(kind)?'Dopasowane pary: '+matched.size+' / '+pairs.length+' · Próby: '+attempts+' · Nietrafione próby: '+(attempts-matched.size):'Poprawne: '+score+' · Błędne: '+(attempts-score)+' · Odpowiedzi: '+attempts+' / '+questions.length;finish('Nauczyciel zakończył grę. '+summary+'.');};
   el('startGame').onclick=startGame;el('replayGame').onclick=startGame;el('endGame').onclick=()=>window.openGamesLobby();
   el('nextGameQuestion').onclick=()=>{if(['quiz','write'].includes(kind) && inSession() && answered && questionIndex<questions.length-1){questionIndex++;renderQuestion();}};
   el('gameWriteForm').onsubmit=checkWritten;

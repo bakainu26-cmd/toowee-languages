@@ -22,7 +22,7 @@
     bar=document.createElement('div');bar.id='activityHeader-'+id;bar.className='activity-header';
     const button=document.createElement('button');button.type='button';button.className='alt';button.textContent='← '+(id==='games'?(window.worldGameMission?'Wróć na mapę':'Wybór gry'):'Ustawienia');button.onclick=back;
     const title=document.createElement('strong');title.id='activityTitle-'+id;
-    bar.append(button,title);el(id).prepend(bar);return bar;
+    bar.append(button,title);if(id==='games'&&el('teacherEndGameNow'))bar.append(el('teacherEndGameNow'));el(id).prepend(bar);return bar;
   }
   function open(id,title,playing=false,kind=''){
     if(!titles[id] || !ready || !account?.userId || !activeLanguage)return;

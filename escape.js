@@ -103,5 +103,5 @@
   for(const [index,id] of ['escapeShelf','escapeDesk','escapePainting'].entries())el(id).onclick=()=>explore(index);
   el('escapeClosePuzzle').onclick=closePuzzle;el('escapeReturn').onclick=closePuzzle;el('escapeNext').onclick=next;el('escapeHint').onclick=hint;el('escapeDoor').onclick=door;
   el('escapeCloseDoor').onclick=()=>{el('escapeDoorPanel').hidden=true;};el('escapeDoorForm').onsubmit=unlock;el('escapeWriteForm').onsubmit=write;
-  window.TooweeEscape=Object.freeze({start,reset,updateControls:controls});reset();
+  window.TooweeEscape=Object.freeze({start,reset,finish(){if(!available())return;state.finished=true;el('escapeDoorPanel').hidden=true;el('escapePuzzle').hidden=true;controls();state.onFinish('Nauczyciel zakończył grę. Rozwiązane zagadki: '+state.completed+'. Błędne próby: '+state.mistakes+'. Podpowiedzi: '+state.hints+'.');},updateControls:controls});reset();
 })();

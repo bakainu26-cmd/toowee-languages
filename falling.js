@@ -115,5 +115,5 @@
     }
     if(/^[1-4]$/.test(event.key) && !state.feedback && !state.paused){const button=el('fallAnswers').children[Number(event.key)-1];if(button){event.preventDefault();choose(button.dataset.id);}}
   });
-  window.TooweeFalling=Object.freeze({start,reset,pause,updateControls:controls});window.pauseFallingGame=pause;reset();
+  window.TooweeFalling=Object.freeze({start,reset,pause,finish:()=>finish(true),updateControls:controls});window.pauseFallingGame=pause;reset();
 })();

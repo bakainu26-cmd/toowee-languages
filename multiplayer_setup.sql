@@ -337,8 +337,8 @@ begin
   'question',case when host or personal_done or q is null then null else q-'correct' end,
   'solution',case when host then null when answer.player_id is not null or room.status='finished' or room.deadline<=clock_timestamp() then q->'options'->((q->>'correct')::integer) else null end,
   'answer',case when answer.player_id is null then null else jsonb_build_object('choice',answer.choice,'correct',answer.correct,'review_until',answer.review_until,'base',answer.base,'pick',answer.pick,'bonus',answer.bonus,'effect',jsonb_build_object('kind',answer.event,'resolved',answer.resolved,'amount',answer.effect_amount,'message',answer.effect_message)) end,
-  'ranking',(select coalesce(jsonb_agg(jsonb_build_object('id',public_id,'name',nickname,'score',score,'correct',correct,'me',player_id=pid) order by score desc,joined_at),'[]') from (
-   select p.player_id,p.public_id,p.nickname,p.joined_at,public.sophie_game_score(room.id,p.player_id) as score,(select count(*) from public.sophie_round_answers a where a.room_id=p.room_id and a.player_id=p.player_id and a.correct) as correct from public.sophie_participants p where p.room_id=room.id
+  'ranking',(select coalesce(jsonb_agg(jsonb_build_object('id',public_id,'name',nickname,'score',score,'correct',correct,'answered',answered_count,'me',player_id=pid) order by score desc,joined_at),'[]') from (
+   select p.player_id,p.public_id,p.nickname,p.joined_at,public.sophie_game_score(room.id,p.player_id) as score,(select count(*) from public.sophie_round_answers a where a.room_id=p.room_id and a.player_id=p.player_id and a.correct) as correct,(select count(*) from public.sophie_round_answers a where a.room_id=p.room_id and a.player_id=p.player_id) as answered_count from public.sophie_participants p where p.room_id=room.id
 
   ) standings));
 end $$;
