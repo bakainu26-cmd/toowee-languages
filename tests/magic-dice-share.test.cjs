@@ -1,0 +1,14 @@
+const {JSDOM}=require(process.env.TOOWEE_JSDOM_MODULE||'jsdom'),fs=require('fs'),assert=require('node:assert/strict');
+const read=f=>fs.readFileSync(__dirname+'/../'+f,'utf8');
+const words=[{word:'猫',reading:'ねこ',translation:'kot',id:'private-id',student_id:'private-student'},{word:'犬',reading:'いぬ',translation:'pies'},{word:'花',reading:'はな',translation:'kwiat'},{word:'本',reading:'ほん',translation:'książka'}];
+function setup(html,url){const dom=new JSDOM(html,{runScripts:'outside-only',url}),w=dom.window;Object.assign(w,{TextEncoder,TextDecoder,CompressionStream,DecompressionStream,Response,Blob});return{dom,w,d:w.document};}
+(async()=>{
+ const h=setup(read('index.html'),'https://example.com/toowee-languages/?uczen=secret');
+ Object.assign(h.w,{ready:true,saving:false,account:{userId:'teacher'},activeLanguage:'Japanese',tooweeView:'teacher',activeWords:()=>[],activeFolders:()=>[],tooweeTeacherGameContext:{words},TooweeMagicDice:{updateControls(){},reset(){}}});
+ h.w.eval(read('magic-dice-share.js'));h.w.eval(read('games.js'));h.d.getElementById('gameType-dice').click();assert(!h.d.getElementById('shareMagicDice').hidden);
+ h.d.getElementById('magicDiceSize').value='4';h.d.getElementById('magicDiceQuota').value='2';h.d.getElementById('gameDirection').value='toTarget';await h.d.getElementById('shareMagicDice').onclick();
+ const input=h.d.querySelector('#magicDiceShareResult input');assert(input);const url=new URL(input.value);assert.equal(url.pathname,'/toowee-languages/magic-dice-player.html');assert.equal(url.search,'');
+ const data=await h.w.MagicDiceShare.decode(url.hash.slice(1));assert.equal(data.size,4);assert.equal(data.quota,2);assert.equal(data.direction,'toTarget');assert.equal(data.words[0].word,'猫');assert(!JSON.stringify(data).includes('private-'));await assert.rejects(()=>h.w.MagicDiceShare.decode('invalid'));
+ const guest=setup(read('magic-dice-player.html'),url.href);Object.assign(guest.w,{ready:true,saving:false,account:{userId:'shared-player'},activeLanguage:null});guest.w.eval(read('magic-dice.js'));guest.w.eval(read('magic-dice-share.js'));await new Promise(r=>setTimeout(r,50));assert(!guest.d.getElementById('playSharedDice').hidden);guest.d.getElementById('playSharedDice').click();assert.equal(guest.d.querySelectorAll('.magic-cell').length,16);for(let i=0;i<2;i++){const prompt=guest.d.querySelector('.magic-prompt').textContent,answer=words.find(w=>w.translation===prompt);[...guest.d.querySelectorAll('.magic-answers button')].find(b=>b.textContent.includes(answer.word)).click();}assert.equal(guest.d.querySelectorAll('.magic-offers button').length,3);
+ h.dom.window.close();guest.dom.window.close();console.log('PASS Magic Dice student links: teacher flow, Unicode compression, settings, no account identifiers, malformed links, guest game and automatic dice');
+})().catch(e=>{console.error(e);process.exit(1)});

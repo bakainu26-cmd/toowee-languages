@@ -1,0 +1,18 @@
+'use strict';
+(()=>{
+ const languages=['English','Japanese','Spanish'];
+ function clean(data){
+  if(!data||data.v!==1||!languages.includes(data.language)||![3,4,5].includes(Number(data.size))||!['toPolish','toTarget'].includes(data.direction)||!Number.isInteger(Number(data.quota))||Number(data.quota)<1||Number(data.quota)>10||!Array.isArray(data.words)||data.words.length<2||data.words.length>2000)throw Error('Nieprawidłowy link do gry. Poproś nauczyciela o nowy link.');
+  const words=data.words.map(w=>{if(!w||typeof w.word!=='string'||typeof w.translation!=='string'||!w.word.trim()||!w.translation.trim()||w.word.length>2000||w.translation.length>2000||w.reading&&typeof w.reading!=='string')throw Error('Nieprawidłowe słówka w linku.');return{word:w.word,translation:w.translation,reading:(w.reading||'').slice(0,2000)};});
+  if(new Set(words.map(w=>w.word)).size<2||new Set(words.map(w=>w.translation)).size<2)throw Error('Wybierz co najmniej dwa różne słówka i tłumaczenia.');
+  return{v:1,language:data.language,size:Number(data.size),quota:Number(data.quota),direction:data.direction,words};
+ }
+ async function encode(config){const safe=clean({...config,v:1}),bytes=new TextEncoder().encode(JSON.stringify(safe));let body=bytes,prefix='j.';if(typeof CompressionStream==='function'){body=new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());prefix='g.';}let raw='';for(const b of body)raw+=String.fromCharCode(b);const token=prefix+btoa(raw).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');if(token.length>120000)throw Error('Ten zestaw jest za duży na link. Wybierz mniejszy zakres słówek.');return token;}
+ async function decode(token){if(typeof token!=='string'||token.length>120000||! /^[gj]\.[A-Za-z0-9_-]+$/.test(token))throw Error('Nieprawidłowy link do gry.');const raw=atob(token.slice(2).replace(/-/g,'+').replace(/_/g,'/'));let bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));if(token.startsWith('g.')){if(typeof DecompressionStream!=='function')throw Error('Otwórz grę w aktualnej przeglądarce Chrome, Safari lub Firefox.');const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();const chunks=[];let size=0;for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>4000000){await reader.cancel();throw Error('Link do gry jest za duży.');}chunks.push(value);}bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}}return clean(JSON.parse(new TextDecoder().decode(bytes)));}
+ window.MagicDiceShare={encode,decode,async create(config){const url=new URL('magic-dice-player.html',location.href);url.search='';url.hash=await encode(config);return url.href;}};
+ if(document.body.dataset.magicPlayer==='true'){
+  const notice=document.getElementById('notice'),start=document.getElementById('playSharedDice');let config;
+  decode(location.hash.slice(1)).then(data=>{config=data;activeLanguage=data.language;notice.textContent=({English:'Angielski',Japanese:'Japoński',Spanish:'Hiszpański'})[data.language]+' · '+data.words.length+' słówek · Plansza '+data.size+' × '+data.size;start.hidden=false;}).catch(()=>{notice.textContent='Nie można otworzyć tej gry. Poproś nauczyciela o ponowne wygenerowanie linku.';});
+  start.onclick=()=>{start.hidden=true;document.getElementById('gameResult').hidden=true;window.TooweeMagicDice.start(config.words,{...config,owner:account.userId,onFinish:message=>{const result=document.getElementById('gameResult');result.textContent=message;result.hidden=false;start.textContent='Zagraj ponownie';start.hidden=false;}});};
+ }
+})();
