@@ -23,3 +23,9 @@ Import obejmuje pytanie–odpowiedź, słówko–tłumaczenie, quiz ABCD, pytani
 Publiczne zestawy można ćwiczyć bez zmiany oryginału. Uruchomienie starszej gry wymagającej materiałów należących do nauczyciela jawnie oferuje zapis prywatnej kopii.
 
 Nowe narzędzia do ćwiczeń i Plansza pytań działają w panelu nauczyciela; nie tworzą osobnych pokoi online. Zdalna gra Magic Dice i gry istniejące używają dotychczasowych mechanizmów swoich pokoi. Nie zapisujemy z nowych ćwiczeń punktów do waluty Sophie ani harmonogramu powtórek.
+
+## Automatyczne ABCD przy imporcie
+
+Opcja „Utwórz quiz ABCD” losowo dobiera po trzy różne błędne odpowiedzi z poprawnych odpowiedzi pozostałych kart (również z kart już obecnych w edytowanym zestawie). Poprawna odpowiedź nie jest zmieniana ani używana jako błędna dla tej samej karty. Powtórzenia są odrzucane po normalizacji wielkości liter i odstępów. Gdy brakuje różnych odpowiedzi, import ABCD wymaga ręcznego uzupełnienia lub wyłączenia tej opcji. System nie wymyśla brakujących odpowiedzi i nie ocenia, czy propozycje są językowo błędne — nauczyciel sprawdza edytowalny podgląd.
+
+Import rozpoznaje tabulatory, średniki, pionową kreskę i pary ze strzałką lub myślnikiem ze spacjami. Można też wkleić pytanie i odpowiedź w osobnych wierszach. Ustawienie układu pozwala wyłączyć automatyczne rozpoznawanie, jeśli separator występuje wewnątrz zadania. Zmiana źródłowego tekstu unieważnia poprzedni podgląd; żadna karta nie trafia na konto bez zapisu zestawu.

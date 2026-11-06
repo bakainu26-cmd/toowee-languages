@@ -2,3 +2,5 @@
 
 .exercise-editor [hidden],.exercise-dialog [hidden]{display:none!important}.exercise-dialog>button[aria-label="Zamknij"]{position:absolute;right:18px;top:18px}.exercise-dialog>h2{padding-right:55px}
 .exercise-editor{grid-template-columns:minmax(0,1fr);align-items:stretch}body[data-portal-mode=teacher] #teacherControls .exercise-set-card{background:#eee3f2;color:#543353}body[data-portal-mode=teacher] #teacherControls .exercise-set-card:hover{background:#e6d8ec}body[data-portal-mode=teacher] #teacherControls .exercise-toolbar button[aria-pressed=true]{background:#795378;color:white}
+
+.exercise-auto-quiz{flex-direction:row!important;align-items:center;background:#eee3f2;border-radius:14px;padding:16px;margin:16px 0}.exercise-auto-quiz input{width:20px;flex-shrink:0}.exercise-import-preview{margin:20px 0}.exercise-import-preview .exercise-edit-card{background:#fff}
