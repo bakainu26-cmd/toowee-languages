@@ -29,3 +29,9 @@ Nowe narzędzia do ćwiczeń i Plansza pytań działają w panelu nauczyciela; n
 Opcja „Utwórz quiz ABCD” losowo dobiera po trzy różne błędne odpowiedzi z poprawnych odpowiedzi pozostałych kart (również z kart już obecnych w edytowanym zestawie). Poprawna odpowiedź nie jest zmieniana ani używana jako błędna dla tej samej karty. Powtórzenia są odrzucane po normalizacji wielkości liter i odstępów. Gdy brakuje różnych odpowiedzi, import ABCD wymaga ręcznego uzupełnienia lub wyłączenia tej opcji. System nie wymyśla brakujących odpowiedzi i nie ocenia, czy propozycje są językowo błędne — nauczyciel sprawdza edytowalny podgląd.
 
 Import rozpoznaje tabulatory, średniki, pionową kreskę i pary ze strzałką lub myślnikiem ze spacjami. Można też wkleić pytanie i odpowiedź w osobnych wierszach. Ustawienie układu pozwala wyłączyć automatyczne rozpoznawanie, jeśli separator występuje wewnątrz zadania. Zmiana źródłowego tekstu unieważnia poprzedni podgląd; żadna karta nie trafia na konto bez zapisu zestawu.
+
+## Sposób prowadzenia gry
+
+Po wyborze materiałów nauczyciel wybiera **Graj w klasie** (wspólny ekran, także przez udostępnianie na Meet) lub **Graj online** (link/pokój i urządzenia uczniów). `game-delivery.js` zawiera jawną listę obsługiwanych trybów. Magic Dice obsługuje oba; Kolekcje Sophisi i Saszetki Sophie — online; gry lokalne i ćwiczenia zestawów — wspólny ekran. Nie pokazujemy nieobsługiwanych trybów ani nie tworzymy pozornych linków do lokalnych ćwiczeń. Plansza pytań i fiszki pozwalają nauczycielowi oceniać ustne odpowiedzi; w pozostałych grach nauczyciel obsługuje sterowanie i odpowiedzi na ekranie.
+
+Wybrany tryb zachowuje kontekst ucznia i materiałów oraz historię nawigacji. W Magic Dice tryb klasy udostępnia start lokalny, a online wyłącznie tworzenie linku. Zmiana konta, Escape i cofnięcie zamykają wybór trybu. Zmiana nie wymaga nowej migracji bazy danych.

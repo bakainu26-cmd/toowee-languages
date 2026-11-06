@@ -11,9 +11,9 @@
   function status(text){el('gameStatus').textContent=text;}
   function shuffle(rows){const out=[...rows];for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
   function updateGameControls(){
-    el('startGame').disabled=!canPlay();
+    el('startGame').disabled=!canPlay();el('startGame').hidden=window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.deliveryMode==='online';
     const stop=el('teacherEndGameNow');if(stop){stop.hidden=window.tooweeView!=='teacher'||!pairs.length||finished;stop.disabled=!inSession();}
-    const share=el('shareMagicDice');if(share){share.hidden=kind!=='dice'||window.tooweeView!=='teacher';share.disabled=!canPlay();}
+    const share=el('shareMagicDice');if(share){share.hidden=kind!=='dice'||window.tooweeView!=='teacher'||window.tooweeTeacherGameContext?.deliveryMode==='classroom';share.disabled=!canPlay();}
     for(const id of ['gameCount','gameDirection','gameReading','fallSpeed','fallMode'])el(id).disabled=!canPlay();
     el('gameCount').disabled=!canPlay() || (kind==='falling' && ['endless','survival'].includes(el('fallMode').value));
     el('gameFolder').disabled=!canPlay() || Boolean(window.getLearningContext?.() || window.tooweeTeacherGameContext);
@@ -132,15 +132,16 @@
     if(kind!=='quiz' || !inSession() || answered || !Array.from(el('gameQuizOptions').children).some(b=>b.dataset.id===id))return;
     const word=questions[questionIndex];showAnswer(id===word.id,word,id);
   }
+  window.addEventListener('toowee-game-delivery',updateGameControls);
   const shareDice=el('shareMagicDice'),shareResult=el('magicDiceShareResult');
-  shareDice.onclick=async()=>{if(kind!=='dice'||!canPlay())return;shareDice.disabled=true;shareResult.hidden=false;shareResult.replaceChildren();try{
+  shareDice.onclick=async()=>{if(kind!=='dice'||!canPlay()||window.tooweeTeacherGameContext?.deliveryMode==='classroom')return;shareDice.disabled=true;shareResult.hidden=false;shareResult.replaceChildren();try{
     const folder=el('gameFolder').value,seen=new Set(),meanings=new Set();
     const words=((window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.words)||(window.filterLearningWords?window.filterLearningWords(activeWords()):activeWords())).filter(w=>!folder||w.folder_id===folder).filter(w=>{const term=w.word.trim().normalize('NFKC').toLocaleLowerCase(),meaning=w.translation.trim().normalize('NFKC').toLocaleLowerCase();if(!term||!meaning||seen.has(term)||(meanings.has(meaning)&&!w.quiz_options))return false;seen.add(term);meanings.add(meaning);return true;});
     const url=await window.MagicDiceClassroom.create({language:activeLanguage,words,size:Number(el('magicDiceSize').value),quota:Number(el('magicDiceQuota').value),direction:el('gameDirection').value},account.client,account.userId,shareResult);
     const label=document.createElement('label');label.textContent='Link dla ucznia';const input=document.createElement('input');input.readOnly=true;input.value=url;input.setAttribute('aria-label','Link do Magic Dice dla ucznia');input.onclick=()=>input.select();label.append(input);const copy=document.createElement('button');copy.type='button';copy.textContent='Kopiuj link';copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);copy.textContent='Skopiowano!';}catch{input.focus();input.select();copy.textContent='Zaznaczono — skopiuj link';}};const open=document.createElement('a');open.href=url;open.target='_blank';open.rel='noopener';open.textContent='Otwórz grę ucznia';const note=document.createElement('p');note.textContent='Uczeń dołącza bez logowania. W panelu nauczyciela możesz zakończyć grę i zobaczyć zapisane statystyki. Każdy, kto otrzyma link, może dołączyć.';shareResult.append(label,copy,open,note);
   }catch(error){const errorNote=document.createElement('p');errorNote.textContent=error.message;shareResult.append(errorNote);}finally{shareDice.disabled=!canPlay();}};
   function startGame(){
-    if(!canPlay())return;resetGame();const folder=el('gameFolder').value;
+    if(!canPlay()||(window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.deliveryMode==='online'))return;resetGame();const folder=el('gameFolder').value;
     const seenWords=new Set(),seenTranslations=new Set(),normalize=s=>s.trim().normalize('NFKC').toLocaleLowerCase();
     const words=shuffle(((window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.words) || (window.filterLearningWords?window.filterLearningWords(activeWords()):activeWords())).filter(w=>!folder || w.folder_id===folder)).filter(w=>{
       const term=normalize(w.word),meaning=normalize(w.translation);if(!term || !meaning || seenWords.has(term) || (seenTranslations.has(meaning)&&!w.quiz_options))return false;seenWords.add(term);seenTranslations.add(meaning);return true;
