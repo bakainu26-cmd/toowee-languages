@@ -269,3 +269,12 @@ body[data-portal-mode=teacher] #teacherControls #teacherSpecialGameHistories>.te
 .teacher-history-toolbar h4{margin:0}
 body[data-portal-mode=teacher] #teacherControls .teacher-history-toolbar #statisticsGames{background:#fffaf5;color:#633b61;border:1px solid #d8c2dd;border-radius:12px;padding:10px 16px;margin:0}
 @media(max-width:600px){body[data-portal-mode=teacher] #teacherSpecialGameHistories{grid-template-columns:1fr;gap:14px}body[data-portal-mode=teacher] #teacherControls #teacherSpecialGameHistories>.teacher-history-choice{min-height:145px}.teacher-history-choice:before{width:64px;height:64px}}
+
+/* Group directory reuses the shared list/tile control. */
+#teacherPanel-groups:has(#teacherGroupForm:not([hidden]))>.teacher-group-view-switch{display:none!important}
+body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list]{grid-template-columns:minmax(0,1fr);align-content:start}
+body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list]>.teacher-group-card{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;min-height:0;padding:18px 22px}
+body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list] .teacher-group-open{flex:1;min-width:0;justify-content:flex-start;text-align:left}
+body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list] .teacher-group-card>p{margin:0;white-space:nowrap}
+body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list] .teacher-group-icon{width:44px;height:38px;object-fit:contain}
+@media(max-width:600px){body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list]>.teacher-group-card{padding:16px;gap:10px}}
