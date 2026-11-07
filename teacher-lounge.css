@@ -232,3 +232,10 @@ body[data-portal-mode=teacher] #teacherStudentList[data-pupil-view=list] .pupil-
  #teacherStudentList[data-pupil-view=list] .pupil-shortcuts{grid-column:1/-1;grid-row:4;margin-top:8px}
  .teacher-pupil-actions .teacher-pupil-views button{padding:9px 10px}
 }
+
+/* Match the shared material layout controls, including explicit readable states. */
+body[data-portal-mode=teacher] #teacherControls .teacher-pupil-views{gap:4px;padding:0;background:transparent;border-radius:10px}
+body[data-portal-mode=teacher] #teacherControls .teacher-pupil-views>button{border:1px solid transparent;border-radius:10px;background:#f1e9f2;color:#765373;font-size:13px;font-weight:600;line-height:1.4;padding:7px 12px;box-shadow:none;opacity:1}
+body[data-portal-mode=teacher] #teacherControls .teacher-pupil-views>button[aria-pressed=true]{background:#e5d5eb;color:#533152;border-color:#cbb4d2}
+body[data-portal-mode=teacher] #teacherControls .teacher-pupil-views>button:hover{background:#eaddf0;color:#533152}
+body[data-portal-mode=teacher] #teacherControls .teacher-pupil-views>button:focus-visible{outline:3px solid #bf9fbd;outline-offset:3px}
