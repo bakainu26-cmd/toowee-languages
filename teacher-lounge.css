@@ -257,3 +257,15 @@ body[data-portal-mode=teacher] #teacherOverview{display:grid;grid-template-colum
 .teacher-statistics-section h4{margin:0 0 14px}
 #teacherStatisticsSection-students>button{margin-top:14px}
 @media(max-width:700px){.teacher-statistics-menu{grid-template-columns:1fr;gap:8px}.teacher-statistics-menu-item img{width:30px;height:30px}body[data-portal-mode=teacher] #teacherControls .teacher-statistics-menu-item{padding:12px 14px}.teacher-statistics-menu-item strong{font-size:16px}}
+
+/* History shortcuts share their artwork with the game catalog. */
+body[data-portal-mode=teacher] #teacherSpecialGameHistories{display:grid;grid-template-columns:repeat(2,minmax(0,300px));gap:18px;margin:22px 0 30px}
+body[data-portal-mode=teacher] #teacherControls #teacherSpecialGameHistories>.teacher-history-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:170px;padding:22px;border:1px solid #d8c2dd;border-radius:20px;background:#eee3f0;color:#533152;box-shadow:0 3px 0 #77547412;white-space:normal;text-align:center}
+body[data-portal-mode=teacher] #teacherControls #teacherSpecialGameHistories>.teacher-history-choice:nth-child(2){background:#f8e8df;border-color:#e4cbbc}
+.teacher-history-choice strong{font-family:Georgia,serif;font-size:21px}
+.teacher-history-choice small{font-size:12px;font-weight:400}
+body[data-portal-mode=teacher] #teacherControls #teacherSpecialGameHistories>.teacher-history-choice:hover{box-shadow:0 5px 14px #76536e25}
+.teacher-history-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin:0 0 20px;padding-top:24px;border-top:1px solid #e4d6e4}
+.teacher-history-toolbar h4{margin:0}
+body[data-portal-mode=teacher] #teacherControls .teacher-history-toolbar #statisticsGames{background:#fffaf5;color:#633b61;border:1px solid #d8c2dd;border-radius:12px;padding:10px 16px;margin:0}
+@media(max-width:600px){body[data-portal-mode=teacher] #teacherSpecialGameHistories{grid-template-columns:1fr;gap:14px}body[data-portal-mode=teacher] #teacherControls #teacherSpecialGameHistories>.teacher-history-choice{min-height:145px}.teacher-history-choice:before{width:64px;height:64px}}
