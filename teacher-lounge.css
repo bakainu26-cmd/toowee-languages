@@ -278,3 +278,18 @@ body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list] .teacher
 body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list] .teacher-group-card>p{margin:0;white-space:nowrap}
 body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list] .teacher-group-icon{width:44px;height:38px;object-fit:contain}
 @media(max-width:600px){body[data-portal-mode=teacher] #teacherGroupsList[data-group-view=list]>.teacher-group-card{padding:16px;gap:10px}}
+
+/* Shared placement and plum primary creation actions across directories. */
+.teacher-directory-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin:18px 0 24px}
+#teacherGroupToolbar>.directory-search{flex:1;min-width:220px;width:auto;margin:0}
+#teacherGroupToolbar>.teacher-group-view-switch{margin:0;flex:none}
+#teacherGroupToolbar>.teacher-directory-create{margin:0;gap:10px}
+body[data-portal-mode=teacher] #teacherControls .teacher-primary-add,
+body[data-portal-mode=teacher] .teacher-pupil-actions>button{background:#63335f!important;color:#fff!important;border:1px solid #63335f!important;border-radius:12px!important;min-height:46px;padding:12px 19px!important;font-size:14px!important;font-weight:600;white-space:nowrap;box-shadow:none}
+body[data-portal-mode=teacher] #teacherControls .teacher-primary-add:hover{background:#75466f!important}
+#teacherPanel-groups:has(#teacherGroupForm:not([hidden])) #teacherGroupToolbar>.directory-search,
+#teacherPanel-groups:has(#teacherGroupForm:not([hidden])) #teacherGroupToolbar>.teacher-group-view-switch{display:none!important}
+#teacherPanel-resources .exercise-toolbar>.teacher-primary-add{margin-left:auto;order:10}
+body[data-portal-mode=teacher] #teacherControls .material-create-actions{justify-content:flex-end}
+body[data-portal-mode=teacher] #teacherControls .material-create-actions>button{background:#63335f!important;color:#fff!important;border-color:#63335f!important}
+@media(max-width:650px){#teacherGroupToolbar>.directory-search{flex-basis:100%}#teacherGroupToolbar>.teacher-directory-create{margin-left:auto}}

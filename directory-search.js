@@ -16,7 +16,7 @@
  function refresh(){for(const [root,state]of states)if(!root.isConnected){state.bar.remove();state.empty.remove();states.delete(root);}
  for(const [selector,items,placeholder]of configs)for(const root of document.querySelectorAll(selector)){const cards=[...root.querySelectorAll(items)];let state=states.get(root);if(!state&&!cards.length)continue;
  if(!state){const bar=document.createElement('div');bar.className='directory-search';const input=document.createElement('input');input.type='search';input.placeholder=placeholder;input.setAttribute('aria-label',placeholder.replace('…',''));input.autocomplete='off';const empty=document.createElement('p');empty.className='directory-search-empty';empty.textContent='Brak wyników. Spróbuj wpisać inną nazwę.';empty.setAttribute('role','status');empty.hidden=true;bar.append(input);state={bar,input,empty,open:new Map()};states.set(root,state);input.addEventListener('input',()=>apply(root,state,[...root.querySelectorAll(items)]));}
- if(!state.bar.isConnected){if(root.id==='teacherGameCatalog')root.insertBefore(state.bar,cards[0]||null);else root.before(state.bar);}
+ if(!state.bar.isConnected){if(root.id==='teacherGroupsList'&&document.getElementById('teacherGroupToolbar'))document.getElementById('teacherGroupToolbar').prepend(state.bar);else if(root.id==='teacherGameCatalog')root.insertBefore(state.bar,cards[0]||null);else root.before(state.bar);}
  if(!state.empty.isConnected)root.after(state.empty);apply(root,state,cards);
  }}
  let pending=false;const observer=new MutationObserver(()=>{if(!pending){pending=true;queueMicrotask(()=>{pending=false;refresh();});}});observer.observe(document.querySelector('main')||document.body,{childList:true,subtree:true});
