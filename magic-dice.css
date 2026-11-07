@@ -94,3 +94,11 @@ body #magicDiceGame.magic-classroom-mode .magic-answers button{
  #magicDiceGame.magic-classroom-mode .magic-layout>div:first-child{padding-top:0}
  #magicDiceGame.magic-classroom-mode .magic-private{position:static;max-width:none}
 }
+
+/* Accurate miniature dice: blank cells stay blank; placed dice retain color and pips. */
+#magicDiceGame .magic-mini-cell{display:grid;place-items:center;width:16px;height:16px;border-radius:3px;background:#fdfbff;border:1px solid #d7cce0}
+#magicDiceGame .magic-mini-cell.magic-mini-occupied{background:#f5eef9}
+#magicDiceGame .magic-mini-cell .magic-die{display:grid!important;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:0;width:15px!important;height:15px!important;min-width:0;max-width:none!important;aspect-ratio:1;padding:2px!important;border:1px solid var(--die-color);border-radius:3px;box-shadow:none!important}
+#magicDiceGame .magic-mini-cell .magic-die i{display:block;min-width:0;min-height:0}
+#magicDiceGame .magic-mini-cell .magic-die .pip{background:#382b48;border-radius:50%;transform:none!important;box-shadow:none}
+#magicDiceGame.magic-classroom-mode .magic-classroom-preview .magic-mini-board{transform:none!important;margin-top:4px!important}
