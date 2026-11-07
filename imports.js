@@ -30,7 +30,7 @@
     else {
       const parsed=window.TooweeImport.parse(text,parserOptions());
       const folder=el('importFolder').value || null;
-      const existing=library.words.filter(w=>w.lang===activeLanguage && (w.folder_id || null)===folder);
+      const implicit=library.folders.find(f=>f.lang===activeLanguage&&f.name==='Słówka luzem')?.id;const existing=library.words.filter(w=>w.lang===activeLanguage && (folder?w.folder_id===folder:!w.folder_id||w.folder_id===implicit));
       const unique=window.TooweeImport.unique(parsed.rows,existing,el('importSkipDuplicates').checked);
       preview={rows:unique.rows,duplicates:unique.duplicates,errors:parsed.errors};
     }
@@ -48,7 +48,7 @@
   }
   function updateImportFolders() {
     const chosen=el('importFolder').value;
-    el('importFolder').replaceChildren(new Option('Bez zestawu',''));
+    el('importFolder').replaceChildren(new Option('Słówka luzem (domyślna lista)',''));
     for(const folder of activeFolders()) el('importFolder').add(new Option(folder.name,folder.id));
     el('importFolder').value=activeFolders().some(f=>f.id===chosen) ? chosen : '';
     refreshPreview();
@@ -79,7 +79,7 @@
     if(folder && !activeFolders().some(f=>f.id===folder)){status('Wybierz zestaw należący do aktualnego języka.',true);return;}
     const payload=preview.rows.map(({word,reading,translation,example})=>({word,reading,translation,...(example ? {example} : {}),lang:language,folder_id:folder,owner_id:owner}));
     importBusy=true;updateImportControls();status('Zapisywanie '+payload.length+' słówek…');
-    const ok=await writeLibrary(({client})=>client.from('vocabulary_words').insert(payload),'Zaimportowano '+payload.length+' słówek.');
+    const ok=await writeLibrary(async snapshot=>{if(!folder){const id=await window.ensureLooseWordList(snapshot,language);for(const row of payload)row.folder_id=id;}if(account?.userId!==owner||activeLanguage!==language)throw Error('Konto lub język zostały zmienione.');return snapshot.client.from('vocabulary_words').insert(payload);},'Zaimportowano '+payload.length+' słówek.');
     if(current!==generation || account?.userId!==owner || activeLanguage!==language) return;
     importBusy=false;
     if(ok) {el('importText').value='';el('importFile').value='';refreshPreview();status('Gotowe! Zaimportowano '+payload.length+' słówek do języka '+languageInfo[language].name+'. Znajdziesz je na liście słówek i w fiszkach.');}

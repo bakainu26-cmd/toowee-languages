@@ -28,5 +28,10 @@ function setup(){
  // A stale/forged foreign-language folder selection is rejected before writing a word.
  h.els.wordForm.elements.word.value='hola';h.els.wordForm.elements.translation.value='cześć';h.els.wordForm.elements.folder.value='jp';await h.els.wordForm.onsubmit({preventDefault(){},target:h.els.wordForm});assert.equal(h.inserted.length,1);assert(h.els.libraryStatus.textContent.includes('aktualnego języka'));
  assert(h.run("dbError({code:'PGRST204',message:'Could not find lang column in vocabulary_folders'})").includes('folder_languages.sql'));
- console.log('PASS: folder language isolation including empty folders, legacy compatibility, creation/owner payload, assignment, missing-language setup errors and foreign-folder guard');
+ 
+ // Default destinations are reused within each language and never mixed between languages.
+ h=setup();const jp=await h.c.ensureLooseWordList({client:h.c.db,userId:'owner'},'Japanese');assert.equal(h.folders.find(f=>f.id===jp).name,'Słówka luzem');assert.equal(await h.c.ensureLooseWordList({client:h.c.db,userId:'owner'},'Japanese'),jp);const es=await h.c.ensureLooseWordList({client:h.c.db,userId:'owner'},'Spanish');assert.notEqual(jp,es);assert.equal(h.folders.find(f=>f.id===es).lang,'Spanish');await assert.rejects(h.c.ensureLooseWordList({client:h.c.db,userId:'other'},'Japanese'));
+ // A manually added word without a selected list lands in the language's default list.
+ h.els.wordForm.elements.word.value='猫';h.els.wordForm.elements.translation.value='kot';h.els.wordForm.elements.folder.value='';await h.els.wordForm.onsubmit({preventDefault(){},target:h.els.wordForm});const added=h.inserted.find(x=>x.table==='vocabulary_words');assert(added);assert.equal(added.payload.folder_id,jp);assert.equal(added.payload.lang,'Japanese');
+console.log('PASS: folder language isolation including empty folders, legacy compatibility, creation/owner payload, assignment, missing-language setup errors and foreign-folder guard');
 })().catch(error=>{console.error(error);process.exit(1)});

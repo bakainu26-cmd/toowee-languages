@@ -19,6 +19,18 @@ function activeFolders() {
     return languages.size===1 && languages.has(activeLanguage);
   });
 }
+// A language-specific list for words added without an explicit list selection.
+const looseWordLists=new Map();
+async function ensureLooseWordList({client,userId},language){
+  if(account?.userId!==userId||!Object.hasOwn(languageInfo,language))throw Error('Konto lub język zostały zmienione.');
+  const found=library.folders.find(f=>f.owner_id===userId&&f.lang===language&&f.name==='Słówka luzem');
+  if(found)return found.id;
+  const key=userId+':'+language;
+  if(looseWordLists.has(key))return looseWordLists.get(key);
+  const pending=(async()=>{const r=await client.from('vocabulary_folders').insert({owner_id:userId,lang:language,name:'Słówka luzem'}).select('id').single();if(r.error)throw r.error;if(account?.userId!==userId)throw Error('Konto zostało zmienione.');const row={id:r.data.id,owner_id:userId,lang:language,name:'Słówka luzem'};if(!library.folders.some(f=>f.id===row.id))library.folders.push(row);return row.id;})();
+  looseWordLists.set(key,pending);try{return await pending;}finally{looseWordLists.delete(key);}
+}
+window.ensureLooseWordList=ensureLooseWordList;
 function renderUnassignedFolders() {
   const folders=library.folders.filter(folder=>!folder.lang && !library.words.some(w=>w.folder_id===folder.id));
   byId('unassignedFolders').hidden=!folders.length || !activeLanguage;
@@ -103,7 +115,7 @@ function tab(id) {
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x.id === 'nav-' + navId));
   const selectedSet=window.getLearningContext?.();
   byId('learningBreadcrumb').hidden = !learningNames[id] || (['games','tasks','words','imports'].includes(id) && !selectedSet);
-  const setName=selectedSet ? library.folders.find(f=>f.id===selectedSet.folder)?.name || 'Bez zestawu' : '';
+  const setName=selectedSet ? library.folders.find(f=>f.id===selectedSet.folder)?.name || 'Słówka luzem' : '';
   byId('learningViewName').textContent = (learningNames[id] || '')+(setName ? ' · '+setName : '');
   if(id!=='games' && window.pauseFallingGame)window.pauseFallingGame();
   if (id !== 'study' && window.pauseStudySession) window.pauseStudySession();
@@ -117,7 +129,7 @@ function renderLibrary() {
   const options = activeFolders().map(f => '<option value="' + safe(f.id) + '">' + safe(f.name) + '</option>').join('');
   const selected = byId('wordFolder').value;
   const filter = byId('filterFolder').value;
-  byId('wordFolder').innerHTML = '<option value="">Bez folderu</option>' + options;
+  byId('wordFolder').innerHTML = '<option value="">Słówka luzem (domyślna lista)</option>' + options;
   byId('wordFolder').value = selected;
   byId('filterFolder').innerHTML = '<option value="">Wszystkie foldery</option>' + options;
   byId('filterFolder').value = filter;
@@ -233,9 +245,11 @@ byId('wordForm').onsubmit = async event => {
   const example=f.example?.value.trim() || '';
   if(example || library.words.find(w=>w.id===editId)?.example)word.example=example;
   const id = editId;
-  const success = await writeLibrary(({client,userId}) => id
-    ? client.from('vocabulary_words').update(word).eq('owner_id',userId).eq('id',id).select('id').single()
-    : client.from('vocabulary_words').insert({...word,owner_id:userId}).select('id').single(), id ? 'Zmiany słówka zapisane.' : 'Słówko zapisane w Supabase.');
+  const success = await writeLibrary(async snapshot => {
+    const {client,userId}=snapshot;if(!word.folder_id)word.folder_id=await ensureLooseWordList(snapshot,word.lang);
+    if(account?.userId!==userId)throw Error('Konto zostało zmienione.');
+    return id?client.from('vocabulary_words').update(word).eq('owner_id',userId).eq('id',id).select('id').single():client.from('vocabulary_words').insert({...word,owner_id:userId}).select('id').single();
+  }, id ? 'Zmiany słówka zapisane.' : 'Słówko zapisane w Supabase.');
   if (success) cancelEdit();
 };
 byId('folderForm').onsubmit = async event => {
