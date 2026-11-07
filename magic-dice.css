@@ -102,3 +102,43 @@ body #magicDiceGame.magic-classroom-mode .magic-answers button{
 #magicDiceGame .magic-mini-cell .magic-die i{display:block;min-width:0;min-height:0}
 #magicDiceGame .magic-mini-cell .magic-die .pip{background:#382b48;border-radius:50%;transform:none!important;box-shadow:none}
 #magicDiceGame.magic-classroom-mode .magic-classroom-preview .magic-mini-board{transform:none!important;margin-top:4px!important}
+
+/* Larger, readable classroom quiz. Long Japanese prompts and answers wrap naturally. */
+#magicDiceGame.magic-classroom-mode .magic-layout{
+ grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);
+}
+#magicDiceGame.magic-classroom-mode .magic-turn{
+ width:100%;display:flex;flex-direction:column;justify-content:center;
+}
+#magicDiceGame.magic-classroom-mode .magic-turn h4{
+ font-size:clamp(21px,2.8vh,30px);line-height:1.2;
+}
+#magicDiceGame.magic-classroom-mode .magic-turn p{
+ font-size:clamp(14px,1.85vh,19px);line-height:1.3;
+}
+#magicDiceGame.magic-classroom-mode .magic-prompt{
+ box-sizing:border-box;width:100%;min-height:clamp(80px,12vh,130px);
+ padding:clamp(12px,2vh,22px);margin:clamp(9px,1.5vh,16px) 0;
+ font-size:clamp(23px,3.7vh,38px);line-height:1.25;
+ white-space:normal;overflow-wrap:anywhere;word-break:normal;
+}
+#magicDiceGame.magic-classroom-mode .magic-answers{
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:clamp(8px,1.3vh,14px);margin:8px 0;
+}
+body #magicDiceGame.magic-classroom-mode .magic-answers button{
+ box-sizing:border-box;display:flex;align-items:center;
+ min-height:clamp(62px,9vh,96px)!important;
+ padding:clamp(10px,1.5vh,18px)!important;
+ font-size:clamp(16px,2.25vh,23px)!important;
+ line-height:1.3;white-space:normal!important;
+ overflow-wrap:anywhere;word-break:normal;text-align:left;
+}
+@media(max-height:680px){
+ #magicDiceGame.magic-classroom-mode .magic-prompt{
+ min-height:58px;font-size:clamp(18px,3vh,26px);padding:8px;margin:5px 0;
+ }
+ body #magicDiceGame.magic-classroom-mode .magic-answers button{
+ min-height:48px!important;font-size:clamp(14px,2vh,18px)!important;padding:7px!important;
+ }
+}
