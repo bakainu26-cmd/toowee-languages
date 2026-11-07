@@ -212,3 +212,23 @@ body[data-portal-mode=teacher] .teacher-game-sources{margin-top:28px;padding:20p
 .teacher-language-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;max-width:1100px;margin:28px 0}.teacher-language-cards .teacher-language-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:190px;padding:28px;border:1px solid #dfd2e5;border-radius:24px;background:#eee2ef;color:#563454;cursor:pointer}.teacher-language-card .teacher-language-card-flag{font-size:46px;line-height:1}.teacher-language-card strong{font-family:Georgia,serif;font-size:27px}.teacher-language-card:hover{background:#e4d5e9;box-shadow:0 5px 14px #56345412}.teacher-language-card:focus-visible{outline:3px solid #87618a;outline-offset:4px}@media(max-width:700px){.teacher-language-cards{grid-template-columns:1fr;gap:14px}.teacher-language-cards .teacher-language-card{flex-direction:row;justify-content:flex-start;min-height:100px;padding:22px;gap:22px}.teacher-language-card .teacher-language-card-flag{font-size:36px}.teacher-language-card strong{font-size:24px}}
 
 .teacher-language-card .teacher-language-card-flag{display:flex;align-items:center;justify-content:center}.teacher-language-flag-art{display:block;width:96px;height:72px;border-radius:13px;overflow:hidden;border:3px solid #fffaf5;box-shadow:0 4px 10px #56345420;transform:rotate(-3deg)}.teacher-language-card:nth-child(2) .teacher-language-flag-art{transform:rotate(2deg)}.teacher-language-card-copy{display:flex;flex-direction:column;align-items:center;gap:6px}.teacher-language-card .teacher-language-native{font-family:Inter,system-ui,sans-serif;font-size:16px;font-weight:400;color:#816782;line-height:1.5}@media(max-width:700px){.teacher-language-flag-art{width:72px;height:54px;border-radius:10px}.teacher-language-card-copy{align-items:flex-start}.teacher-language-card .teacher-language-native{font-size:15px}}
+
+/* Student directory layout switch; card actions remain available in both views. */
+.teacher-pupil-views{display:flex;gap:4px;padding:4px;border-radius:14px;background:#efe5f0}
+.teacher-pupil-actions .teacher-pupil-views button{background:transparent;color:#704e70;padding:9px 12px;font-weight:600}
+.teacher-pupil-actions .teacher-pupil-views button[aria-pressed=true]{background:#765273;color:#fff}
+body[data-portal-mode=teacher] #teacherStudentList[data-pupil-view=list]{grid-template-columns:minmax(0,1fr);align-content:start}
+body[data-portal-mode=teacher] #teacherStudentList[data-pupil-view=list]>.teacher-pupil-card{display:grid;grid-template-columns:60px minmax(160px,1fr) minmax(240px,340px);column-gap:20px;row-gap:8px;min-height:0;padding:20px 58px 20px 22px;align-items:center}
+body[data-portal-mode=teacher] #teacherStudentList[data-pupil-view=list]>.teacher-pupil-card:before{display:none}
+#teacherStudentList[data-pupil-view=list] .pupil-initial{grid-column:1;grid-row:1/4;margin:0;align-self:center}
+body[data-portal-mode=teacher] #teacherStudentList[data-pupil-view=list] .pupil-card-name{grid-column:2;grid-row:1;margin:0}
+body[data-portal-mode=teacher] #teacherStudentList[data-pupil-view=list] .pupil-card-state{grid-column:2;grid-row:2;margin:0;justify-self:start}
+#teacherStudentList[data-pupil-view=list] .pupil-shortcuts{grid-column:3;grid-row:1/4;margin:0}
+#teacherStudentList[data-pupil-view=list] .pupil-shortcuts button{padding:10px 5px}
+body[data-portal-mode=teacher] #teacherStudentList[data-pupil-view=list] .pupil-profile-open{grid-column:2;grid-row:3;margin:0;justify-self:start;font-size:14px;padding-bottom:3px}
+@media(max-width:760px){
+ body[data-portal-mode=teacher] #teacherStudentList[data-pupil-view=list]>.teacher-pupil-card{grid-template-columns:44px minmax(0,1fr);padding:18px 42px 18px 16px;column-gap:12px}
+ #teacherStudentList[data-pupil-view=list] .pupil-initial{width:44px;height:44px;font-size:26px}
+ #teacherStudentList[data-pupil-view=list] .pupil-shortcuts{grid-column:1/-1;grid-row:4;margin-top:8px}
+ .teacher-pupil-actions .teacher-pupil-views button{padding:9px 10px}
+}
