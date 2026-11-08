@@ -20,3 +20,5 @@
 /* Standard online header actions, shared by host/student and future games. */
 .tw-online .tw-online-actions button{background:#6a3c66;border-color:#6a3c66;color:#fff}
 .tw-online .tw-online-actions button:hover:not(:disabled){background:#553052;border-color:#553052;color:#fff}
+
+#magicDiceHostDialog .magic-help-heading>button,#collectionsClose,#collectionsHelpButton,#sophieBack{background:#6a3c66!important;border-color:#6a3c66!important;color:#fff!important}

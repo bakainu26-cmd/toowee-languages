@@ -1,0 +1,6 @@
+const {JSDOM}=require(process.env.TOOWEE_JSDOM_MODULE||'jsdom'),fs=require('fs'),assert=require('node:assert/strict');
+const read=f=>fs.readFileSync(__dirname+'/../'+f,'utf8');
+const dom=new JSDOM(read('index.html'),{runScripts:'outside-only',url:'https://example.com'}),w=dom.window,d=w.document;
+const words=['猫','犬','花','本'].map((word,i)=>({id:String(i),word,translation:['kot','pies','kwiat','książka'][i],lang:'Japanese'}));
+Object.assign(w,{ready:true,saving:false,account:{userId:'teacher'},activeLanguage:'Japanese',tooweeView:'teacher',languageInfo:{Japanese:{code:'ja'}},activeWords:()=>words,activeFolders:()=>[],tooweeTeacherGameContext:{words},tab(){},TooweeMagicDice:{updateControls(){},reset(){}}});
+w.eval(read('games.js'));d.getElementById('gameType-quiz').click();d.getElementById('startGame').click();const stop=d.getElementById('teacherEndGameNow');assert(!stop.hidden);stop.click();assert(!d.getElementById('gameResult').hidden);assert.equal(stop.textContent,'Wyjdź');assert(!stop.hidden);assert(!stop.disabled);let exits=0;w.openGamesLobby=()=>exits++;stop.click();assert.equal(exits,1);console.log('PASS completed game keeps enabled Wyjdź in same header slot and exits to lobby');dom.window.close();
