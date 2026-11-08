@@ -63,7 +63,7 @@
     if(finished)return;
     if(!finished && kind==='match' && matched.size>=6 && matched.size===pairs.length && worldRewardId && window.recordWorldGame)void window.recordWorldGame({event_id:worldRewardId,owner:sessionOwner,language:sessionLanguage,ids:[...matched]});
     finished=true;el('gameResult').hidden=false;el('gameResultText').textContent=text+' Czas: '+Math.max(0,Math.floor((Date.now()-startedAt)/1000))+' s.';
-    status('Gra zakończona! Zagraj ponownie lub kliknij „Koniec gry”, aby wrócić do wyboru gier.');updateGameControls();el('gameResult').scrollIntoView?.({block:'nearest'});
+    status('Gra zakończona! Zagraj ponownie lub wybierz „Wyjdź” u góry, aby wrócić do wyboru gier.');updateGameControls();el('gameResult').scrollIntoView?.({block:'nearest'});
   }
   function renderColumn(id,items,side){
     el(id).replaceChildren();
@@ -171,7 +171,7 @@
   for(const key of Object.keys(names))el('gameType-'+key).onclick=()=>{kind=key;resetGame();window.openActivityFocus?.('games',names[kind],false,kind);};
   for(const id of ['gameFolder','gameCount','gameDirection','gameReading','fallSpeed','fallMode','magicDiceSize','magicDiceQuota'])el(id).onchange=resetGame;
   el('teacherEndGameNow').onclick=()=>{if(finished){window.openGamesLobby();return;}if(window.tooweeView!=='teacher'||!inSession())return;if(kind==='dice'){window.TooweeMagicDice.finish('Nauczyciel zakończył grę.');return;}if(kind==='falling'){window.TooweeFalling.finish();return;}if(kind==='escape'){window.TooweeEscape.finish();return;}if(hideTimer!==null){clearTimeout(hideTimer);hideTimer=null;}const summary=['match','memory'].includes(kind)?'Dopasowane pary: '+matched.size+' / '+pairs.length+' · Próby: '+attempts+' · Nietrafione próby: '+(attempts-matched.size):'Poprawne: '+score+' · Błędne: '+(attempts-score)+' · Odpowiedzi: '+attempts+' / '+questions.length;finish('Nauczyciel zakończył grę. '+summary+'.');};
-  el('startGame').onclick=startGame;el('replayGame').onclick=startGame;el('endGame').onclick=()=>window.openGamesLobby();
+  el('startGame').onclick=startGame;el('replayGame').onclick=startGame;
   el('nextGameQuestion').onclick=()=>{if(['quiz','write'].includes(kind) && inSession() && answered && questionIndex<questions.length-1){questionIndex++;renderQuestion();}};
   el('gameWriteForm').onsubmit=checkWritten;
   window.openGamesLobby=(allowWorld=true)=>{if(window.returnToTeacherGameCatalog?.())return;const toWorld=allowWorld && window.worldGameMission===true;window.worldGameMission=false;window.closeActivityFocus?.();if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab(toWorld?'world':'games');if(!toWorld)el('games').scrollIntoView?.({block:'start'});};
