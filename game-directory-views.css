@@ -1,0 +1,16 @@
+
+/* Consistent list/tile controls for game directories. */
+body[data-portal-mode=teacher] #teacherControls .game-directory-view-switch{display:flex;justify-content:flex-end;gap:6px;margin:16px 0;grid-column:1/-1}
+body[data-portal-mode=teacher] #teacherControls .game-directory-view-switch button{background:#f1e9f2;color:#765373;border:1px solid transparent;border-radius:12px;padding:10px 15px;min-height:42px;font-size:14px}
+body[data-portal-mode=teacher] #teacherControls .game-directory-view-switch button[aria-pressed=true]{background:#e5d5eb;color:#533152;border-color:#cbb4d2}
+body[data-portal-mode=teacher] #teacherGameCatalog>.game-types[data-game-directory-view=list]{grid-template-columns:1fr}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .game-types[data-game-directory-view=list]>.cozy-game-choice{flex-direction:row;justify-content:flex-start;text-align:left;min-height:88px;padding:12px 22px;gap:20px}
+#teacherGameCatalog .game-types[data-game-directory-view=list]>.cozy-game-choice::before{width:64px;height:64px}
+body[data-portal-mode=teacher] #teacherControls #profileGamesPanel[data-game-directory-view=tiles]{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;align-content:start}
+#profileGamesPanel[data-game-directory-view=tiles]>:not(.sophie-launch){grid-column:1/-1}
+body[data-portal-mode=teacher] #teacherControls #profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch{display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:flex-start;margin:0;gap:14px;padding:22px;min-width:0}
+#profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch>div{flex:1;width:100%}
+#profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch>button{margin-top:auto}
+#profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch>img,#profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch>.magic-profile-icon{width:94px;height:94px;object-fit:contain;flex:none}
+body[data-portal-mode=teacher] #teacherControls #profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch h3{margin:0 0 10px}
+#profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch p{margin:0;line-height:1.5}
