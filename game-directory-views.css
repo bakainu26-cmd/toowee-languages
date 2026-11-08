@@ -14,3 +14,14 @@ body[data-portal-mode=teacher] #teacherControls #profileGamesPanel[data-game-dir
 #profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch>img,#profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch>.magic-profile-icon{width:94px;height:94px;object-fit:contain;flex:none}
 body[data-portal-mode=teacher] #teacherControls #profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch h3{margin:0 0 10px}
 #profileGamesPanel[data-game-directory-view=tiles]>.sophie-launch p{margin:0;line-height:1.5}
+
+/* Search and layout switch share one toolbar row, as in pupil directories. */
+body[data-portal-mode=teacher] #teacherGameCatalog:has(>.game-types){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:14px}
+#teacherGameCatalog:has(>.game-types)>:not(.directory-search):not(.game-directory-view-switch){grid-column:1/-1}
+body[data-portal-mode=teacher] #teacherGameCatalog:has(>.game-types)>.directory-search{grid-column:1;margin:0;min-width:0;width:100%}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog:has(>.game-types)>.game-directory-view-switch{grid-column:2;grid-row:auto;margin:0;align-self:center}
+#teacherGameCatalog:has(>.game-types)>.directory-search input{width:100%;box-sizing:border-box;min-height:46px}
+@media(max-width:600px){
+ body[data-portal-mode=teacher] #teacherGameCatalog:has(>.game-types){grid-template-columns:minmax(0,1fr)}
+ body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog:has(>.game-types)>.game-directory-view-switch{grid-column:1;justify-content:flex-end;margin-top:10px}
+}
