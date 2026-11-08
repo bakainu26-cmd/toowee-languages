@@ -54,11 +54,11 @@
    start.disabled=originalStart.disabled;start.hidden=originalStart.hidden;share.disabled=originalShare?.disabled??true;share.hidden=originalShare?.hidden??true;
    footer.hidden=document.getElementById('gameSetup').hidden;for(const b of sizeButtons)b.setAttribute('aria-pressed',String(b.dataset.size===size.value));draw();
   }
-  async function reload(l,id){
+  async function reload(l,id,preserve=false){
    const token=++request;status.textContent='Wczytywanie materiałów…';start.disabled=share.disabled=true;
-   try{const next=await(id?window.getStudentGameMaterials(id,l):window.getTeacherGameMaterials(l));if(token!==request||destroyed)return;student=id;ctx={...next,name:id?(window.tooweeStudentProfiles||[]).find(p=>p.id===id)?.first_name||'Uczeń':names[l],deliveryMode:context.deliveryMode};lang.replaceChildren(...Object.entries(names).map(([value,name])=>new Option(name,value)));lang.value=l;language.value=l;language.refresh();onContext(ctx);studentOptions();folder=null;refresh();status.textContent='';}catch(e){status.textContent=e.message;refresh();}
+   try{const next=await(id?window.getStudentGameMaterials(id,l):window.getTeacherGameMaterials(l));if(token!==request||destroyed)return;student=id;ctx={...next,name:id?(window.tooweeStudentProfiles||[]).find(p=>p.id===id)?.first_name||'Uczeń':names[l],deliveryMode:context.deliveryMode};lang.replaceChildren(...Object.entries(names).map(([value,name])=>new Option(name,value)));lang.value=l;language.value=l;language.refresh();onContext(ctx);if(preserve){const chosenSet=ctx.sets.find(s=>s.name===context.name),chosenFolder=ctx.folders.find(f=>f.name===context.name);if(chosenSet)scope.value='set:'+chosenSet.id;else if(chosenFolder)scope.value='folder:'+chosenFolder.id;scope.onchange?.();}studentOptions();folder=null;refresh();status.textContent='';}catch(e){status.textContent=e.message;refresh();}
   }
-  studentOptions();refresh();
+  studentOptions();refresh();if(!context.exerciseSet)void reload(lang.value,student,true);
   const watch=new MutationObserver(()=>{start.disabled=originalStart.disabled;start.hidden=originalStart.hidden;share.disabled=originalShare?.disabled??true;share.hidden=originalShare?.hidden??true;footer.hidden=document.getElementById('gameSetup').hidden;});
   for(const n of [originalStart,originalShare,document.getElementById('gameSetup')].filter(Boolean))watch.observe(n,{attributes:true,attributeFilter:['disabled','hidden']});
   solo.addEventListener('change',refresh);scope.addEventListener('change',refresh);
