@@ -10,7 +10,13 @@
   const inSession=()=>canPlay() && sessionOwner===account.userId && sessionLanguage===activeLanguage && !finished;
   function status(text){el('gameStatus').textContent=text;}
   function shuffle(rows){const out=[...rows];for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
+  function updateDirectionLabels(){
+    const language=window.tooweeTeacherGameContext?.lang||activeLanguage;
+    const label=({Japanese:'Japoński',English:'Angielski',Spanish:'Hiszpański'})[language]||language||'Wybrany język';
+    for(const option of el('gameDirection').options){if(option.value==='toPolish')option.textContent=label+' → polski';else if(option.value==='toTarget')option.textContent='Polski → '+label.toLocaleLowerCase('pl');}
+  }
   function updateGameControls(){
+    updateDirectionLabels();
     el('startGame').disabled=!canPlay();el('startGame').hidden=window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.deliveryMode==='online';
     const stop=el('teacherEndGameNow');if(stop){stop.hidden=window.tooweeView!=='teacher'||!pairs.length||finished;stop.disabled=!inSession();}
     const share=el('shareMagicDice');if(share){share.hidden=kind!=='dice'||window.tooweeView!=='teacher'||window.tooweeTeacherGameContext?.deliveryMode==='classroom';share.disabled=!canPlay();}
@@ -170,5 +176,6 @@
   el('gameWriteForm').onsubmit=checkWritten;
   window.openGamesLobby=(allowWorld=true)=>{if(window.returnToTeacherGameCatalog?.())return;const toWorld=allowWorld && window.worldGameMission===true;window.worldGameMission=false;window.closeActivityFocus?.();if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab(toWorld?'world':'games');if(!toWorld)el('games').scrollIntoView?.({block:'start'});};
   window.updateGameControls=updateGameControls;window.updateGameFolders=updateGameFolders;window.resetGame=resetGame;
+  window.addEventListener('toowee-game-delivery',updateDirectionLabels);
   updateGameFolders();resetGame();
 })();
