@@ -4,7 +4,7 @@
   let records=[],days=[],dataOwner=null,daysLoaded=false,memoryLoaded=false,version=0,pending=null,recording=false;
   let shownMonth=math.dateKey().slice(0,7);
   const labels=['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień'];
-  function notice(text,error=false) {el('challengeNotice').hidden=false;el('challengeNotice').textContent=text;el('challengeNotice').style.color=error ? '#a12743' : '#286040';}
+  function notice(text,error=false) {el('challengeNotice').hidden=false;el('challengeNotice').textContent=text;el('challengeNotice').style.color=error ? '#a12743' : '#54344f';}
   function setStatus(text) {el('progressStatus').textContent=text;}
   function renderMemoryStats() {
     el('memoryLanguage').textContent=activeLanguage ? 'Słówka w języku: '+languageInfo[activeLanguage].name+'.' : 'Wybierz język nauki.';

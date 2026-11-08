@@ -1,5 +1,5 @@
 /* The teacher's student home: quiet watercolor surfaces with useful card shortcuts. */
-body[data-portal-mode=teacher]{--lounge-ink:#4d2449;--lounge-plum:#63335f;--lounge-sage:#71805d;--lounge-paper:#fbf6ef;background:#fbf6ef;color:#38283e}
+body[data-portal-mode=teacher]{--lounge-ink:#4d2449;--lounge-plum:#63335f;--lounge-sage:#895480;--lounge-paper:#fbf6ef;background:#fbf6ef;color:#38283e}
 body[data-portal-mode=teacher] #teacherSidebar{background:linear-gradient(160deg,#f2eaf3,#eee8f4);border-color:#e6dae6}
 body[data-portal-mode=teacher] #teacherSidebar h2{font-family:Georgia,serif;color:#59345c;font-size:25px}
 body[data-portal-mode=teacher] #teacherSidebar #teacherNavigation{background:transparent;border-color:#dfd0e1}
@@ -34,7 +34,7 @@ body.teacher-lounge-open #portalStatus.lounge-default-status{display:none}body.t
 body.teacher-lounge-open .site-header #teacherAccountButton{margin-left:auto}
 
 /* Shared watercolor language for every teacher workspace. */
-body[data-portal-mode=teacher]{--cozy-lavender:#eee2ef;--cozy-sage:#e7ead7;--cozy-peach:#f8e1cd;--cozy-border:#e3d6dd;--cozy-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%238a7582' opacity='.08' filter='url(%23n)' d='M0 0h140v140H0z'/%3E%3C/svg%3E")}
+body[data-portal-mode=teacher]{--cozy-lavender:#eee2ef;--cozy-sage:#ead7e7;--cozy-peach:#f8e1cd;--cozy-border:#e3d6dd;--cozy-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%238a7582' opacity='.08' filter='url(%23n)' d='M0 0h140v140H0z'/%3E%3C/svg%3E")}
 body[data-portal-mode=teacher] main{max-width:1540px;padding:0 14px;margin-top:14px}
 body[data-portal-mode=teacher] #connectionsPanel{background:transparent;border:0;box-shadow:none;padding:0}
 body[data-portal-mode=teacher] .site-header{padding-top:6px;padding-bottom:6px;min-height:68px;background:#fffaf5;border-color:#ebdfdf}
@@ -61,7 +61,7 @@ body[data-portal-mode=teacher] #teacherWelcome{padding:24px;background:var(--coz
 /* Groups and members */
 body[data-portal-mode=teacher] #teacherGroupsList{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;margin:22px 0}
 body[data-portal-mode=teacher] #teacherGroupsList .teacher-group-card{min-width:0;min-height:160px;margin:0;padding:22px 24px;background:var(--cozy-lavender);background-image:var(--cozy-grain);border:1px solid #e2d4e2;border-radius:23px 18px 22px 18px;box-shadow:0 4px 0 #77547412}
-body[data-portal-mode=teacher] #teacherGroupsList .teacher-group-card:nth-child(3n+2){background-color:var(--cozy-sage);border-color:#dce0cb}
+body[data-portal-mode=teacher] #teacherGroupsList .teacher-group-card:nth-child(3n+2){background-color:var(--cozy-sage);border-color:#dfccdc}
 body[data-portal-mode=teacher] #teacherGroupsList .teacher-group-card:nth-child(3n){background-color:var(--cozy-peach);border-color:#ead2c0}
 body[data-portal-mode=teacher] .teacher-group-open{font-family:Georgia,serif;font-size:23px;color:#4d2449!important;line-height:1.25;overflow-wrap:anywhere;white-space:normal}
 body[data-portal-mode=teacher] .teacher-group-card>p{font-size:12px;margin:12px 0 0}
@@ -73,7 +73,7 @@ body[data-portal-mode=teacher] .group-students-list>button:nth-child(3n+2){backg
 body[data-portal-mode=teacher] .group-students-list>button:nth-child(3n){background:var(--cozy-peach)!important}
 /* Folders, sets and word cards keep their tile/list modes. */
 body[data-portal-mode=teacher] :is(.material-folder-card,.group-word-editor){background:#f4eaf2;background-image:var(--cozy-grain);border:1px solid #e4d5df;border-radius:20px;padding:20px}
-body[data-portal-mode=teacher] .material-folder-card:nth-of-type(3n+2){background-color:#edf0e0;border-color:#dce1cc}
+body[data-portal-mode=teacher] .material-folder-card:nth-of-type(3n+2){background-color:#efe1ed;border-color:#e0cddd}
 body[data-portal-mode=teacher] .material-folder-card:nth-of-type(3n){background-color:#faeada;border-color:#eddbca}
 body[data-portal-mode=teacher] .material-folder-title{font-family:Georgia,serif;font-size:20px;color:#573450}
 body[data-portal-mode=teacher] .material-set-card{background:#fffaf3dc!important;color:#62455c!important;border-color:#dfcfd8!important;border-radius:14px;box-shadow:0 2px 2px #76546608}
@@ -96,7 +96,7 @@ body[data-portal-mode=teacher] #teacherAddStudentPanel details,body[data-portal-
 /* Game catalog and profile/group game launch cards. */
 body[data-portal-mode=teacher] #teacherGameCatalog>.game-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px;margin:24px 0}
 body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;min-width:0;min-height:185px;text-align:center;padding:22px 18px;font-family:Georgia,serif;font-size:22px;line-height:1.3;background:var(--cozy-lavender);background-image:var(--cozy-grain);color:#512b4f;border:1px solid #e2d4e1;border-radius:23px 18px 23px 18px;box-shadow:0 3px 0 #77547412}
-body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-choice:nth-child(3n+2){background-color:var(--cozy-sage);border-color:#dce0cb}
+body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-choice:nth-child(3n+2){background-color:var(--cozy-sage);border-color:#dfccdc}
 body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-choice:nth-child(3n){background-color:var(--cozy-peach);border-color:#ead2c0}
 .cozy-game-choice:before{content:'';display:block;width:74px;height:74px;background:url('assets/sofi-book.webp') center/contain no-repeat;pointer-events:none}
 .cozy-game-choice[data-teacher-game-kind=sophie]:before{background-image:url('assets/sophie-pouch-fish.webp')}
@@ -107,10 +107,10 @@ body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-s
 body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-student:nth-of-type(3n){background-color:var(--cozy-sage)}
 body[data-portal-mode=teacher] #teacherControls #teacherGameCatalog .cozy-game-student:nth-of-type(3n+1){background-color:var(--cozy-peach)}
 body[data-portal-mode=teacher] :is(#profileGamesPanel,#groupGamesPanel)>.sophie-launch{background:var(--cozy-lavender);background-image:var(--cozy-grain);border:1px solid #e1d2df;border-radius:22px;padding:22px;box-shadow:0 3px 0 #77547410}
-body[data-portal-mode=teacher] :is(#profileGamesPanel,#groupGamesPanel)>.sophie-launch:nth-of-type(even){background-color:var(--cozy-sage);border-color:#dce0cc}
+body[data-portal-mode=teacher] :is(#profileGamesPanel,#groupGamesPanel)>.sophie-launch:nth-of-type(even){background-color:var(--cozy-sage);border-color:#e0ccdd}
 body[data-portal-mode=teacher] #teacherControls .profile-game-select{background:#6e436a!important;color:white;border-radius:12px}
 /* Results, history and profile summaries. */
-body[data-portal-mode=teacher] #teacherOverview{padding:22px;background:var(--cozy-sage);border:1px solid #dce1cd;border-radius:19px;color:#566149;font-size:15px}
+body[data-portal-mode=teacher] #teacherOverview{padding:22px;background:var(--cozy-sage);border:1px solid #e1cddd;border-radius:19px;color:#694163;font-size:15px}
 body[data-portal-mode=teacher] .game-history-day{margin:20px 0;padding:20px 22px;background:#fffaf4;border:1px solid #e6d7df;border-radius:21px}
 body[data-portal-mode=teacher] .game-history-day h4{margin-top:0}
 body[data-portal-mode=teacher] #teacherControls .game-history-entry{background:#eee2ef;color:#593553;border-radius:14px;padding:16px 18px}
@@ -122,7 +122,7 @@ body[data-portal-mode=teacher] #profileStatisticsContent>.hint{background:var(--
 /* Settings become four comfortable sections inside the same original form. */
 body[data-portal-mode=teacher] #teacherPreferencesForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;max-width:none;align-items:start}
 .cozy-settings-card{min-width:0;margin:0;padding:22px 24px 24px;border:1px solid #e0d2df;border-radius:22px;background:#f1e6f0;background-image:var(--cozy-grain)}
-.cozy-settings-card:nth-child(2){background-color:#e9eddc;border-color:#dbe0cc}
+.cozy-settings-card:nth-child(2){background-color:#ecddea;border-color:#e0ccdd}
 .cozy-settings-card:nth-child(3){background-color:#f8e7d7;border-color:#ead9c8}
 .cozy-settings-card:nth-child(4){background-color:#eee6f0}
 .cozy-settings-card legend{font-family:Georgia,serif;font-size:23px;font-weight:600;color:#573251;padding:0 8px}
