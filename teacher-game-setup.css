@@ -1,0 +1,62 @@
+
+.toowee-setup{color:#512b4f;margin:20px 0}
+#teacherGameCatalog:has(.toowee-setup)>h3,#teacherGameCatalog:has(.toowee-setup)>p:not(.game-delivery-banner){display:none}
+.toowee-setup-heading{display:flex;align-items:center;gap:22px;margin:0 0 24px}
+.toowee-setup-heading img{width:115px;height:100px;object-fit:contain}
+.toowee-setup-heading h3{font:700 clamp(26px,3vw,40px) Georgia,serif;margin:0 0 8px;color:#512b4f}
+.toowee-setup-heading p{margin:0;font-size:19px;color:#806d7b}
+.toowee-setup-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.toowee-setup-card,body[data-portal-mode=teacher] #teacherControls .toowee-setup-game{background:#fffaf4;border:1px solid #d6bfdf;border-radius:20px;padding:24px;box-shadow:0 4px 12px #7754740d;min-width:0;margin:0}
+.toowee-setup h4{font:700 27px Georgia,serif;color:#512b4f;margin:0 0 24px;display:flex;align-items:center;gap:16px}
+.toowee-materials>h4:before,.toowee-settings-title:before{content:'';display:block;flex:none;background-image:url('assets/approved-game-setup.webp');background-size:921.6px 614.4px;background-repeat:no-repeat}
+.toowee-materials>h4:before{width:112px;height:80px;background-position:-63px -180px}
+.toowee-settings-title:before{width:68px;height:58px;background-position:-480px -183px}
+.toowee-material-fields{display:grid;gap:18px;margin-bottom:22px}
+.toowee-search-field>span{display:block;font-weight:650;font-size:15px;margin-bottom:8px}
+.toowee-search-field details{position:relative}
+.toowee-search-field summary{list-style:none;cursor:pointer;background:#fffdf8;border:1px solid #ccb3d7;padding:12px 15px;border-radius:10px;display:flex;justify-content:space-between;gap:12px;color:#512b4f}
+.toowee-search-field summary:after{content:'⌄'}
+.toowee-search-field summary::-webkit-details-marker{display:none}
+.toowee-search-field input{width:100%;margin:8px 0}
+.toowee-search-options{display:grid;max-height:230px;overflow:auto;gap:5px;padding:8px;background:#fffdf8;border:1px solid #dfcfe6;border-radius:12px}
+body[data-portal-mode=teacher] #teacherControls .toowee-search-options button{background:#f6eff8;color:#63335f;text-align:left;padding:10px;border-radius:8px}
+.toowee-native-source{display:none!important}
+.toowee-material-selected{display:flex;align-items:center;gap:12px;justify-content:space-between;border:1px solid #e0cee5;border-radius:12px;padding:14px;background:#f5edf6}
+.toowee-material-selected strong{font-size:14px;color:#63335f!important}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-selected button{color:#63335f;background:#eadbed;padding:8px 12px}
+.toowee-material-browser{margin-top:18px}
+.toowee-material-tabs,.toowee-material-toolbar,.toowee-material-crumb{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+.toowee-material-toolbar input{flex:1;min-width:100px;width:100%}
+.toowee-material-toolbar .material-view-switch{margin:0;gap:4px}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-browser button{background:#f0e7f3;color:#63335f;border:1px solid #e0cee5;border-radius:10px;padding:9px 12px;font-size:13px}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-browser button[aria-pressed=true]{background:#dfcce8;color:#512b4f;border-color:#b793c4}
+.toowee-material-results{display:grid;gap:10px}
+.toowee-material-results[data-view=tiles]{grid-template-columns:repeat(2,minmax(0,1fr))}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-option{display:flex;align-items:center;gap:10px;text-align:left;min-width:0;min-height:65px;background:#fffdf8}
+.toowee-material-option>span:last-child{display:grid;gap:5px;overflow-wrap:anywhere}
+.toowee-material-option small{font-size:12px;color:#806d7b}
+.toowee-material-option .material-icon{width:32px;height:30px;flex:none}
+.toowee-setup-game>.directory-search,.toowee-setup-game>h2,.toowee-setup-game>h3,.toowee-setup-game>p:not(#gameStatus),.toowee-setup-game>.game-types{display:none!important}
+.toowee-setup-game #gameSetup{background:transparent;border:0;padding:0}
+.toowee-setup-game #gameInstructions{font-size:14px;line-height:1.6;color:#806d7b;margin:0 0 18px}
+.toowee-setup-game .study-settings{display:grid;grid-template-columns:1fr;gap:18px}
+.toowee-setup-game input,.toowee-setup-game select{max-width:100%;box-sizing:border-box}
+.toowee-setup-game label{font-size:14px;color:#63335f}
+.toowee-setup-game #startGame,.toowee-setup-game #shareMagicDice{display:none!important}
+.toowee-setup-game #gameStatus{font-size:13px}
+.toowee-size-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}
+body[data-portal-mode=teacher] #teacherControls .toowee-size-choices button{display:flex;flex-direction:column;align-items:center;gap:8px;background:#fffaf4;color:#63335f;border:1px solid #d8c3e3;border-radius:13px;padding:14px 6px}
+body[data-portal-mode=teacher] #teacherControls .toowee-size-choices button[aria-pressed=true]{background:#eee0f2;border-color:#794878;box-shadow:inset 0 0 0 1px #794878}
+.toowee-size-choices strong{font-size:19px;color:#63335f!important}
+.toowee-size-choices small{font-size:13px}
+.toowee-mini-board{width:56px;height:56px;display:grid;grid-template-columns:repeat(var(--size),1fr);gap:2px}
+.toowee-mini-board i{background:#cdb0dd;border-radius:2px}
+.toowee-setup-footer{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:20px;border:1px solid #d6bfdf;border-radius:18px;background:#fffaf4;padding:20px 24px}
+.toowee-setup-footer>div:first-child{display:grid;gap:8px}
+.toowee-setup-footer strong{font:700 20px Georgia,serif;color:#512b4f!important}
+.toowee-setup-footer small{color:#806d7b;font-size:14px}
+.toowee-setup-actions{display:flex;flex-wrap:wrap;gap:10px}
+body[data-portal-mode=teacher] #teacherControls .toowee-setup-actions button{background:#63335f;color:white;min-height:48px;padding:12px 22px;border-radius:12px}
+.toowee-setup-status{font-size:13px;color:#806d7b}
+@media(max-width:950px){.toowee-setup-columns{grid-template-columns:1fr}.toowee-setup-footer{flex-wrap:wrap}.toowee-setup-actions{width:100%;justify-content:flex-end}}
+@media(max-width:500px){.toowee-setup-card,body[data-portal-mode=teacher] #teacherControls .toowee-setup-game{padding:16px}.toowee-setup h4{font-size:24px}.toowee-setup-heading img{width:76px;height:76px}.toowee-setup-footer{padding:16px}.toowee-material-results[data-view=tiles]{grid-template-columns:1fr}}
