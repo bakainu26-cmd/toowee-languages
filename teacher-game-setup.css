@@ -80,3 +80,10 @@ body[data-portal-mode=teacher] #teacherControls fieldset.toowee-date-fields{bord
 .toowee-date-fields label{flex:1;min-width:120px;display:flex;flex-direction:column;gap:7px;font-size:14px;color:#63335f}
 .toowee-date-fields input{width:100%;box-sizing:border-box}
 .toowee-material-browser[hidden],.toowee-date-pane[hidden],.toowee-material-toolbar[hidden],.toowee-material-results[hidden],.toowee-material-crumb[hidden]{display:none!important}
+
+/* Readable watercolor scope illustrations on both selected and unselected tabs. */
+body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button::before{content:'';width:64px;height:64px;mask:none!important;-webkit-mask:none!important;background-color:transparent;background-image:url('assets/material-scope-icons.webp');background-repeat:no-repeat;background-size:192px 64px;opacity:1}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button:nth-child(1)::before{background-position:0 0}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button:nth-child(2)::before{background-position:-64px 0}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button:nth-child(3)::before{background-position:-128px 0}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button{min-height:112px;gap:8px;padding:12px 8px}
