@@ -16,3 +16,7 @@
 .tw-online-invite form button[type=submit]{min-height:60px;padding:16px 26px;background:#6a3c66;border-color:#6a3c66;color:#fff;font:700 17px/1.4 system-ui,sans-serif}
 .tw-online-invite form button[type=submit]:hover:not(:disabled){background:#553052;border-color:#553052}
 @media(max-width:650px){.tw-online-invite form input,.tw-online-invite form button[type=submit]{flex-basis:100%;width:100%}}
+
+/* Standard online header actions, shared by host/student and future games. */
+.tw-online .tw-online-actions button{background:#6a3c66;border-color:#6a3c66;color:#fff}
+.tw-online .tw-online-actions button:hover:not(:disabled){background:#553052;border-color:#553052;color:#fff}
