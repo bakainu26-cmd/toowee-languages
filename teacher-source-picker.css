@@ -26,3 +26,18 @@ body[data-portal-mode=teacher] #teacherControls .teacher-source-result:hover{bor
 .teacher-source-results[data-layout=tiles] .teacher-source-result>span:last-child{width:100%;text-align:right}
 .teacher-source-note{color:#806d7b;font-size:14px;line-height:1.5}
 @media(max-width:700px){.teacher-source-tabs{gap:8px}.teacher-source-tab strong{font-size:18px}.teacher-source-tab svg{width:42px;height:42px}body[data-portal-mode=teacher] #teacherControls .teacher-source-tab{padding:12px;min-height:95px;flex-direction:column;gap:8px}.teacher-source-toolbar{flex-wrap:wrap}.teacher-source-toolbar input[type=search]{flex-basis:100%}.teacher-source-views{margin-left:auto!important}.teacher-source-results[data-layout=tiles]{grid-template-columns:1fr}.teacher-source-results[data-layout=list] .teacher-source-result{flex-wrap:wrap}.teacher-source-results[data-layout=list] .teacher-source-result>span:last-child{width:100%;text-align:right}}
+
+/* Original approved watercolor artwork, displayed as a sprite without redrawing. */
+body[data-portal-mode=teacher] #teacherControls .teacher-source-tab>span:first-child{display:block;flex:none;background-image:url('assets/approved-material-picker.webp');background-repeat:no-repeat;background-size:1075.2px 716.8px;border-radius:8px}
+.teacher-source-tab svg{display:none}
+body[data-portal-mode=teacher] #teacherControls .teacher-source-tab:nth-child(1)>span:first-child{width:154px;height:119px;background-position:-49px -182px}
+body[data-portal-mode=teacher] #teacherControls .teacher-source-tab:nth-child(2)>span:first-child{width:130px;height:100px;background-position:-389px -196px}
+body[data-portal-mode=teacher] #teacherControls .teacher-source-tab:nth-child(3)>span:first-child{width:140px;height:105px;background-position:-735px -190px}
+body[data-portal-mode=teacher] #teacherControls .teacher-source-tab{min-height:164px;gap:14px}
+body[data-portal-mode=teacher] #teacherControls .teacher-source-tab strong,body[data-portal-mode=teacher] #teacherControls .teacher-source-tab[aria-pressed=true] strong{color:#512b4f!important;font-size:30px}
+body[data-portal-mode=teacher] #teacherControls .teacher-source-tab[aria-pressed=true]{border-color:#63335f;background:#eee2f1}
+.teacher-source-results[data-layout=tiles]{grid-template-columns:repeat(2,minmax(0,1fr))}
+body[data-portal-mode=teacher] #teacherControls .teacher-source-results[data-layout=tiles] .teacher-source-result{flex-wrap:nowrap;min-height:116px}
+.teacher-source-results[data-layout=tiles] .teacher-source-result>span:last-child{width:auto;text-align:right}
+@media(max-width:1100px){body[data-portal-mode=teacher] #teacherControls .teacher-source-tab{flex-direction:column;gap:8px}body[data-portal-mode=teacher] #teacherControls .teacher-source-tab strong{font-size:24px}.teacher-source-results[data-layout=tiles] .teacher-source-result>span:last-child{display:none}}
+@media(max-width:700px){.teacher-source-results[data-layout=tiles]{grid-template-columns:1fr}body[data-portal-mode=teacher] #teacherControls .teacher-source-tab{padding:12px 5px;min-height:140px;overflow:hidden}body[data-portal-mode=teacher] #teacherControls .teacher-source-tab>span:first-child{zoom:.65}body[data-portal-mode=teacher] #teacherControls .teacher-source-tab strong{font-size:18px}}
