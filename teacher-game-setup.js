@@ -7,8 +7,8 @@
   window.cleanupTeacherGameSetup?.();
   let ctx=context,student=p?.id||context.profile_id||'',request=0,destroyed=false;
   const root=node('div','', 'toowee-setup');catalog.append(root);
-  const header=node('header','', 'toowee-setup-heading'),icon=node('img');icon.src='assets/game-icons/'+kind+'.webp';icon.alt='';const title=node('div');title.append(node('h3','Przygotuj rozgrywkę'),node('p',catalog.querySelector('h3')?.textContent||''));header.append(icon,title);root.append(header);
-  const grid=node('div','', 'toowee-setup-columns'),materials=node('section','', 'toowee-setup-card toowee-materials'),form=node('div','', 'toowee-material-fields');materials.append(node('h4','Materiały'),form);grid.append(materials);root.append(grid);
+  const header=node('div','', 'toowee-setup-heading'),icon=node('img');icon.src='assets/game-icons/'+kind+'.webp';icon.alt='';const title=node('div');title.append(node('h3','Przygotuj rozgrywkę'),node('p',catalog.querySelector('h3')?.textContent||''));header.append(icon,title);root.append(header);
+  const grid=node('div','', 'toowee-setup-columns'),materials=node('div','', 'toowee-setup-card toowee-materials'),form=node('div','', 'toowee-material-fields');materials.append(node('h4','Materiały'),form);grid.append(materials);root.append(grid);
   const originalLangParent=lang.parentNode,originalScopeParent=scope.parentNode;
   lang.classList.add('toowee-native-source');scope.classList.add('toowee-native-source');materials.append(lang,scope);
   const pickers=[];
@@ -25,13 +25,16 @@
   const tabs=node('div','', 'toowee-material-tabs'),toolbar=node('div','', 'toowee-material-toolbar'),search=document.createElement('input'),views=node('div','', 'material-view-switch'),results=node('div','', 'toowee-material-results'),crumb=node('div','', 'toowee-material-crumb');
   search.type='search';search.placeholder='Szukaj folderu…';search.setAttribute('aria-label','Szukaj materiałów');
   let tab='folders',folder=null,view='tiles';try{view=localStorage.getItem('toowee-setup-material-view')||view;}catch{}
-  const folderTab=button('Foldery',()=>{tab='folders';folder=null;search.value='';draw();}),setTab=button('Wszystkie zestawy',()=>{tab='sets';folder=null;search.value='';draw();}),tiles=button('▦ Kafelki',()=>setView('tiles')),list=button('≡ Lista',()=>setView('list'));
+  const dateTab=button('Data dodania',()=>activateRange('dates')),folderTab=button('Foldery',()=>activateRange('folders')),setTab=button('Listy słówek',()=>activateRange('sets')),tiles=button('▦ Kafelki',()=>setView('tiles')),list=button('≡ Lista',()=>setView('list'));
   function setView(v){view=v;try{localStorage.setItem('toowee-setup-material-view',v);}catch{}draw();}
-  tabs.append(folderTab,setTab);views.append(tiles,list);toolbar.append(search,views);browser.append(tabs,toolbar,crumb,results);browser.hidden=true;
+  tabs.append(dateTab,folderTab,setTab);views.append(tiles,list);toolbar.append(search,views);browser.append(tabs,toolbar,crumb,results);browser.hidden=!student;
+  const dateMode=catalog.querySelector('[aria-label="Okres przypisania słówek"]'),dateBox=dateMode?.closest('fieldset'),dateParent=dateBox?.parentNode,datePane=node('div','', 'toowee-date-pane'),periods=node('div','', 'toowee-date-periods');
+  if(dateBox){datePane.append(periods,dateBox);browser.append(datePane);dateBox.classList.add('toowee-date-fields');dateMode.classList.add('toowee-native-source');for(const [value,label]of [['all','Wszystkie daty'],['week','Ostatnie 7 dni'],['month','Ostatnie 30 dni'],['quarter','Ostatnie 90 dni'],['custom','Własny zakres']]){const b=button(label,()=>{dateMode.value=value;dateMode.dispatchEvent(new Event('change',{bubbles:true}));refresh();});b.dataset.period=value;periods.append(b);}}
+  function activateRange(next){tab=next;folder=null;search.value='';if(next==='dates'){scope.value='all';scope.onchange?.();}else if(dateMode&&dateMode.value!=='all'){dateMode.value='all';dateMode.dispatchEvent(new Event('change',{bubbles:true}));}draw();refresh();}
   function words(){return window.tooweeTeacherGameContext?.words||[];}
   function choose(value){scope.value=value;scope.onchange?.();browser.hidden=true;refresh();}
   function draw(){
-   results.replaceChildren();crumb.replaceChildren();results.dataset.view=view;tiles.setAttribute('aria-pressed',String(view==='tiles'));list.setAttribute('aria-pressed',String(view==='list'));folderTab.setAttribute('aria-pressed',String(tab==='folders'));setTab.setAttribute('aria-pressed',String(tab==='sets'));search.placeholder=folder||tab==='sets'?'Szukaj zestawu…':'Szukaj folderu…';
+   results.replaceChildren();crumb.replaceChildren();results.dataset.view=view;dateTab.hidden=!student||!dateBox;datePane.hidden=tab!=='dates';toolbar.hidden=crumb.hidden=results.hidden=tab==='dates';dateTab.setAttribute('aria-pressed',String(tab==='dates'));if(dateMode)for(const b of periods.children)b.setAttribute('aria-pressed',String(b.dataset.period===dateMode.value));tiles.setAttribute('aria-pressed',String(view==='tiles'));list.setAttribute('aria-pressed',String(view==='list'));folderTab.setAttribute('aria-pressed',String(tab==='folders'));setTab.setAttribute('aria-pressed',String(tab==='sets'));search.placeholder=folder||tab==='sets'?'Szukaj zestawu…':'Szukaj folderu…';
    const q=search.value.toLocaleLowerCase('pl'),match=x=>x.name.toLocaleLowerCase('pl').includes(q);let entries;
    if(tab==='folders'&&!folder)entries=(ctx.folders||[]).filter(f=>!f.lang||f.lang===lang.value).map(f=>({...f,folder:true}));else entries=(ctx.sets||[]).filter(s=>(!s.lang||s.lang===lang.value)&&(!folder||s.folder_id===folder));
    crumb.append(button('Wszystkie słówka',()=>choose('all')));
@@ -39,7 +42,7 @@
    for(const e of entries.filter(match)){const b=button('',()=>{if(e.folder){folder=e.id;search.value='';draw();}else choose('set:'+e.id);});b.className='toowee-material-option';const icon=node('span','', 'material-icon material-icon-'+(e.folder?'folder':'set'));const copy=node('span');copy.append(node('strong',e.name));if(!e.folder){const f=ctx.folders.find(f=>f.id===e.folder_id);copy.append(node('small',f?.name||'Bez folderu'));}b.append(icon,copy);results.append(b);}
    if(!results.childElementCount)results.append(node('p','Brak pasujących materiałów.'));
   }
-  search.oninput=draw;
+  search.oninput=draw;datePane.addEventListener('change',()=>refresh());
   const oldSoloParent=solo.parentNode,oldSoloNext=solo.nextSibling;grid.append(solo);solo.classList.add('toowee-setup-game');
   const settingsHeading=node('h4','Ustawienia rozgrywki','toowee-settings-title');solo.prepend(settingsHeading);
   const footer=node('footer','', 'toowee-setup-footer'),summary=node('div'),count=node('strong'),detail=node('small'),actions=node('div','', 'toowee-setup-actions');summary.append(count,detail);footer.append(summary,actions);root.append(footer);
@@ -50,18 +53,18 @@
   function refresh(){
    const option=scope.selectedOptions[0];let label=option?.textContent||ctx.name||'Wszystkie słówka';
    if(scope.value.startsWith('set:')){const s=ctx.sets.find(s=>s.id===scope.value.slice(4)),f=ctx.folders.find(f=>f.id===s?.folder_id);label=[f?.name,s?.name].filter(Boolean).join(' → ')||label;}
-   selectedText.textContent=label+' · '+words().length+' słówek';count.textContent=(names[lang.value]||lang.value)+' · '+words().length+' słówek'+(kind==='dice'?' · Plansza '+size.value+' × '+size.value:'');detail.textContent=label;
+   if(tab==='dates'&&dateMode)label=dateMode.selectedOptions[0]?.textContent||label;selectedText.textContent=label+' · '+words().length+' słówek';count.textContent=(names[lang.value]||lang.value)+' · '+words().length+' słówek'+(kind==='dice'?' · Plansza '+size.value+' × '+size.value:'');detail.textContent=label;
    start.disabled=originalStart.disabled;start.hidden=originalStart.hidden;share.disabled=originalShare?.disabled??true;share.hidden=originalShare?.hidden??true;
    footer.hidden=document.getElementById('gameSetup').hidden;for(const b of sizeButtons)b.setAttribute('aria-pressed',String(b.dataset.size===size.value));draw();
   }
   async function reload(l,id,preserve=false){
    const token=++request;status.textContent='Wczytywanie materiałów…';start.disabled=share.disabled=true;
-   try{const next=await(id?window.getStudentGameMaterials(id,l):window.getTeacherGameMaterials(l));if(token!==request||destroyed)return;student=id;ctx={...next,name:id?(window.tooweeStudentProfiles||[]).find(p=>p.id===id)?.first_name||'Uczeń':names[l],deliveryMode:context.deliveryMode};lang.replaceChildren(...Object.entries(names).map(([value,name])=>new Option(name,value)));lang.value=l;language.value=l;language.refresh();onContext(ctx);if(preserve){const chosenSet=ctx.sets.find(s=>s.name===context.name),chosenFolder=ctx.folders.find(f=>f.name===context.name);if(chosenSet)scope.value='set:'+chosenSet.id;else if(chosenFolder)scope.value='folder:'+chosenFolder.id;scope.onchange?.();}studentOptions();folder=null;refresh();status.textContent='';}catch(e){status.textContent=e.message;refresh();}
+   try{const next=await(id?window.getStudentGameMaterials(id,l):window.getTeacherGameMaterials(l));if(token!==request||destroyed)return;student=id;ctx={...next,name:id?(window.tooweeStudentProfiles||[]).find(p=>p.id===id)?.first_name||'Uczeń':names[l],deliveryMode:context.deliveryMode};lang.replaceChildren(...Object.entries(names).map(([value,name])=>new Option(name,value)));lang.value=l;language.value=l;language.refresh();onContext(ctx);if(preserve){const chosenSet=ctx.sets.find(s=>s.name===context.name),chosenFolder=ctx.folders.find(f=>f.name===context.name);if(chosenSet)scope.value='set:'+chosenSet.id;else if(chosenFolder)scope.value='folder:'+chosenFolder.id;scope.onchange?.();}studentOptions();folder=null;if(!student){if(tab==='dates')tab='folders';if(dateMode){dateMode.value='all';dateMode.dispatchEvent(new Event('change',{bubbles:true}));}}browser.hidden=!student;refresh();status.textContent='';}catch(e){status.textContent=e.message;refresh();}
   }
   studentOptions();refresh();if(!context.exerciseSet)void reload(lang.value,student,true);
   const watch=new MutationObserver(()=>{start.disabled=originalStart.disabled;start.hidden=originalStart.hidden;share.disabled=originalShare?.disabled??true;share.hidden=originalShare?.hidden??true;footer.hidden=document.getElementById('gameSetup').hidden;});
   for(const n of [originalStart,originalShare,document.getElementById('gameSetup')].filter(Boolean))watch.observe(n,{attributes:true,attributeFilter:['disabled','hidden']});
   solo.addEventListener('change',refresh);scope.addEventListener('change',refresh);
-  window.cleanupTeacherGameSetup=()=>{destroyed=true;watch.disconnect();solo.removeEventListener('change',refresh);scope.removeEventListener('change',refresh);sizeChoices?.remove();size?.classList.remove('toowee-native-source');settingsHeading.remove();lang.classList.remove('toowee-native-source');scope.classList.remove('toowee-native-source');originalLangParent.append(lang);originalScopeParent.append(scope);if(oldSoloNext?.parentNode===oldSoloParent)oldSoloParent.insertBefore(solo,oldSoloNext);else oldSoloParent.append(solo);solo.classList.remove('toowee-setup-game');root.remove();window.cleanupTeacherGameSetup=null;};
+  window.cleanupTeacherGameSetup=()=>{if(dateBox){dateMode.classList.remove('toowee-native-source');dateBox.classList.remove('toowee-date-fields');dateParent.append(dateBox);}destroyed=true;watch.disconnect();solo.removeEventListener('change',refresh);scope.removeEventListener('change',refresh);sizeChoices?.remove();size?.classList.remove('toowee-native-source');settingsHeading.remove();lang.classList.remove('toowee-native-source');scope.classList.remove('toowee-native-source');originalLangParent.append(lang);originalScopeParent.append(scope);if(oldSoloNext?.parentNode===oldSoloParent)oldSoloParent.insertBefore(solo,oldSoloNext);else oldSoloParent.append(solo);solo.classList.remove('toowee-setup-game');root.remove();window.cleanupTeacherGameSetup=null;};
  };
 })();

@@ -60,3 +60,23 @@ body[data-portal-mode=teacher] #teacherControls .toowee-setup-actions button{bac
 .toowee-setup-status{font-size:13px;color:#806d7b}
 @media(max-width:950px){.toowee-setup-columns{grid-template-columns:1fr}.toowee-setup-footer{flex-wrap:wrap}.toowee-setup-actions{width:100%;justify-content:flex-end}}
 @media(max-width:500px){.toowee-setup-card,body[data-portal-mode=teacher] #teacherControls .toowee-setup-game{padding:16px}.toowee-setup h4{font-size:24px}.toowee-setup-heading img{width:76px;height:76px}.toowee-setup-footer{padding:16px}.toowee-material-results[data-view=tiles]{grid-template-columns:1fr}}
+
+/* Student vocabulary scope lives inside the materials card. */
+body[data-portal-mode=teacher] #teacherControls .toowee-setup-heading{background:transparent;border:0;box-shadow:none;display:flex;justify-content:flex-start;align-items:center;padding:0;min-height:0}
+body[data-portal-mode=teacher] #teacherControls .toowee-setup-heading>div{flex:1;min-width:0}
+body[data-portal-mode=teacher] #teacherControls .toowee-materials{display:block;visibility:visible}
+.toowee-material-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:18px 0}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:78px;white-space:normal;background:#fffaf4;border:1px solid #d8c3e3;color:#63335f;font-weight:650}
+.toowee-material-tabs button:before{content:'';display:block;width:28px;height:28px;background:#e8d9ee;mask:center/contain no-repeat}
+.toowee-material-tabs button:nth-child(1):before{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='7' width='24' height='22' rx='4' fill='%23000'/%3E%3Cpath d='M9 3h3v8H9zm11 0h3v8h-3z' fill='%23000'/%3E%3C/svg%3E")}
+.toowee-material-tabs button:nth-child(2):before{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 7h10l3 4h13v16H3z' fill='%23000'/%3E%3C/svg%3E")}
+.toowee-material-tabs button:nth-child(3):before{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='5' y='4' width='21' height='25' rx='4' fill='%23000'/%3E%3C/svg%3E")}
+body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button[aria-pressed=true]{background:#eadbed;border-color:#b28abd;box-shadow:inset 0 0 0 1px #b28abd}
+.toowee-date-periods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body[data-portal-mode=teacher] #teacherControls .toowee-date-periods button{min-height:48px;background:#fffaf4;border:1px solid #ddcbe3;color:#63335f}
+body[data-portal-mode=teacher] #teacherControls .toowee-date-periods button[aria-pressed=true]{background:#e8d8ed;border-color:#ae88bb;color:#512b4f}
+body[data-portal-mode=teacher] #teacherControls fieldset.toowee-date-fields{border:0;padding:12px 0 0;margin:0;display:flex;flex-wrap:wrap;gap:12px}
+.toowee-date-fields legend{display:none}
+.toowee-date-fields label{flex:1;min-width:120px;display:flex;flex-direction:column;gap:7px;font-size:14px;color:#63335f}
+.toowee-date-fields input{width:100%;box-sizing:border-box}
+.toowee-material-browser[hidden],.toowee-date-pane[hidden],.toowee-material-toolbar[hidden],.toowee-material-results[hidden],.toowee-material-crumb[hidden]{display:none!important}
