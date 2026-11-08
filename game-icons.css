@@ -1,0 +1,23 @@
+/* Shared watercolor game icons: catalog, profile and history. */
+.cozy-game-choice[data-teacher-game-kind="dice"]::before,#gameType-dice>span{background-image:url('assets/game-icons/dice.webp')!important}
+.cozy-game-choice[data-teacher-game-kind="collections"]::before,#gameType-collections>span{background-image:url('assets/game-icons/collections.webp')!important}
+.cozy-game-choice[data-teacher-game-kind="sophie"]::before,#gameType-sophie>span{background-image:url('assets/game-icons/sophie.webp')!important}
+.cozy-game-choice[data-teacher-game-kind="match"]::before,#gameType-match>span{background-image:url('assets/game-icons/match.webp')!important}
+.cozy-game-choice[data-teacher-game-kind="memory"]::before,#gameType-memory>span{background-image:url('assets/game-icons/memory.webp')!important}
+.cozy-game-choice[data-teacher-game-kind="write"]::before,#gameType-write>span{background-image:url('assets/game-icons/write.webp')!important}
+.cozy-game-choice[data-teacher-game-kind="quiz"]::before,#gameType-quiz>span{background-image:url('assets/game-icons/quiz.webp')!important}
+.cozy-game-choice[data-teacher-game-kind="escape"]::before,#gameType-escape>span{background-image:url('assets/game-icons/escape.webp')!important}
+.cozy-game-choice[data-teacher-game-kind="falling"]::before,#gameType-falling>span{background-image:url('assets/game-icons/falling.webp')!important}
+.cozy-game-choice[data-teacher-game-kind="sbh"]::before,#gameType-sbh>span,.game-types button[onclick*="TooweeSwordsBombsHearts"]::before{background-image:url('assets/game-icons/sbh.webp')!important}
+
+.cozy-game-choice::before{width:94px;height:94px;flex-shrink:0;background-position:center;background-size:contain;background-repeat:no-repeat}
+.game-types .game-type>span{display:block;width:80px;height:80px;font-size:0!important;background-position:center;background-size:contain;background-repeat:no-repeat}
+.game-types .game-type>span::before,.game-types .game-type>span::after{display:none!important}
+.game-types button[onclick*="TooweeSwordsBombsHearts"]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;padding:22px 18px;border:1px solid #e2d4e1;border-radius:23px 18px;background-color:#eee2ef;color:#512b4f}
+.game-types button[onclick*="TooweeSwordsBombsHearts"]::before{content:"";display:block;width:94px;height:94px;background-position:center;background-size:contain;background-repeat:no-repeat;flex-shrink:0}
+.game-types button[onclick*="TooweeSwordsBombsHearts"]>span{display:none}
+#profileGamesPanel .sophie-launch:has(#profileGame)>img,#teacherControls>.sophie-launch>img,.sophie-header>img{content:url('assets/game-icons/sophie.webp')}
+#profileGamesPanel .sophie-launch:has([aria-label="Wybierz grę: Kolekcje Sophisi"])>img{content:url('assets/game-icons/collections.webp')}
+#profileGamesPanel .magic-profile-icon{width:80px;height:80px;background:url('assets/game-icons/dice.webp') center/contain no-repeat}
+#profileGamesPanel .magic-profile-icon::before,#profileGamesPanel .magic-profile-icon::after{display:none}
+@media(max-width:480px){.cozy-game-choice::before,.game-types button[onclick*="TooweeSwordsBombsHearts"]::before{width:68px;height:68px}}
