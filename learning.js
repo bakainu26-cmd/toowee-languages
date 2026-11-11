@@ -52,7 +52,7 @@
     el('search').value='';el('wordFolder').value=group.id || '';
     el('studyScope').value='all';el('filterFolder').value=group.id || '';el('gameFolder').value=group.id || '';el('taskFolder').value=group.id || '';
     if(window.updateTaskControls)window.updateTaskControls();
-    if(window.resetStudy)window.resetStudy();renderWords();
+    if(window.resetStudy)window.resetStudy();renderWords();if(window.dispatchEvent&&window.Event)window.dispatchEvent(new window.Event('toowee-tab'));
   }
   function filter(words, progress=records) {
     if(!context || context.language!==activeLanguage)return words;
@@ -70,10 +70,11 @@
   }
   function reset(){++version;records.clear();owner=null;loaded=false;loading=false;view='learn';clearContext();render();}
   for(const key of Object.keys(labels))el('learningView-'+key).onclick=()=>chooseView(key);
-  el('backToLearningSets').onclick=()=>{clearContext();render();};el('refreshLearning').onclick=refresh;
+  el('backToLearningSets').onclick=()=>{clearContext();render();if(window.dispatchEvent&&window.Event)window.dispatchEvent(new window.Event('toowee-tab'));};el('refreshLearning').onclick=refresh;
   window.filterLearningWords=filter;window.refreshLearningSets=refresh;window.resetLearningSets=reset;
   window.clearLearningContext=()=>{clearContext();el('filterFolder').value='';el('search').value='';renderWords();};
   window.getLearningContext=()=>context;
+  window.restoreLearningNavigation=value=>{if(!value){clearContext();return;}const group=groups().find(g=>g.id===value.folder);if(group&&value.language===activeLanguage)openSet(group,value.category);};
   window.setLearningProgress=rows=>{++version;loading=false;records=new Map(rows.map(p=>[p.word_id,p]));owner=account?.userId;loaded=true;render();};
   reset();
 })();

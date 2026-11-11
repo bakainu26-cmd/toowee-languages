@@ -23,6 +23,7 @@ alter table public.toowee_material_deliveries add column if not exists target_fo
 alter table public.toowee_material_deliveries add column if not exists target_set_ids uuid[] not null default '{}';
 alter table public.toowee_material_deliveries enable row level security;
 revoke all on public.toowee_material_deliveries from public,anon,authenticated;
+alter table public.toowee_material_folders add column if not exists parent_id uuid references public.toowee_material_folders(id) on delete set null;
 create or replace function public.toowee_teacher(p_action text default 'load',p_data jsonb default '{}') returns jsonb
 language plpgsql security definer set search_path=public,pg_temp as $$
 declare who uuid:=auth.uid();gid uuid;pid uuid;fid uuid;sid uuid;item jsonb;bucket public.toowee_material_folders%rowtype; source_ids uuid[];target_folder uuid;new_set uuid;target_profile public.toowee_student_profiles%rowtype;material_lang text;material_name text;source record; copied_sets uuid[]:='{}';recipient jsonb;
@@ -118,16 +119,22 @@ begin
   if length(trim(coalesce(p_data->>'name',''))) not between 1 and 200 then raise exception 'Podaj nazwę folderu lub klasy.';end if;
   pid:=nullif(p_data->>'profile_id','')::uuid;
   if pid is not null and not exists(select 1 from public.toowee_student_profiles where id=pid and owner_id=who) then raise exception 'Brak dostępu do ucznia.';end if;
-  insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,pid,trim(p_data->>'name'),p_data->>'lang');
+  fid:=nullif(p_data->>'parent_id','')::uuid;
+  if fid is not null and not exists(select 1 from public.toowee_material_folders where id=fid and owner_id=who and lang=p_data->>'lang' and profile_id is not distinct from pid and group_id is null) then raise exception 'Wybierz folder nadrzędny w tym samym profilu i języku.';end if;
+  insert into public.toowee_material_folders(owner_id,profile_id,name,lang,parent_id) values(who,pid,trim(p_data->>'name'),p_data->>'lang',fid);
  elsif p_action in ('set_move','set_copy') then
-  select * into bucket from public.toowee_material_folders where id=(p_data->>'folder_id')::uuid and owner_id=who for update;
-  if not found then raise exception 'Brak dostępu do folderu.';end if;
-  select id into sid from public.vocabulary_folders where id=(p_data->>'set_id')::uuid and owner_id=who and lang=bucket.lang;
-  if sid is null then raise exception 'Wybierz własny zestaw w tym samym języku.';end if;
+  select id,lang into sid,material_lang from public.vocabulary_folders where id=(p_data->>'set_id')::uuid and owner_id=who;
+  if sid is null then raise exception 'Wybierz własny zestaw.';end if;
+  if nullif(p_data->>'folder_id','') is not null then
+   select * into bucket from public.toowee_material_folders where id=(p_data->>'folder_id')::uuid and owner_id=who and lang=material_lang for update;
+   if not found then raise exception 'Wybierz własny folder w tym samym języku.';end if;
+  end if;
   if p_action='set_move' then
    if bucket.profile_id is not null or exists(select 1 from public.toowee_material_sets ms join public.toowee_material_folders m on m.id=ms.folder_id where ms.set_id=sid and m.profile_id is not null) then raise exception 'Zestaw ucznia pozostaje w jego profilu. Użyj kopiowania.';end if;
-   insert into public.toowee_material_sets values(bucket.id,sid) on conflict(set_id) do update set folder_id=excluded.folder_id;
+   if bucket.id is null then delete from public.toowee_material_sets where set_id=sid;
+   else insert into public.toowee_material_sets values(bucket.id,sid) on conflict(set_id) do update set folder_id=excluded.folder_id;end if;
   else
+   if bucket.id is null then raise exception 'Wybierz folder dla kopii.';end if;
    if (select count(*) from public.vocabulary_words where owner_id=who and folder_id=sid)>500 then raise exception 'Kopiuj maksymalnie 500 słówek naraz.';end if;
    pid:=sid;
    insert into public.vocabulary_folders(owner_id,name,lang) select who,name,lang from public.vocabulary_folders where id=pid returning id into sid;
@@ -135,11 +142,15 @@ begin
    insert into public.vocabulary_words(owner_id,lang,word,reading,translation,example,folder_id) select who,lang,word,reading,translation,example,sid from public.vocabulary_words where owner_id=who and folder_id=pid;
   end if;
  elsif p_action='set_create' then
-  select * into bucket from public.toowee_material_folders where id=(p_data->>'folder_id')::uuid and owner_id=who for update;
-  if not found then raise exception 'Brak dostępu do folderu.';end if;
+  if nullif(p_data->>'folder_id','') is not null then
+   select * into bucket from public.toowee_material_folders where id=(p_data->>'folder_id')::uuid and owner_id=who for update;
+   if not found then raise exception 'Brak dostępu do folderu.';end if;
+  end if;
+  material_lang:=coalesce(bucket.lang,p_data->>'lang');
+  if material_lang not in ('English','Japanese','Spanish') or material_lang is null then raise exception 'Wybierz język zestawu.';end if;
   if length(trim(coalesce(p_data->>'name',''))) not between 1 and 200 then raise exception 'Podaj nazwę zestawu.';end if;
-  insert into public.vocabulary_folders(owner_id,name,lang) values(who,trim(p_data->>'name'),bucket.lang) returning id into sid;
-  insert into public.toowee_material_sets values(bucket.id,sid);
+  insert into public.vocabulary_folders(owner_id,name,lang) values(who,trim(p_data->>'name'),material_lang) returning id into sid;
+  if bucket.id is not null then insert into public.toowee_material_sets values(bucket.id,sid);end if;
  elsif p_action not in ('load','profile') then raise exception 'Nieznana operacja panelu nauczyciela.';end if;
  if p_action='profile' then
   pid:=(p_data->>'profile_id')::uuid;

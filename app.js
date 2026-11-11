@@ -108,6 +108,7 @@ function openVocabulary() {
   renderWords();tab('words');
 }
 function tab(id) {
+  window.tooweeCurrentTab=id;
   if(id!=='games')window.worldGameMission=false;
   window.onActivityTabChange?.(id);
   if(window.onStudyTabChange)window.onStudyTabChange(id);
@@ -124,6 +125,7 @@ function tab(id) {
   if ((id === 'world' || id === 'dashboard') && window.loadWorld)void window.loadWorld();
   if (id === 'learning' && window.refreshLearningSets) void window.refreshLearningSets();
   if (id === 'progress' && window.loadProgressDashboard) void window.loadProgressDashboard();
+  window.dispatchEvent(new Event('toowee-tab'));
 }
 function renderLibrary() {
   if(ready && activeLanguage && window.loadWorld)void window.loadWorld();
@@ -190,6 +192,7 @@ async function loadLibrary() {
     if (version !== libraryRevision || id !== account?.userId) return;
     library = {words,folders};
     ready = true;
+    if(pendingStudentContext){window.restoreLearningNavigation?.(pendingStudentContext);pendingStudentContext=null;}
     byId('storageBadge').textContent = 'Biblioteka w Supabase';
     libraryStatus('Biblioteka wczytana. Zmiany zapisują się na Twoim koncie w Supabase.');
     renderLibrary();
@@ -316,3 +319,7 @@ function checkTest() {
   byId('testArea').innerHTML = '<h3>Wynik: '+n+' / '+quiz.length+'</h3>'+rows+'<button onclick="makeTest()">Spróbuj ponownie</button>';
 }
 tab('dashboard');renderLibrary();
+
+let pendingStudentContext=null;
+window.captureStudentNavigation=()=>({tab:window.tooweeCurrentTab||'dashboard',language:activeLanguage,context:pendingStudentContext||window.getLearningContext?.()||null});
+window.restoreStudentNavigation=state=>{if(state.language&&Object.hasOwn(languageInfo,state.language)&&state.language!==activeLanguage)chooseLanguage(state.language);if(!state.language&&activeLanguage)showLanguagePicker();pendingStudentContext=state.context||null;if(ready){window.restoreLearningNavigation?.(pendingStudentContext);pendingStudentContext=null;}if(document.getElementById(state.tab)?.matches('main section'))tab(state.tab);};

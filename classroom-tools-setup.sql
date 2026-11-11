@@ -40,7 +40,7 @@ begin
  elsif p_action='set_create' then
  if p_data->>'source' not in ('English','Japanese','Spanish') or p_data->>'target' not in ('Polish','English','Japanese','Spanish') or p_data->>'source'=p_data->>'target' then raise exception 'Wybierz dwa różne języki.';end if;
  if not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Wybierz konto nauczyciela.';end if;
- result:=public.toowee_teacher('set_create',jsonb_build_object('folder_id',p_data->>'folder_id','name',p_data->>'name'));
+ result:=public.toowee_teacher('set_create',jsonb_build_object('folder_id',p_data->>'folder_id','name',p_data->>'name','lang',p_data->>'source'));
  sid:=(result->>'created_set_id')::uuid;
  if not exists(select 1 from public.vocabulary_folders where id=sid and owner_id=who and lang=p_data->>'source') then raise exception 'Folder ma inny język niż lista. Wybierz folder w języku słówek.';end if;
  insert into public.toowee_language_pairs values(sid,who,p_data->>'source',p_data->>'target');return result;
