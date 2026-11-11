@@ -1,0 +1,14 @@
+const {PGlite}=require(process.env.TOOWEE_PGLITE_MODULE||'@electric-sql/pglite'),fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),{randomUUID}=require('crypto');
+(async()=>{const db=new PGlite(),host=randomUUID(),student=randomUUID(),outsider=randomUUID();const script=n=>fs.readFileSync(path.join(__dirname,'../'+n),'utf8');
+await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
+for(const id of [host,student,outsider])await db.query('insert into auth.users values($1,$2)',[id,{display_name:'Test',role:id===host?'teacher':'student'}]);
+await db.exec(script('vocabulary_setup.sql'));await db.exec('alter table vocabulary_folders add column lang text');await db.exec(script('spaced_repetition_setup.sql'));await db.exec(script('accounts_setup.sql'));await db.exec(script('collections_setup.sql'));await db.exec(script('collections_live_setup.sql'));await db.exec(script('collections_live_setup.sql'));await db.exec(script('collections-word-rotation.sql'));await db.exec(script('collections-word-rotation.sql'));
+const as=id=>db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);const rpc=async(a,p={})=>(await db.query('select toowee_collections($1,$2) as v',[a,p])).rows[0].v;
+for(const id of [host,student,outsider]){await as(id);await db.query("select toowee_portal('load','{}')");}
+const ids=[];for(let i=0;i<5;i++){const id=randomUUID();ids.push(id);await db.query("insert into vocabulary_words(id,owner_id,lang,word,translation) values($1,$2,'Japanese',$3,$4)",[id,host,'単語'+i,'znaczenie '+i]);}const foreign=randomUUID();await db.query("insert into vocabulary_words(id,owner_id,lang,word,translation) values($1,$2,'Japanese','秘密','PRYWATNE')",[foreign,outsider]);
+
+await as(host);let r=await rpc('create',{protocol:4,request_id:randomUUID(),ids,lang:'Japanese',questions_per_turn:1,rounds:1,seconds:0,placement_seconds:0}),code=r.code;
+const roomId=(await db.query('select id from toowee_collection_rooms where code=$1',[code])).rows[0].id;const bagPlayer=randomUUID(),pool=ids.map((id,i)=>({word:'単語'+i,translation:'znaczenie '+i})),drawn=[];
+for(let i=0;i<15;i++)drawn.push((await db.query('select toowee_collection_draw($1,$2,$3) as q',[pool,roomId,bagPlayer])).rows[0].q.prompt);
+for(let i=0;i<15;i+=5)assert.equal(new Set(drawn.slice(i,i+5)).size,5);assert.notEqual(drawn[4],drawn[5]);assert.notEqual(drawn[9],drawn[10]);
+await db.close();console.log('PASS durable word bags cover every word before repeats, avoid boundary repeats, and migration is idempotent');})().catch(e=>{console.error(e);process.exit(1)});

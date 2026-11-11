@@ -1,0 +1,11 @@
+const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
+const dom=new JSDOM('<div id="gameResult"></div>',{runScripts:'outside-only'}),w=dom.window,d=w.document;
+Object.assign(w,{ready:true,saving:false,account:{userId:'teacher'},activeLanguage:'English'});
+w.eval(fs.readFileSync(__dirname+'/../magic-dice.js','utf8'));
+const words=Array.from({length:6},(_,i)=>({word:'word'+i,translation:'słowo'+i}));words.push({...words[0]});
+const opts={owner:'teacher',language:'English',size:3,quota:10,direction:'toPolish',onFinish:()=>{}};
+w.TooweeMagicDice.start(words,opts);const seen=[];
+function wrong(){const s=w.TooweeMagicDice.snapshot(),prompt=d.querySelector('.magic-prompt').textContent;seen.push(prompt);const correct=words.find(v=>v.word===prompt).translation;[...d.querySelectorAll('.magic-answers button')].find(b=>!b.textContent.endsWith(correct)).click();d.querySelector('#magicDiceCorrectionDialog button').click();return s;}
+for(let i=0;i<4;i++)wrong();const saved=w.TooweeMagicDice.snapshot();w.TooweeMagicDice.start(words,{...opts,resume:saved.resume});for(let i=0;i<8;i++)wrong();assert.equal(new Set(seen.slice(0,6)).size,6);assert.equal(new Set(seen.slice(6,12)).size,6);assert.notEqual(seen[5],seen[6]);
+w.TooweeMagicDice.start(words,{...opts,classroomPlayers:['Magda','Ola']});const prompt=d.querySelector('.magic-prompt').textContent;const correct=words.find(v=>v.word===prompt).translation;[...d.querySelectorAll('.magic-answers button')].find(b=>!b.textContent.endsWith(correct)).click();d.querySelector('#magicDiceCorrectionDialog button').click();w.TooweeMagicDice.finish();assert(d.querySelector('#magicDiceGame').classList.contains('magic-finished'));assert(d.querySelector('.magic-stat-card'));assert(d.querySelector('.magic-stat-card details'));d.querySelectorAll('.magic-classroom-preview')[1].click();assert(d.querySelector('.magic-turn').textContent.includes('Ola'));assert(!d.querySelector('.magic-stat-card details'));d.querySelectorAll('.magic-classroom-preview')[0].click();assert(d.querySelector('.magic-stat-card details'));assert(d.querySelector('.magic-stat-card').textContent.includes('Błędne: 1'));
+w.close();console.log('PASS shuffled word coverage including duplicates/resume; classroom per-player results and review');

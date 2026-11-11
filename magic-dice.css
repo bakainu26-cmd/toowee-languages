@@ -147,3 +147,16 @@ body #magicDiceGame.magic-classroom-mode .magic-answers button{
 body #magicDiceGame .magic-board>.magic-cell{position:relative;display:grid;place-items:center;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
 body #magicDiceGame .magic-board>.magic-cell>.magic-die:not(.magic-rule-face){position:absolute;inset:5%;width:90%;height:90%;min-width:0;min-height:0;max-width:none;max-height:none;margin:0;box-sizing:border-box;aspect-ratio:1;padding:12%;gap:6%;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));box-shadow:inset 0 2px 2px #ffffffbd,0 2px 0 var(--die-color)}
 body #magicDiceGame .magic-board>.magic-cell>.magic-die>i{min-width:0;min-height:0}
+
+/* Results remain readable without squeezing the board or clipping review words. */
+.magic-stat-card{box-sizing:border-box;background:#fffaf4;border:1px solid #d7bddf;border-radius:20px;padding:18px;margin:12px 0;color:#583357;min-width:0}
+.magic-score-badge{display:inline-block;font:700 clamp(26px,3vw,42px) Georgia,serif;background:#eee0f2;color:#65335f;border-radius:16px;padding:12px 24px;margin:4px 0 14px}
+.magic-score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+.magic-score-grid>div{border-radius:10px;background:#f4ecf6;padding:9px 12px}.magic-score-grid dt{font-size:12px;color:#806782}.magic-score-grid dd{font-weight:700;font-size:18px;margin:3px 0 0}
+.magic-stat-card details{margin-top:14px}.magic-stat-card details p{overflow-wrap:anywhere;max-height:none!important}
+.activity-focus #games.activity-playing[data-activity-kind=dice]:has(.magic-finished){overflow:auto;display:block}
+.activity-focus #games.activity-playing[data-activity-kind=dice] #magicDiceGame.magic-finished{display:block;height:auto;max-height:none;overflow:visible;flex:none;margin:12px auto}
+#magicDiceGame.magic-finished .magic-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;flex:none}
+#magicDiceGame.magic-finished .magic-turn{max-height:none;overflow:visible}body #magicDiceGame.magic-finished .magic-board{width:min(100%,480px);height:auto;aspect-ratio:1;max-height:none}
+#magicDiceGame.magic-finished .magic-turn p{font-size:14px}.magic-live-results{margin-top:18px;max-height:60vh;overflow:auto}.magic-live-results .magic-score-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:700px){#magicDiceGame.magic-finished .magic-layout{grid-template-columns:1fr}.magic-score-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
