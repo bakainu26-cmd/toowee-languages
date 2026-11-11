@@ -27,7 +27,7 @@
     if(focused || hash.startsWith('#/fiszki')){pauseStudySession();setFocus(false);const id=hash.startsWith('#/fiszki')?'study':['learning','games','tasks','progress','folders','words'].find(id=>hash==='#/'+id) || 'learning';if(typeof tab==='function')tab(id);updateStudyControls();}
   }
   function paintCard(original){const mode=window.tooweeTeacherPreferences?.japanese;const card=original.lang==='Japanese'&&mode&&mode!=='both'?{...original,word:mode==='kana'?(original.reading||original.word):original.word,reading:''}:original;
-    const toTarget=direction==='toTarget';
+    const toTarget=direction==='toTarget';window.TooWeeTools?.renderImage(el('studyPrompt').parentElement,original);
     if(window.TooweeFurigana)for(const id of ['studyPrompt','studyAnswerText','studyExampleText'])window.TooweeFurigana.cancel(el(id));
     el('studyPrompt').textContent=toTarget ? card.translation : card.word;el('studyPrompt').lang=toTarget ? 'pl' : languageInfo[card.lang]?.code || 'en';
     el('studyAnswerText').textContent=toTarget ? card.word : card.translation;el('studyAnswerText').lang=toTarget ? languageInfo[card.lang]?.code || 'en' : 'pl';
@@ -153,10 +153,10 @@
   function renderCard(preserve=false) {
     const card=queue[0];if(!card)return;if(!preserve){revealed=false;pendingRating=null;}historyIndex=null;
     el('studySummary').hidden=true;el('studySession').hidden=false;el('studyAnswer').hidden=true;el('revealStudy').hidden=false;el('knowStudyCard').hidden=true;el('retryStudyCard').hidden=true;
-    const toTarget=direction==='toTarget';
+    const toTarget=direction==='toTarget';window.TooWeeTools?.renderImage(el('studyPrompt').parentElement,original);
     el('studyPhaseLabel').textContent=phase==='verify' ? 'Końcowa weryfikacja' : phase==='review' ? 'Powtórka' : 'Nauka';
     paintCard(card);
-    el('studyPromptLabel').textContent=phase==='verify' ? 'Sprawdź, czy nadal pamiętasz' : toTarget ? 'Przetłumacz na '+(languageInfo[card.lang]?.target || 'język obcy') : 'Przetłumacz na polski';
+    el('studyPromptLabel').textContent=phase==='verify' ? 'Sprawdź, czy nadal pamiętasz' : toTarget ? 'Przetłumacz na '+(languageInfo[card.lang]?.target || 'język obcy') : 'Przetłumacz na '+({Polish:'polski',English:'angielski',Japanese:'japoński',Spanish:'hiszpański'}[window.TooWeeTools?.wordTarget(card)||'Polish']);
     el('studyAnswer').hidden=!revealed;el('revealStudy').hidden=revealed;el('knowStudyCard').hidden=!revealed;el('retryStudyCard').hidden=!revealed;
     el('studyProgress').textContent=['verify','review'].includes(phase) ? 'Sprawdzono: '+verified.size+' z '+verificationTotal+' • Potwierdzone „Umiem”: '+confirmedCount()+' • Pozostało: '+queue.length : 'Wstępnie umiem: '+learnedCount()+' z '+sessionWords.length+' • W tej porcji pozostało: '+queue.length+' • Próby: '+attempts;
     el('studyProgressBar').max=phase==='verify' ? verificationTotal : sessionWords.length;el('studyProgressBar').value=['verify','review'].includes(phase) ? verified.size : learnedCount();

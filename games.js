@@ -13,7 +13,7 @@
   function updateDirectionLabels(){
     const language=window.tooweeTeacherGameContext?.lang||activeLanguage;
     const label=({Japanese:'Japoński',English:'Angielski',Spanish:'Hiszpański'})[language]||language||'Wybrany język';
-    for(const option of el('gameDirection').options){if(option.value==='toPolish')option.textContent=label+' → polski';else if(option.value==='toTarget')option.textContent='Polski → '+label.toLocaleLowerCase('pl');}
+    const words=window.tooweeTeacherGameContext?.words||activeWords();const target=window.TooWeeTools?.languages[words[0]?.translation_lang||window.TooWeeTools.wordTarget(words[0]||{})]||'Polski';for(const option of el('gameDirection').options){if(option.value==='toPolish')option.textContent=label+' → '+target.toLocaleLowerCase('pl');else if(option.value==='toTarget')option.textContent=target+' → '+label.toLocaleLowerCase('pl');}
   }
   function updateGameControls(){
     updateDirectionLabels();

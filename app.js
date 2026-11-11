@@ -12,6 +12,7 @@ const languageInfo = Object.freeze({English:{name:'Angielski',genitive:'angielsk
 function activeWords() { return library.words.filter(w => w.lang === activeLanguage && (!window.learningSourceAccepts||window.learningSourceAccepts(w))); }
 function activeFolders() {
   return library.folders.filter(folder=>{
+    if(window.materialFolderSourceAccepts&&!window.materialFolderSourceAccepts(folder))return false;
     if(window.learningFolderAccepts&&!window.learningFolderAccepts(folder))return false;
     if(folder.lang)return folder.lang===activeLanguage;
     // Compatibility before the one-time migration: only infer an unambiguous language.
@@ -155,6 +156,7 @@ function renderWords() {
     '</td><td><div class="actions"><button class="alt" data-edit="' + safe(w.id) + '">Edytuj</button>' +
     '<button class="danger" data-delete="' + safe(w.id) + '">Usuń</button></div></td></tr>').join('') ||
     '<tr><td colspan="5">' + (ready ? 'Brak słówek dla tego wyszukiwania.' : 'Zaloguj się i wczytaj bibliotekę.') + '</td></tr>';
+  if(window.TooWeeTools)for(const row of byId('wordRows').querySelectorAll('tr')){const id=row.querySelector('[data-edit]')?.dataset.edit,word=library.words.find(w=>w.id===id);if(word)window.TooWeeTools.renderImage(row.firstElementChild,word);}
   controls();
 }
 function dbError(error) {
