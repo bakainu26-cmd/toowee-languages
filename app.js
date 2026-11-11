@@ -62,6 +62,7 @@ function chooseLanguage(language) {
   byId('folderForm').reset();byId('search').value = '';byId('filterFolder').value = '';
   byId('studyFolder').value = '';
   byId('wordForm').elements.lang.value = language;
+  const wordFields=byId('wordForm').elements;wordFields.reading.parentElement.hidden=language!=='Japanese';wordFields.word.placeholder=language==='Japanese'?'np. 猫（ねこ）':language==='Spanish'?'np. casa':'np. birthday card';if(wordFields.word.previousElementSibling)wordFields.word.previousElementSibling.textContent=language==='Japanese'?'Słówko (kanji lub kana)':'Słówko';
   byId('testLang').value = language;
   byId('studyLanguage').value = language;
   byId('currentLanguage').textContent = window.tooweeView==='teacher' ? 'Słówka · '+languageInfo[language].name : 'Uczysz się ' + languageInfo[language].genitive;
