@@ -26,9 +26,9 @@
     if(count===3)el('escapeMessage').textContent='Masz trzy pieczęcie! Cyfry w ekwipunku, w kolejności 1–2–3, otworzą drzwi. Kliknij wyjście.';
     controls();
   }
-  function start(words,{owner,language,onFinish}){
+  function start(words,{owner,language,direction='toPolish',onFinish}){
     reset();if(words.length<3)return false;
-    state={words:[...words],owner,language,onFinish,groups:locks.map((_,i)=>words.filter((w,j)=>j%3===i)),indexes:[0,0,0],solved:[false,false,false],code:Array.from({length:3},()=>Math.floor(Math.random()*10)),active:null,correct:false,wrong:new Set(),hinted:false,hints:0,mistakes:0,completed:0,finished:false};
+    state={words:[...words],owner,language,direction,onFinish,groups:locks.map((_,i)=>words.filter((w,j)=>j%3===i)),indexes:[0,0,0],solved:[false,false,false],code:Array.from({length:3},()=>Math.floor(Math.random()*10)),active:null,correct:false,wrong:new Set(),hinted:false,hints:0,mistakes:0,completed:0,finished:false};
     el('escapeRoom').hidden=false;el('escapeMessage').textContent='Drzwi zatrzasnęły się za Tobą. Zbadaj książki, biurko i obraz. Każdy przedmiot skrywa pieczęć z cyfrą kodu.';
     inventory();el('escapeRoom').scrollIntoView?.({block:'start'});return true;
   }
@@ -45,15 +45,15 @@
     el('escapePuzzleTitle').textContent=config.icon+' '+config.name;
     el('escapeStory').textContent=config.story;
     el('escapePuzzleCount').textContent='Zagadka '+(state.indexes[index]+1)+' / '+state.groups[index].length;
-    el('escapePrompt').textContent=config.mode==='reverse'?label(current):current.translation;
-    el('escapePrompt').lang=config.mode==='reverse'?languageInfo[state.language]?.code || 'en':'pl';
-    el('escapePromptInstruction').textContent=config.mode==='write'?'Uzupełnij dziennik: wpisz słówko w języku obcym.':config.mode==='reverse'?'Wybierz polskie znaczenie napisu na sejfie.':'Wybierz słówko pasujące do znaczenia.';
+    el('escapePrompt').textContent=state.direction==='toTarget'?current.translation:label(current);
+    el('escapePrompt').lang=state.direction==='toTarget'?'pl':languageInfo[state.language]?.code||'en';
+    el('escapePromptInstruction').textContent=config.mode==='write'?'Wpisz odpowiedź w wybranym języku.':'Wybierz tłumaczenie.';
     el('escapeWriteForm').hidden=config.mode!=='write';el('escapeOptions').hidden=config.mode==='write';el('escapeOptions').replaceChildren();
     el('escapeAnswer').value='';el('escapeAnswer').lang=languageInfo[state.language]?.code || 'en';el('escapeWriteHint').hidden=state.language!=='Japanese';
     el('escapeFeedback').textContent='';el('escapeNext').hidden=true;
     if(config.mode!=='write')for(const option of shuffle([current,...shuffle(state.words.filter(w=>w.id!==current.id)).slice(0,3)])){
       const button=document.createElement('button');button.type='button';button.className='escape-option';button.dataset.id=option.id;
-      button.textContent=config.mode==='reverse'?option.translation:label(option);
+      button.textContent=state.direction==='toTarget'?label(option):option.translation;
       button.addEventListener('click',()=>choose(option.id));el('escapeOptions').append(button);
     }
     controls();
@@ -73,7 +73,7 @@
   function write(event){
     event.preventDefault();if(!available() || state.active===null || locks[state.active].mode!=='write' || state.correct)return;
     const value=el('escapeAnswer').value;if(!value.trim()){el('escapeFeedback').textContent='Najpierw wpisz odpowiedź.';return;}
-    const current=word(),accepted=[current.word,...(state.language==='Japanese' && current.reading?[current.reading]:[])];
+    const current=word(),accepted=state.direction==='toTarget'?[current.word,...(state.language==='Japanese'&&current.reading?[current.reading]:[])]:[current.translation];
     result(accepted.some(answer=>normalize(answer)===normalize(value)));
   }
   function closePuzzle(){if(!available())return;if(state.active!==null && state.correct && !state.solved[state.active])state.indexes[state.active]++;state.active=null;state.correct=false;el('escapePuzzle').hidden=true;controls();el('escapeScene').scrollIntoView?.({block:'start'});}
@@ -85,7 +85,7 @@
   function hint(){
     if(!available() || state.active===null || state.correct)return;
     if(!state.hinted){state.hints++;state.hinted=true;}
-    el('escapeFeedback').textContent='Podpowiedź: '+(locks[state.active].mode==='reverse'?word().translation:label(word()))+'. Wybierz lub wpisz tę odpowiedź, aby otworzyć zamek.';
+    el('escapeFeedback').textContent='Podpowiedź: '+(state.direction==='toTarget'?label(word()):word().translation)+'. Wybierz lub wpisz tę odpowiedź, aby otworzyć zamek.';
   }
   function door(){
     if(!available())return;

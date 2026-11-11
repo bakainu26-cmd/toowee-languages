@@ -43,7 +43,7 @@
     for(const id of ['gameMatch','gameMemory','gameQuiz','gameResult','nextGameQuestion'])el(id).hidden=true;
     el('gameScore').textContent='';el('gameQuizFeedback').textContent='';el('gameWriteAnswer').value='';
     for(const key of Object.keys(names)){el('gameType-'+key).classList.toggle('active',kind===key);el('gameType-'+key).setAttribute('aria-pressed',String(kind===key));}
-    el('gameDirectionField').hidden=!['quiz','falling','dice'].includes(kind)||Boolean(window.tooweeTeacherGameContext?.exerciseSet);if(window.tooweeTeacherGameContext?.exerciseSet)el('gameDirection').value='toPolish';el('fallSpeedField').hidden=kind!=='falling';el('fallModeField').hidden=kind!=='falling';el('magicDiceSettings').hidden=kind!=='dice';const classroomDice=kind==='dice'&&window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.deliveryMode==='classroom';el('magicDiceClassroomPlayers').hidden=!classroomDice;el('gameCountField').hidden=kind==='dice'||kind==='falling' && ['endless','survival'].includes(el('fallMode').value);
+    el('gameDirectionField').hidden=false;el('fallSpeedField').hidden=kind!=='falling';el('fallModeField').hidden=kind!=='falling';el('magicDiceSettings').hidden=kind!=='dice';const classroomDice=kind==='dice'&&window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.deliveryMode==='classroom';el('magicDiceClassroomPlayers').hidden=!classroomDice;el('gameCountField').hidden=kind==='dice'||kind==='falling' && ['endless','survival'].includes(el('fallMode').value);
     el('gameWriteHint').textContent=activeLanguage==='Japanese' ? 'Możesz wpisać kanji lub czytanie w hiraganie. Używamy czytania zapisanego przy słówku.' : 'Wpisz słówko w języku, którego się uczysz.';el('gameReadingField').hidden=activeLanguage!=='Japanese' || ['escape','falling'].includes(kind);
     el('gameInstructions').textContent=kind==='dice'?'Odpowiadaj na pytania, wybierz jedną z trzech kostek i ułóż ją zgodnie z warunkami pola. Stwórz magiczny witraż na planszy 3×3, 4×4 lub 5×5.':kind==='falling' ? 'Wybierz tłumaczenie, zanim słówko dotknie dolnej granicy. Wybierz rundy, endless bez limitu żyć albo grę do utraty 3 serduszek. Tempo rośnie co trzy trafienia; możesz ustawić tempo początkowe i język pytania.' : kind==='escape' ? 'Zbadaj przedmioty w Bibliotece zaginionych słów. Rozwiązuj zagadki, zbierz trzy pieczęcie z cyframi i otwórz drzwi. Potrzebujesz co najmniej 3 słówek.' : kind==='match' ? 'Wybierz słówko po lewej i jego tłumaczenie po prawej. Dopasuj wszystkie pary.' : kind==='memory' ? 'Odkrywaj po dwie karty. Znajdź pary: słówko w języku obcym i jego polskie tłumaczenie.' : kind==='write' ? 'Przeczytaj polskie znaczenie i wpisz słówko z pamięci. Zatwierdź klawiszem Enter lub przyciskiem.' : 'Wybierz właściwe tłumaczenie spośród podanych odpowiedzi. Po każdej próbie zobaczysz poprawną odpowiedź.';
     status(canPlay() ? 'Wybierz grę i rozpocznij. Gry nie zmieniają harmonogramu powtórek ani nie zaliczają dziennego challenge’u.' : 'Zaloguj się i wczytaj bibliotekę.');
@@ -67,7 +67,7 @@
   }
   function renderColumn(id,items,side){
     el(id).replaceChildren();
-    for(const word of items){const button=document.createElement('button');button.type='button';button.className='match-card';button.dataset.id=word.id;button.setAttribute('aria-pressed','false');addLabel(button,word,side==='left'?'target':'polish');button.addEventListener('click',()=>choose(side,word.id));el(id).append(button);}
+    for(const word of items){const button=document.createElement('button');button.type='button';button.className='match-card';button.dataset.id=word.id;button.setAttribute('aria-pressed','false');addLabel(button,word,(side==='left')===(el('gameDirection').value!=='toTarget')?'target':'polish');button.addEventListener('click',()=>choose(side,word.id));el(id).append(button);}
   }
   function showSelections(){
     for(const side of ['left','right'])for(const button of el(side==='left'?'gameWords':'gameTranslations').children){
@@ -101,8 +101,8 @@
   }
   function renderQuestion(){
     const word=questions[questionIndex];answered=false;el('nextGameQuestion').hidden=true;el('gameQuizFeedback').textContent='';
-    const toTarget=kind==='write' || el('gameDirection').value==='toTarget';
-    el('gamePromptInstruction').textContent=kind==='write' ? 'Wpisz słówko w języku obcym' : 'Wybierz tłumaczenie';
+    const toTarget=el('gameDirection').value==='toTarget';
+    el('gamePromptInstruction').textContent=kind==='write' ? 'Wpisz odpowiedź' : 'Wybierz tłumaczenie';
     el('gameWriteForm').hidden=kind!=='write';el('gameQuizOptions').hidden=kind==='write';
     el('gameWriteAnswer').value='';el('gameWriteAnswer').disabled=false;el('checkGameWrite').disabled=false;
     addLabel(el('gameQuizPrompt'),word,toTarget?'polish':'target');
@@ -121,14 +121,14 @@
     event.preventDefault();if(kind!=='write' || !inSession() || answered)return;
     const value=el('gameWriteAnswer').value;if(!value.trim()){el('gameQuizFeedback').textContent='Najpierw wpisz odpowiedź.';return;}
     const word=questions[questionIndex];
-    const accepted=[word.word,...(activeLanguage==='Japanese' && word.reading ? [word.reading] : [])].map(normalizeAnswer);
+    const accepted=(el('gameDirection').value==='toTarget'?[word.word,...(activeLanguage==='Japanese'&&word.reading?[word.reading]:[])]:[word.translation]).map(normalizeAnswer);
     showAnswer(accepted.includes(normalizeAnswer(value)),word);
   }
   function showAnswer(correct,word,chosenId=null){
     answered=true;attempts++;if(correct)score++;
     for(const button of el('gameQuizOptions').children){button.disabled=true;button.classList.toggle('matched',button.dataset.id===word.id);button.classList.toggle('incorrect',button.dataset.id===chosenId&&!correct);}
     el('gameWriteAnswer').disabled=true;el('checkGameWrite').disabled=true;
-    const answerText=kind==='write' || el('gameDirection').value==='toTarget' ? word.word+(word.reading&&activeLanguage==='Japanese'?' ('+word.reading+')':'') : word.translation;
+    const answerText=el('gameDirection').value==='toTarget' ? word.word+(word.reading&&activeLanguage==='Japanese'?' ('+word.reading+')':'') : word.translation;
     el('gameQuizFeedback').textContent=(correct?'✓ Dobrze! ':'✗ Tym razem nie. ')+'Poprawna odpowiedź: '+answerText;
     el('gameScore').textContent='Odpowiedzi: '+(questionIndex+1)+' / '+questions.length+' · Punkty: '+score;
     if(questionIndex===questions.length-1)finish('Twój wynik: '+score+' / '+questions.length+' ('+Math.round(100*score/questions.length)+'%).');
@@ -163,7 +163,7 @@
     updateGameControls();
     if(kind==='dice'){window.TooweeMagicDice.start(pairs,{owner:sessionOwner,language:sessionLanguage,size:el('magicDiceSize').value,quota:el('magicDiceQuota').value,direction:el('gameDirection').value,classroomPlayers:el('magicDiceClassroomPlayers').hidden?null:[...el('magicDicePlayerNames').querySelectorAll('input')].map((input,i)=>input.value.trim()||'Gracz '+(i+1)),onFinish:finish});}
     else if(kind==='falling'){if(window.TooweeFalling)window.TooweeFalling.start(pairs,{owner:sessionOwner,language:sessionLanguage,direction:el('gameDirection').value,speed:el('fallSpeed').value,mode:el('fallMode').value,onFinish:finish});else status('Odśwież stronę, aby wczytać grę.');}
-    else if(kind==='escape'){if(window.TooweeEscape)window.TooweeEscape.start(pairs,{owner:sessionOwner,language:sessionLanguage,onFinish:finish});else status('Odśwież stronę, aby wczytać escape room.');}
+    else if(kind==='escape'){if(window.TooweeEscape)window.TooweeEscape.start(pairs,{owner:sessionOwner,language:sessionLanguage,direction:el('gameDirection').value,onFinish:finish});else status('Odśwież stronę, aby wczytać escape room.');}
     else if(kind==='match'){el('gameMatch').hidden=false;renderColumn('gameWords',shuffle(pairs),'left');renderColumn('gameTranslations',shuffle(pairs),'right');el('gameScore').textContent='Pary: 0 / '+pairs.length;}
     else if(kind==='memory'){el('gameMemory').hidden=false;deck=shuffle(pairs.flatMap(word=>[{word,side:'target'},{word,side:'polish'}]));renderMemory();el('gameScore').textContent='Pary: 0 / '+pairs.length;}
     else {el('gameQuiz').hidden=false;questions=shuffle(pairs);renderQuestion();}
