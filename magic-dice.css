@@ -160,3 +160,46 @@ body #magicDiceGame .magic-board>.magic-cell>.magic-die>i{min-width:0;min-height
 #magicDiceGame.magic-finished .magic-turn{max-height:none;overflow:visible}body #magicDiceGame.magic-finished .magic-board{width:min(100%,480px);height:auto;aspect-ratio:1;max-height:none}
 #magicDiceGame.magic-finished .magic-turn p{font-size:14px}.magic-live-results{margin-top:18px;max-height:60vh;overflow:auto}.magic-live-results .magic-score-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:700px){#magicDiceGame.magic-finished .magic-layout{grid-template-columns:1fr}.magic-score-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Compact end-of-game workspace: board and detailed score share one viewport. */
+@media(min-width:701px){
+.activity-focus #games.activity-playing[data-activity-kind=dice]:has(.magic-finished){display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.activity-focus #games.activity-playing[data-activity-kind=dice] #magicDiceGame.magic-finished{display:flex;flex-direction:column;flex:1 1 0;min-height:0;height:auto;max-height:100%;overflow:hidden;margin:0 auto;padding:10px}
+#magicDiceGame.magic-finished .magic-layout{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);align-items:center;gap:18px;flex:1 1 0;min-height:0}
+#magicDiceGame.magic-finished .magic-layout>div:first-child{display:flex;flex-direction:column;min-height:0;max-height:100%;gap:5px}
+body #magicDiceGame.magic-finished .magic-board{width:min(100%,calc(100dvh - 230px),440px);max-width:100%;max-height:100%;height:auto;aspect-ratio:1;margin:auto}
+#magicDiceGame.magic-finished .magic-turn{max-height:100%;min-height:0;overflow:hidden;align-self:center}
+#magicDiceGame.magic-finished .magic-turn>h4{font-size:20px;margin:0 0 6px}
+#magicDiceGame.magic-finished .magic-private{padding:5px 9px;font-size:12px;margin-top:4px}
+#magicDiceGame.magic-finished .magic-private small{font-size:10px}
+body[data-magic-player=true]:has(.magic-finished){height:100dvh;overflow:hidden}
+body[data-magic-player=true]:has(.magic-finished)>main{height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;padding:10px 16px;gap:5px}
+body[data-magic-player=true]:has(.magic-finished)>main>h1{display:none}
+body[data-magic-player=true]:has(.magic-finished) #notice{margin:0;font-size:12px}
+body[data-magic-player=true] #magicDiceGame.magic-finished{flex:1 1 0;min-height:0;max-height:100%;display:flex;flex-direction:column;margin:0;padding:10px}
+body[data-magic-player=true] #gameResult.magic-result-confirmation{flex:0 0 auto;padding:6px 12px;margin:0;font-size:12px}
+body[data-magic-player=true] #gameResult.magic-result-confirmation p{margin:0}
+}
+.magic-stat-card{padding:10px 12px;margin:0;border-radius:14px;min-height:0}.magic-stat-card h3{font-size:19px;margin:0 0 6px}.magic-score-badge{font-size:28px;padding:7px 16px;margin:0 0 8px;border-radius:11px}.magic-score-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.magic-score-grid>div{padding:5px 8px;border-radius:8px}.magic-score-grid dt{font-size:11px}.magic-score-grid dd{font-size:15px;margin:1px 0 0}.magic-stat-card details{margin-top:8px;font-size:12px}.magic-review-list{max-height:min(18dvh,130px);overflow:auto;overscroll-behavior:contain;padding-right:5px}.magic-stat-card .magic-review-list p{font-size:12px!important;line-height:1.35;margin:5px 0!important}
+#magicDiceHostDialog.magic-host-report{width:min(1180px,97vw);height:min(94dvh,850px)!important;max-height:94dvh!important;overflow:hidden!important;padding:16px;zoom:1!important}
+#magicDiceHostDialog.magic-host-report .tw-online-body{display:flex!important;flex-direction:column;gap:8px;min-height:0;flex:1;overflow:hidden}
+#magicDiceHostDialog.magic-host-report .tw-online-header{flex:0 0 auto;min-height:90px;padding-bottom:8px}
+#magicDiceHostDialog.magic-host-report .tw-online-header img{max-height:70px;width:auto}
+#magicDiceHostDialog.magic-host-report .tw-online-footer{flex:0 0 auto;padding:7px 12px;font-size:12px}
+#magicDiceHostDialog.magic-host-report .magic-live-results{max-height:none;overflow:hidden;margin:10px 0;flex:1;min-height:0}
+#magicDiceHostDialog.magic-host-report>p{font-size:12px;margin:7px 0}
+.magic-report-tabs{display:flex;gap:6px;overflow-x:auto;flex-shrink:0;max-height:55px}.magic-report-tabs button{font-size:12px;padding:8px 12px;white-space:nowrap}.magic-report-tabs button[aria-pressed=true]{background:#68375f;color:white}.magic-report-status{margin:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.magic-report-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:center;min-height:0;flex:1}.magic-report-layout>div{min-height:0;max-height:100%}.magic-report-board{display:grid;grid-template-columns:repeat(var(--dice-size),1fr);grid-template-rows:repeat(var(--dice-size),1fr);width:min(100%,calc(100dvh - 260px),420px);aspect-ratio:1;border-radius:16px;padding:10px;border:6px solid #9b9690;background:#e7e4de;gap:5px;margin:auto}.magic-report-board .magic-cell{display:grid;place-items:center;position:relative;border:1px solid #b9b3ac;border-radius:9px;background:#fff;min-width:0;min-height:0;overflow:hidden}.magic-report-board .magic-cell>.magic-die{position:absolute;inset:5%;width:90%;height:90%;max-width:none;box-sizing:border-box;aspect-ratio:1;padding:12%;gap:6%;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}.magic-report-board .magic-cell.magic-number{background:#dddde5}.magic-report-board .magic-cell[class*=magic-]{background:var(--die-light,#fff)}
+@media(max-height:720px) and (min-width:701px){.magic-score-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.magic-score-grid dd{font-size:14px}.magic-stat-card{padding:8px}.magic-score-badge{font-size:24px;padding:5px 12px}.magic-review-list{max-height:100px}#magicDiceHostDialog.magic-host-report .tw-online-header{min-height:65px}.magic-report-board{width:min(100%,calc(100dvh - 230px),380px)}}
+#magicDiceHostDialog.magic-host-report[open]{display:flex;flex-direction:column;gap:8px}
+#magicDiceHostDialog.magic-host-report .tw-online-header{height:90px;margin-bottom:4px}
+#magicDiceHostDialog.magic-host-report .tw-online-game-art{width:100px;height:75px}
+#magicDiceHostDialog.magic-host-report .tw-online-header h2{font-size:28px}
+#magicDiceHostDialog.magic-host-report .tw-online-header p{font-size:12px}
+@media(max-height:720px){#magicDiceHostDialog.magic-host-report .tw-online-header{height:66px}.magic-report-board{max-height:100%}}
+
+@media(min-width:701px){body[data-magic-player=true]:has(.magic-finished) #gameResult{flex:0 0 auto;margin:0;padding:7px 12px;font-size:12px}body[data-magic-player=true]:has(.magic-finished)>main>#playSharedDice{align-self:flex-start;padding:7px 12px;font-size:12px}}
+#magicDiceHostDialog.magic-host-report>.tw-dialog-x{display:none!important}
+#magicDiceHostDialog .magic-stat-card h3{font-size:20px;margin:0 0 6px}
+#magicDiceHostDialog .magic-report-board{width:min(100%,calc(100dvh - 340px),420px)}
+
+@media(min-width:701px){body[data-magic-player=true].magic-player-finished{height:100dvh;overflow:hidden}body[data-magic-player=true].magic-player-finished>main{box-sizing:border-box;height:100dvh;display:flex;flex-direction:column;gap:8px;padding:12px 16px}body[data-magic-player=true] #gameResult.magic-standalone-results{flex:1;min-height:0;display:flex;flex-direction:column;margin:0;padding:12px}#gameResult.magic-standalone-results .magic-report-layout{flex:1;min-height:0}}
