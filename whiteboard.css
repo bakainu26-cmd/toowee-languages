@@ -9,3 +9,11 @@
 
 /* The SVG is a viewport onto a finite slide, not additional writing space. */
 .wb-paper{background:#eee6f4;border-radius:3px}.wb-paper>svg{overflow:hidden}.wb-zoom-panel button[aria-label="Dopasuj slajd"]{border-top:1px solid #dfcee9;border-radius:5px}.wb-text-editor{overflow:auto}
+
+/* A short shared neck joins the open case to its adaptive tool strip. */
+.wb-pencil-case:has(.wb-case-button[aria-expanded=true]) .wb-case-button{background:#ffffffed;color:#745180;border-color:#dfcce8}
+.wb-pencil-case:has(.wb-case-button[aria-expanded=true]):before{content:'';position:absolute;z-index:-1;background:#fff;border:1px solid #dfcce8;pointer-events:none}
+.wb-pencil-case[data-direction=right]:before{left:34px;top:9px;width:34px;height:40px;border-left:0;border-right:0}
+.wb-pencil-case[data-direction=left]:before{right:34px;top:9px;width:34px;height:40px;border-left:0;border-right:0}
+.wb-pencil-case[data-direction=down]:before{top:34px;left:9px;width:40px;height:34px;border-top:0;border-bottom:0}
+.wb-pencil-case[data-direction=up]:before{bottom:34px;left:9px;width:40px;height:34px;border-top:0;border-bottom:0}
