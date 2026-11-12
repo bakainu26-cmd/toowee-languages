@@ -17,3 +17,10 @@ body[data-portal-mode=teacher] #profileVocabularyTab::before{background-image:ur
 body[data-portal-mode=teacher] #profileStatisticsTab::before{background-image:url('assets/profile-statistics-pastel.svg')!important}
 body[data-portal-mode=teacher] #profileGamesTab::before{background-image:url('assets/profile-games-pastel.svg')!important}
 body[data-portal-mode=teacher] #teacherControls .material-view[data-material-kind=collections]{align-content:start!important}
+
+/* Each action has its own row; only the menu container is positioned. */
+.material-copy-dropdown>.material-menu-options{position:absolute;right:0;top:calc(100% + 6px);min-width:220px;max-width:calc(100vw - 32px);z-index:40;background:#fffcf7;border:1px solid #e3d2dc;border-radius:15px;padding:8px;box-shadow:0 8px 24px #5d3e591a;display:flex;flex-direction:column;gap:5px}
+.material-copy-dropdown:not([open])>.material-menu-options{display:none}
+:is(.material-menu-options,.student-profile-options)>button{position:static!important;display:block;width:100%;box-sizing:border-box;text-align:left;white-space:normal;min-height:40px!important;cursor:pointer;pointer-events:auto}
+:is(.exercise-set-shell,.teacher-pupil-card,.material-folder-card,.material-copy-menu):has(:is(details[open].material-copy-dropdown,details[open].student-profile-menu,.material-actions:has(>.material-menu-options:not([hidden])))){z-index:50;position:relative;overflow:visible}
+.teacher-pupil-card[role=link]{cursor:pointer}.teacher-pupil-card[role=link]:focus-visible{outline:3px solid #a079bb;outline-offset:4px}
