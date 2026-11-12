@@ -1,6 +1,7 @@
 'use strict';
 window.TooweeImport = Object.freeze({
   parse(text, options={}) {
+    try{const exported=window.TooWeeMaterialExport?.importVocabulary(text);if(exported)return exported;}catch(e){return{rows:[],errors:[{line:0,message:e.message}]};}
     const errors=[],rows=[];
     text=String(text).replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
     const delimiter=options.delimiter ?? '\t';

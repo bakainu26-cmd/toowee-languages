@@ -21,9 +21,23 @@ create index if not exists toowee_exercises_owner_idx on public.toowee_exercise_
 create index if not exists toowee_exercises_public_idx on public.toowee_exercise_sets(lang,updated_at desc) where is_public;
 create or replace function public.toowee_exercise_sets(p_action text,p_data jsonb default '{}') returns jsonb
 language plpgsql security definer set search_path=public,pg_temp as $$
-declare who uuid:=auth.uid();s public.toowee_exercise_sets; item jsonb; cards jsonb; wrong jsonb; names text[]; result jsonb; fid uuid; req uuid; expected integer; page integer; v_lang text; v_title text; v_description text; v_public boolean;
+declare who uuid:=auth.uid();s public.toowee_exercise_sets; item jsonb; cards jsonb; wrong jsonb; names text[]; result jsonb; fid uuid; req uuid; expected integer; page integer; v_lang text; v_title text; v_description text; v_public boolean; recipient uuid; recipient_ids uuid[];
 begin
- if who is null or not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) then raise exception 'Zestawy są dostępne dla nauczycieli.';end if;
+ if who is null or (p_action not in ('assigned','get') and not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin'))) then raise exception 'Zestawy są dostępne dla nauczycieli.';end if;
+ if p_action='get' and not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) and not exists(select 1 from public.toowee_material_deliveries d join public.toowee_student_profiles p on p.id=d.profile_id join public.toowee_exercise_sets e on e.id=d.source_id and e.owner_id=d.owner_id where d.kind='exercise' and d.source_id=(p_data->>'id')::uuid and p.owner_id=d.owner_id and p.student_id=who and not p.blocked) then raise exception 'Brak dostępu do zestawu.';end if;
+ if p_action='assign_folder' then
+ if not exists(select 1 from public.toowee_material_folders where id=(p_data->>'folder_id')::uuid and owner_id=who) then raise exception 'Brak dostępu do folderu.';end if;
+ for s in select * from public.toowee_exercise_sets where owner_id=who and folder_id=(p_data->>'folder_id')::uuid loop
+  perform public.toowee_exercise_sets('assign',p_data||jsonb_build_object('id',s.id));
+ end loop;return jsonb_build_object('saved',true);
+ end if;
+ if p_action='assigned' then
+ select coalesce(jsonb_agg(jsonb_build_object('id',e.id,'title',e.title,'description',e.description,'lang',e.lang,'count',jsonb_array_length(e.cards),'author',a.display_name) order by e.updated_at desc),'[]') into result from public.toowee_exercise_sets e join public.toowee_accounts a on a.id=e.owner_id where exists(select 1 from public.toowee_material_deliveries d join public.toowee_student_profiles p on p.id=d.profile_id where d.owner_id=e.owner_id and d.kind='exercise' and d.source_id=e.id and p.owner_id=e.owner_id and p.student_id=who and not p.blocked);
+ return jsonb_build_object('sets',result);
+ end if;
+ if p_action='recipients' then
+ return jsonb_build_object('profiles',(select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',trim(first_name||' '||last_name))),'[]') from public.toowee_student_profiles where owner_id=who and not blocked),'groups',(select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',name,'lang',lang)),'[]') from public.toowee_groups where owner_id=who));
+ end if;
  if p_action='folders' then
  select coalesce(jsonb_agg(to_jsonb(f)),'[]') into result from public.toowee_material_folders f where f.owner_id=who;
  return jsonb_build_object('folders',result);
@@ -71,7 +85,29 @@ begin
   on conflict(id) do update set folder_id=excluded.folder_id,title=excluded.title,description=excluded.description,lang=excluded.lang,cards=excluded.cards,is_public=excluded.is_public,revision=toowee_exercise_sets.revision+1,updated_at=now() returning * into s;
  else
   select * into s from public.toowee_exercise_sets where id=(p_data->>'id')::uuid for update;
-  if not found or(s.owner_id<>who and not s.is_public) then raise exception 'Ten zestaw jest prywatny lub nie jest już dostępny.';end if;
+  if not found or(s.owner_id<>who and not s.is_public and not(p_action='get' and exists(select 1 from public.toowee_material_deliveries d join public.toowee_student_profiles p on p.id=d.profile_id where d.kind='exercise' and d.source_id=s.id and d.owner_id=s.owner_id and p.owner_id=s.owner_id and p.student_id=who and not p.blocked))) then raise exception 'Ten zestaw jest prywatny lub nie jest już dostępny.';end if;
+ end if;
+ if p_action in ('delete','assign') then
+ if s.owner_id<>who then raise exception 'Możesz zmieniać tylko własny zestaw.';end if;
+ if p_action='delete' then
+  if p_data->>'confirmation' is distinct from 'DELETE' or p_data->>'confirm_id' is distinct from s.id::text then raise exception 'Potwierdź usunięcie zestawu.';end if;
+  delete from public.toowee_material_deliveries where owner_id=who and kind='exercise' and source_id=s.id;
+  delete from public.toowee_exercise_sets where id=s.id and owner_id=who;
+  return jsonb_build_object('deleted',true);
+ end if;
+ if nullif(p_data->>'group_id','') is not null then
+  if not exists(select 1 from public.toowee_groups where id=(p_data->>'group_id')::uuid and owner_id=who and (lang is null or lang=s.lang)) then raise exception 'Wybierz własną grupę w języku zestawu.';end if;
+  select array_agg(gs.profile_id) into recipient_ids from public.toowee_group_students gs join public.toowee_student_profiles p on p.id=gs.profile_id where gs.group_id=(p_data->>'group_id')::uuid and p.owner_id=who and not p.blocked;
+ else
+  if jsonb_typeof(p_data->'profile_ids') is distinct from 'array' or jsonb_array_length(p_data->'profile_ids') not between 1 and 100 then raise exception 'Wybierz uczniów.';end if;
+  select array_agg(distinct value::uuid) into recipient_ids from jsonb_array_elements_text(p_data->'profile_ids');
+ end if;
+ if coalesce(array_length(recipient_ids,1),0)=0 then raise exception 'Brak aktywnych uczniów.';end if;
+ foreach recipient in array recipient_ids loop
+  if not exists(select 1 from public.toowee_student_profiles where id=recipient and owner_id=who and not blocked) then raise exception 'Brak dostępu do ucznia.';end if;
+  insert into public.toowee_material_deliveries(owner_id,profile_id,kind,source_id) values(who,recipient,'exercise',s.id) on conflict do nothing;
+ end loop;
+ return jsonb_build_object('assigned',array_length(recipient_ids,1));
  end if;
  if p_action='copy' then
   req:=(p_data->>'new_id')::uuid;if req is null then raise exception 'Brak identyfikatora kopii.';end if;

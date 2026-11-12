@@ -35,6 +35,18 @@ begin
   insert into public.toowee_material_folders(owner_id,profile_id,name,lang) values(who,(item->>'profile_id')::uuid,'Słówka bez zestawu',item->>'lang') returning id into fid;
   insert into public.toowee_material_sets values(fid,(item->>'folder_id')::uuid) on conflict do nothing;
  end loop;
+ if p_action='words_update' then
+  sid:=(p_data->>'set_id')::uuid;
+  if not exists(select 1 from public.vocabulary_folders where id=sid and owner_id=who) then raise exception 'Brak dostępu do listy.';end if;
+  if jsonb_typeof(p_data->'words') is distinct from 'array' or jsonb_array_length(p_data->'words') not between 1 and 500 then raise exception 'Zapisuj od 1 do 500 poprawek naraz.';end if;
+  if (select count(distinct value->>'id') from jsonb_array_elements(p_data->'words'))<>jsonb_array_length(p_data->'words') then raise exception 'Powtórzone słówka.';end if;
+  for item in select value from jsonb_array_elements(p_data->'words') loop
+   if not exists(select 1 from public.vocabulary_words where id=(item->>'id')::uuid and owner_id=who and folder_id=sid) then raise exception 'Słówko nie należy do tej listy.';end if;
+   if length(trim(coalesce(item->>'word',''))) not between 1 and 500 or length(trim(coalesce(item->>'translation',''))) not between 1 and 1000 or length(coalesce(item->>'reading',''))>500 or length(coalesce(item->>'example',''))>2000 then raise exception 'Sprawdź słówko i tłumaczenie.';end if;
+   update public.vocabulary_words set word=trim(item->>'word'),translation=trim(item->>'translation'),reading=coalesce(item->>'reading',''),example=coalesce(item->>'example','') where id=(item->>'id')::uuid and owner_id=who and folder_id=sid;
+  end loop;
+  return jsonb_build_object('saved',jsonb_array_length(p_data->'words'));
+ end if;
  if p_action='material_assign_many' then
   if jsonb_typeof(p_data->'profile_ids') is distinct from 'array' then raise exception 'Zaznacz uczniów.';end if;
   if jsonb_array_length(p_data->'profile_ids') not between 1 and 100 then raise exception 'Wybierz od 1 do 100 uczniów.';end if;
@@ -130,7 +142,9 @@ begin
    if not found then raise exception 'Wybierz własny folder w tym samym języku.';end if;
   end if;
   if p_action='set_move' then
-   if bucket.profile_id is not null or exists(select 1 from public.toowee_material_sets ms join public.toowee_material_folders m on m.id=ms.folder_id where ms.set_id=sid and m.profile_id is not null) then raise exception 'Zestaw ucznia pozostaje w jego profilu. Użyj kopiowania.';end if;
+   select m.profile_id,m.group_id into pid,gid from public.toowee_material_sets ms join public.toowee_material_folders m on m.id=ms.folder_id where ms.set_id=sid;
+   if bucket.profile_id is distinct from pid or bucket.group_id is distinct from gid then raise exception 'Wybierz folder tego samego ucznia lub grupy.';end if;
+   if bucket.id is null and (pid is not null or gid is not null) then raise exception 'Wybierz folder w tym samym profilu lub grupie, aby zachować przypisanie.';end if;
    if bucket.id is null then delete from public.toowee_material_sets where set_id=sid;
    else insert into public.toowee_material_sets values(bucket.id,sid) on conflict(set_id) do update set folder_id=excluded.folder_id;end if;
   else
