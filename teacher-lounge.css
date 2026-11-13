@@ -300,3 +300,7 @@ body[data-portal-mode=teacher] #teacherSidebar .tw-global-tools>button{backgroun
 body[data-portal-mode=teacher] #teacherSidebar :is(.teacher-entry-grid>button,.teacher-global-nav-row>button:first-child){font-family:Arial,sans-serif;font-size:13px;font-weight:600;line-height:1.25}
 body[data-portal-mode=teacher] #teacherSidebar .tw-global-tools>button{display:flex;align-items:center;gap:8px}
 .teacher-whiteboard-icon{display:inline-flex;align-items:center;justify-content:center;flex:none;line-height:1}
+
+/* A single disclosure contains the existing language entries and their navigation. */
+body[data-portal-mode=teacher] #teacherSidebar #teacherLanguageList{margin:2px 0 8px 10px;padding-left:8px;border-left:2px solid #e3d8f3;gap:6px}
+body[data-portal-mode=teacher] #teacherSidebar #teacherLanguagesToggle{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#eee7f9;color:#5c4185;border-radius:12px}
