@@ -87,7 +87,7 @@
       const button=document.createElement('button');button.type='button';button.className='match-card memory-card';button.dataset.index=String(index);button.dataset.pair=card.word.id;
       const found=matched.has(card.word.id),shown=found || flipped.includes(index);
       button.classList.toggle('matched',found);button.classList.toggle('selected',shown&&!found);button.setAttribute('aria-pressed',String(shown));
-      if(shown)addLabel(button,card.word,card.side);else {button.textContent='?';button.setAttribute('aria-label','Odkryj kartę '+(index+1));}
+      if(shown)addLabel(button,card.word,card.side);else {button.textContent=String(index+1);button.setAttribute('aria-label','Odkryj kartę '+(index+1));}
       button.disabled=!inSession() || found || flipped.includes(index) || lock;
       button.addEventListener('click',()=>flip(index));el('gameMemoryBoard').append(button);
     });

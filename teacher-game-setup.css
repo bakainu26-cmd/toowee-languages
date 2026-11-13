@@ -92,3 +92,18 @@ body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button{min
 #sophieDialog.tw-setup-mode{padding:24px;background:#fbf7ef;overflow:auto}#sophieDialog.tw-setup-mode>.sophie-header,#sophieDialog.tw-setup-mode>.sophie-footer{display:none!important}#sophieDialog.tw-setup-mode .sophie-content{padding:0;overflow:visible}#sophieDialog.tw-setup-mode #sophieHostConfig>h3,#sophieDialog.tw-setup-mode #sophieHostConfig>.sophie-help{display:none}#sophieDialog.tw-setup-mode #sophieCreateForm{width:100%;max-width:none}#sophieDialog.tw-setup-mode #sophieStatus{margin:0 0 12px}#sophieDialog.tw-setup-mode .sophie-rooms{margin-bottom:12px}#collectionsDialog:has(.toowee-form-setup){width:min(1450px,97vw);max-width:1450px;background:#fbf7ef;padding:24px}#collectionsDialog:has(.toowee-form-setup) .collection-config{display:block;max-width:none;width:100%}#collectionsDialog:has(.toowee-form-setup) #collectionsContent>h3{display:none}.toowee-form-setup .toowee-setup-heading>div{flex:1}.toowee-form-setup .toowee-material-selected{margin-top:20px}
 #sophieDialog.tw-setup-mode #sophieCreateForm{display:block!important}#sophieDialog.tw-setup-mode .toowee-form-settings>div{margin-bottom:18px}#sophieDialog.tw-setup-mode .sophie-timing-settings{display:grid;grid-template-columns:1fr;gap:18px}#sophieDialog.tw-setup-mode .toowee-setup{margin:0}#sophieDialog.tw-setup-mode #sophieOpenSetup{margin-bottom:14px}#sophieDialog.tw-setup-mode .toowee-form-settings .wide{width:100%}
 #sophieDialog.tw-setup-mode #sophieOpenSetup{display:none}
+
+/* The form contains a full-width composition, not a cell in the legacy grid. */
+#collectionsDialog .collection-config:has(.toowee-form-setup){display:block;width:100%;max-width:none}
+#collectionsDialog[data-dialog-layout=viewport]{box-sizing:border-box;zoom:1;overflow:auto;max-height:96dvh}
+#collectionsDialog .toowee-setup-columns{grid-template-columns:minmax(0,1.2fr) minmax(300px,1fr)}
+#collectionsDialog .toowee-material-option>span:last-child{min-width:0;overflow-wrap:break-word}
+.toowee-settings-title{display:none!important}
+.collection-game-icon,.activity-game-icon{width:64px;height:64px;object-fit:contain;flex:none;vertical-align:middle}
+#activityTitle-games{display:flex;align-items:center;gap:14px}
+#collectionsDialog .collections-header h2{display:flex;align-items:center;gap:12px}
+#collectionsDialog:not(:has(.toowee-form-setup)):not([data-view=game]):not(.tw-lobby-mode){width:min(900px,96vw)}
+#collectionsDialog .collection-config:not(:has(.toowee-form-setup)){display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:24px;background:#fffaf4;border:1px solid #dcc5e3;border-radius:20px;max-width:none}
+#collectionsDialog .collection-config:not(:has(.toowee-form-setup))>button{grid-column:1/-1;min-height:54px}
+#collectionsDialog .collection-config input{box-sizing:border-box;width:100%;min-height:50px;font-size:18px}
+@media(max-width:700px){#collectionsDialog .toowee-setup-columns,#collectionsDialog .collection-config:not(:has(.toowee-form-setup)){grid-template-columns:minmax(0,1fr)}.activity-game-icon{width:44px;height:44px}}

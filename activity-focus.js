@@ -29,7 +29,7 @@
     if(state?.id!==id)leave();
     const before=state?hashFor(state):'';
     state={id,title,playing,kind,owner:account.userId,language:activeLanguage};page=0;
-    header(id);el('activityHeader-'+id).querySelector('button').textContent='← '+(id==='games'?(window.worldGameMission?'Wróć na mapę':'Wybór gry'):'Ustawienia');el('activityTitle-'+id).textContent=title;
+    header(id);el('activityHeader-'+id).querySelector('button').textContent='← '+(id==='games'?(window.worldGameMission?'Wróć na mapę':'Wybór gry'):'Ustawienia');el('activityTitle-'+id).textContent=title;if(id==='games'&&kind){const icon=document.createElement('img');icon.src='assets/game-icons/'+kind+'.webp';icon.alt='';icon.className='activity-game-icon';el('activityTitle-'+id).prepend(icon);}
     el(id).classList.add('activity-screen');el(id).classList.toggle('activity-playing',playing);el(id).dataset.activityKind=kind;
     document.body.classList.add('activity-focus');tab(id);
     const hash=hashFor(state);if(location.hash!==hash)history[before?'replaceState':'pushState'](null,'',hash);
