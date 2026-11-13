@@ -1,11 +1,11 @@
 'use strict';
 (()=>{
  const states=new Map();
- const definitions=[['#teacherGameCatalog>.game-types','catalog','tiles'],['#profileGamesPanel','profile','list']];
+ const definitions=[['#teacherGameCatalog>.teacher-game-directory','catalog','tiles'],['#profileGamesPanel>.teacher-game-directory','profile','tiles']];
  const read=(key,fallback)=>{try{return localStorage.getItem('toowee-games-view-'+key)||fallback;}catch{return fallback;}};
  function enhance(root,key,fallback){
   if(states.has(root))return;
-  const cards=()=>key==='profile'?[...root.children].filter(n=>n.classList.contains('sophie-launch')):[...root.children].filter(n=>n.tagName==='BUTTON');
+  const cards=()=>[...root.children].filter(n=>n.tagName==='BUTTON');
   if(!cards().length)return;
   const toolbar=document.createElement('div');toolbar.className='material-view-switch game-directory-view-switch';toolbar.setAttribute('role','group');toolbar.setAttribute('aria-label','Widok gier');
   let view=read(key,fallback);if(!['tiles','list'].includes(view))view=fallback;
@@ -21,7 +21,7 @@
   for(const [kind,label] of [['tiles','▦ Kafelki'],['list','≡ Lista']]){
    const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',()=>apply(kind,true));buttons[kind]=b;toolbar.append(b);
   }
-  if(key==='profile')root.insertBefore(toolbar,cards()[0]);else root.before(toolbar);
+  root.before(toolbar);
   states.set(root,toolbar);apply(view);
  }
  let pending=false;
