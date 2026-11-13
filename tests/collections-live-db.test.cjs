@@ -11,6 +11,8 @@ await as(host);let r=await rpc('create',{protocol:4,request_id:randomUUID(),ids,
 await as(student);r=await rpc('join',{code,nickname:'A'});const first=r.me;
 await as(outsider);r=await rpc('join',{code,nickname:'B'});const second=r.me;
 await as(host);r=await rpc('start',{code});assert.equal(r.phase,'questions');assert.equal(r.protocol,4);
+// The assertions below deliberately play A before B; make response-time ordering deterministic.
+await db.query("update toowee_collection_quiz set question_started_at=clock_timestamp()-interval '1 minute' where player_id=$1",[second]);
 for(const id of [student,outsider]){await as(id);r=await rpc('load',{code});assert(r.question);assert(!('solution' in r.question));const raw=(await db.query('select question from toowee_collection_quiz where player_id=$1',[r.me])).rows[0].question;r=await rpc('answer',{code,cycle:r.my_quiz.cycle,question_id:r.question.id,choice:r.question.options.indexOf(raw.solution)});}
 assert.equal(r.phase,'draw');
 await as(student);r=await rpc('load',{code});await assert.rejects(rpc('end_turn',{code,revision:r.revision}),/Najpierw/);
@@ -42,6 +44,6 @@ await db.exec(script('collections_setup.sql'));await db.exec(script('collections
 
 // If time expires after one player moved, finishing the cycle gives the other player a turn.
 await as(host);let timed=await rpc('create',{protocol:4,request_id:randomUUID(),ids,lang:'Japanese',end_mode:'timer',time_limit:60,questions_per_turn:1,seconds:0,placement_seconds:0});const tc=timed.code;
-await as(student);await rpc('join',{code:tc,nickname:'A'});await as(outsider);await rpc('join',{code:tc,nickname:'B'});await as(host);timed=await rpc('start',{code:tc});timed=await rpc('skip',{code:tc});assert.equal(timed.phase,'draw');await as(student);timed=await rpc('end_turn',{code:tc,revision:timed.revision});assert.equal(timed.turn_no,2);
+await as(student);await rpc('join',{code:tc,nickname:'A'});await as(outsider);await rpc('join',{code:tc,nickname:'B'});await as(host);timed=await rpc('start',{code:tc});await db.query("update toowee_collection_quiz set question_started_at=clock_timestamp()-interval '1 minute' where room_id=(select id from toowee_collection_rooms where code=$1) and player_id in(select id from toowee_collection_players where nickname='B')",[tc]);timed=await rpc('skip',{code:tc});assert.equal(timed.phase,'draw');await as(student);timed=await rpc('end_turn',{code:tc,revision:timed.revision});assert.equal(timed.turn_no,2);
 await db.query("update toowee_collection_rooms set game_deadline=now()-interval '1 second' where code=$1",[tc]);await as(host);timed=await rpc('load',{code:tc});assert.equal(timed.phase,'time_decision');timed=await rpc('finish_cycle',{code:tc});assert.equal(timed.turn_no,2);assert.equal(timed.phase,'draw');await as(outsider);timed=await rpc('end_turn',{code:tc,revision:timed.revision});assert.equal(timed.status,'finished');assert.equal(timed.state.cycle,1);
 console.log('PASS live-v4 simultaneous questions, turn choice, endings, statistics and repeatable migration');await db.close();})().catch(e=>{console.error(e);process.exitCode=1});
