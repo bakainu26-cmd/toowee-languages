@@ -22,3 +22,28 @@
 .tw-online .tw-online-actions button:hover:not(:disabled){background:#553052;border-color:#553052;color:#fff}
 
 #magicDiceHostDialog .magic-help-heading>button,#collectionsClose,#collectionsHelpButton,#sophieBack{background:#6a3c66!important;border-color:#6a3c66!important;color:#fff!important}
+
+/* Viewport-owned Sophie screens: no content-driven dialog zoom. */
+#sophieDialog[data-dialog-layout=viewport]{width:100%;height:100dvh;max-height:100dvh;box-sizing:border-box;zoom:1;overflow:hidden}
+#sophieDialog.tw-lobby-mode{display:flex;flex-direction:column;padding:clamp(10px,2vh,22px)}
+#sophieOnlineLobby{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:clamp(14px,2vh,26px)}
+#sophieOnlineLobby .tw-online-header{height:auto;min-height:90px;flex:none;margin-bottom:14px;padding-bottom:12px}
+#sophieOnlineLobby .tw-online-body{flex:1;min-height:0}
+#sophieOnlineLobby .tw-online-card{min-height:0;padding:clamp(14px,2vh,24px)}
+#sophieOnlineLobby .tw-online-invite{overflow:auto;scrollbar-gutter:stable}
+#sophieOnlineLobby .tw-online-participants{display:flex;flex-direction:column;overflow:hidden}
+#sophieOnlineLobby .tw-online-participants-heading{flex:none}
+#sophieOnlineLobby .tw-online-participants ul{flex:1;min-height:0;overflow:auto;scrollbar-gutter:stable;margin-bottom:0}
+#sophieOnlineLobby .tw-online-footer{flex:none;margin-top:14px}
+#sophieOnlineLobby .tw-online-help{flex:none;max-height:20dvh;overflow:auto}
+#sophieDialog.tw-setup-mode{display:flex;flex-direction:column;padding:clamp(14px,2vh,28px);overflow:hidden}
+#sophieDialog.tw-setup-mode .sophie-content{flex:1;min-height:0;overflow:auto;scrollbar-gutter:stable}
+#sophieDialog.tw-setup-mode .sophie-config{max-width:none;width:100%}
+#sophieDialog .toowee-setup{margin:0}
+#sophieDialog .toowee-setup-columns{align-items:start}
+#sophieDialog .toowee-setup input,#sophieDialog .toowee-setup select{font-size:17px;min-height:46px}
+#sophieDialog .toowee-setup button{font-size:16px;min-height:44px}
+#sophieJoinConfig{width:min(920px,100%);max-width:none}
+#sophieJoinConfig input{width:100%;box-sizing:border-box;min-height:52px;padding:12px 16px;font-size:19px}
+#sophieJoinForm button{min-height:52px;font-size:18px}
+@media(max-width:650px){#sophieOnlineLobby .tw-online-header{min-height:0}#sophieOnlineLobby .tw-online-logo{width:48px;height:48px}#sophieOnlineLobby .tw-online-body{grid-template-columns:1fr;grid-template-rows:minmax(160px,1fr) minmax(110px,.8fr)}#sophieOnlineLobby .tw-online-footer{gap:8px;padding:10px}#sophieOnlineLobby h3{font-size:22px}#sophieOnlineLobby .tw-online-code{margin:10px 0;padding:8px}#sophieOnlineLobby .tw-online-note{display:none}}

@@ -1,0 +1,12 @@
+/* Shared answer treatment only; navigation and game boards keep their own colours. */
+:is(.magic-answers,.sophie-options,.exercise-quiz,.escape-options,.collection-answers,#gameQuizOptions,.material-study-answers)>button,button.match-card{
+ background:#f0e4f2!important;color:#512b55!important;border:2px solid #c9a9cf!important;
+ white-space:normal;overflow-wrap:anywhere;word-break:normal;line-height:1.4;text-align:center;
+ min-width:0;max-width:100%;height:auto;opacity:1;
+}
+:is(.magic-answers,.sophie-options,.exercise-quiz,.escape-options,.collection-answers,#gameQuizOptions,.material-study-answers)>button:nth-child(even){background:#f9e9e1!important}
+:is(.magic-answers,.sophie-options,.exercise-quiz,.escape-options,.collection-answers,#gameQuizOptions,.material-study-answers)>button:not(:disabled):hover,button.match-card:not(:disabled):hover{border-color:#84528e!important;box-shadow:0 0 0 1px #84528e}
+:is(.magic-answers,.sophie-options,.exercise-quiz,.escape-options,.collection-answers,#gameQuizOptions,.material-study-answers)>button:focus-visible,button.match-card:focus-visible{outline:3px solid #75417f;outline-offset:3px}
+:is(.magic-answers,.sophie-options,.exercise-quiz,.escape-options,.collection-answers,#gameQuizOptions,.material-study-answers)>button:is(.picked,.selected,[aria-pressed=true]),button.match-card.selected{background:#e2cce9!important;border-color:#784486!important;outline:2px solid #784486}
+:is(.magic-answers,.sophie-options,.exercise-quiz,.escape-options,.collection-answers,#gameQuizOptions,.material-study-answers)>button:is(.correct,.matched,[data-result=correct]),button.match-card.matched{background:#e5efdc!important;border-color:#6c8554!important;color:#354529!important;opacity:1}
+:is(.magic-answers,.sophie-options,.exercise-quiz,.escape-options,.collection-answers,#gameQuizOptions,.material-study-answers)>button:is(.wrong,.incorrect,[data-result=incorrect]),button.match-card.incorrect{background:#f6dfe6!important;border-color:#b15c77!important;color:#702c46!important;opacity:1}
