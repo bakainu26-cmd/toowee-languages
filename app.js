@@ -52,7 +52,7 @@ function showLanguagePicker() {
   cancelEdit();clearQuiz();if (window.resetImport) window.resetImport();
   byId('learningWorkspace').hidden = true;
   byId('languagePicker').hidden = false;
-  controls();
+  controls();window.dispatchEvent(new Event('toowee-tab'));
 }
 function chooseLanguage(language) {
   if (!account?.userId || saving || !Object.hasOwn(languageInfo,language)) return;
