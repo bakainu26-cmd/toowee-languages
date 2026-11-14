@@ -22,7 +22,7 @@
  }
  const joinButton=button('Dołącz do gry',()=>window.openTooWeeGameJoin?.());joinButton.id='studentJoinGame';menu.append(joinButton);
  const resumeButton=button('Wróć do ostatniej gry',()=>el('resumeSophie')?.click());menu.append(resumeButton);
- const accountButton=button('Moje konto',()=>route('connections'));accountButton.id='studentAccountButton';headerControls.append(accountButton);
+ const accountButton=button('Moje konto',()=>route('connections'));accountButton.id='studentAccountButton';headerControls.prepend(accountButton);
  const oldDashboard=el('dashboard')?.querySelector('.dashboard-brand');if(oldDashboard){oldDashboard.querySelector('h2').textContent='Twoja przestrzeń do nauki';oldDashboard.querySelector('p').textContent='Słówka, powtórki i małe kroki każdego dnia.';}
  const dashboardHint=el('dashboard')?.querySelector('.hint');if(dashboardHint)dashboardHint.textContent='Wybierz zestaw do nauki albo wróć do zaplanowanych powtórek. Swój postęp i serię dni nauki sprawdzisz w statystykach.';
  const cardSelectors='#learningSetCards>.question,.learning-tile,.progress-stat,#dashboard .world-dashboard,.language-choice,#assignedExerciseSets article';
@@ -30,7 +30,7 @@
  function sync(){const student=window.tooweeView==='student';sidebar.hidden=hero.hidden=accountButton.hidden=headerControls.hidden=!student;if(!student){pendingView=null;navigationPrompt.hidden=true;languages.hidden=true;languageToggle.setAttribute('aria-expanded','false');return;}resumeButton.hidden=el('resumeSophie')?.hidden!==false;
   const language=typeof activeLanguage!=='undefined'?activeLanguage:null,view=window.tooweeCurrentTab||'learning';document.body.dataset.studentPage=view==='connections'?'connections':language?view:'languages';accountButton.textContent=(window.tooweeProfile?.display_name||'Moje konto').split(' ')[0];if(view==='connections')picker.hidden=true;
   title.textContent=view==='connections'?'Moje konto':language?(labels[view]||'Twoja nauka'):'Wybierz język';eyebrow.textContent=language?({Japanese:'JAPOŃSKI',English:'ANGIELSKI',Spanish:'HISZPAŃSKI'}[language]||'TWOJA PRZESTRZEŃ DO NAUKI'):'TWOJA PRZESTRZEŃ DO NAUKI';
-  const currentLanguage=[...languages.children].find(b=>b.dataset.studentLanguage===language);languageToggle.textContent=(currentLanguage?currentLanguage.textContent:'Wybierz język')+' ▾';
+  const currentLanguage=[...languages.children].find(b=>b.dataset.studentLanguage===language);languageToggle.textContent=(currentLanguage?'Język: '+currentLanguage.textContent:'Wybierz język')+' ▾';
   for(const b of languages.children){b.classList.toggle('active',b.dataset.studentLanguage===language);b.setAttribute('aria-pressed',String(b.dataset.studentLanguage===language));}
   if(language){navigationPrompt.hidden=true;if(pendingView){const next=pendingView,owner=account?.userId;pendingView=null;queueMicrotask(()=>{if(window.tooweeView==='student'&&account?.userId===owner&&activeLanguage===language)route(next);});}}
   const selected=['folders','imports'].includes(view)?'words':['study','tests'].includes(view)?'learning':view;
