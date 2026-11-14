@@ -22,9 +22,11 @@ revoke all on function public.toowee_check_email_link() from public,anon,authent
 drop trigger if exists toowee_email_accept_guard on public.toowee_invites;
 create trigger toowee_email_accept_guard before update of accepted_by on public.toowee_invites for each row execute function public.toowee_check_email_link();
 create or replace function public.toowee_classroom_tools(p_action text,p_data jsonb default '{}') returns jsonb language plpgsql security definer set search_path=public as $$
-declare who uuid:=auth.uid(); v_board public.toowee_boards%rowtype;wid uuid;sid uuid;pid uuid;v_image text;v_url text;v_token text;result jsonb;v int;v_email text;
+declare who uuid:=auth.uid(); v_board public.toowee_boards%rowtype;wid uuid;sid uuid;pid uuid;v_image text;v_url text;v_token text;result jsonb;v int;v_email text;v_teacher boolean;
 begin
  if who is null then raise exception 'Zaloguj się.';end if;
+ v_teacher:=coalesce(p_data->>'view','teacher')<>'student' and exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin'));
+ if not v_teacher and p_action in ('link_save','link_delete','board_create') then raise exception 'Ta operacja jest dostępna w panelu nauczyciela.';end if;
  if p_action='metadata' then
  return jsonb_build_object('images',(select coalesce(jsonb_object_agg(x.word_id::text,x.image),'{}') from (
  select i.word_id,i.image from public.toowee_word_images i where i.owner_id=who
@@ -65,9 +67,9 @@ begin
  return public.toowee_portal('accept',jsonb_build_object('token',v_token));
  elsif p_action in ('links','boards') then
  return jsonb_build_object('items',case when p_action='links' then (
- select coalesce(jsonb_agg(to_jsonb(l) order by l.created_at),'[]') from public.toowee_notebook_links l join public.toowee_student_profiles p on p.id=l.profile_id where (l.owner_id=who or p.student_id=who and not p.blocked) and (nullif(p_data->>'profile_id','') is null or l.profile_id=(p_data->>'profile_id')::uuid)
+ select coalesce(jsonb_agg(to_jsonb(l) order by l.created_at),'[]') from public.toowee_notebook_links l join public.toowee_student_profiles p on p.id=l.profile_id where (v_teacher and l.owner_id=who or p.student_id=who and not p.blocked) and (nullif(p_data->>'profile_id','') is null or l.profile_id=(p_data->>'profile_id')::uuid)
  ) else (
- select coalesce(jsonb_agg(to_jsonb(x) order by x.updated_at desc),'[]') from (select b.id,b.owner_id,b.profile_id,b.title,b.revision,b.updated_at from public.toowee_boards b left join public.toowee_student_profiles p on p.id=b.profile_id where (b.owner_id=who or p.student_id=who and not p.blocked) and (nullif(p_data->>'profile_id','') is null or b.profile_id=(p_data->>'profile_id')::uuid)) x
+ select coalesce(jsonb_agg(to_jsonb(x) order by x.updated_at desc),'[]') from (select b.id,b.owner_id,b.profile_id,b.title,b.revision,b.updated_at from public.toowee_boards b left join public.toowee_student_profiles p on p.id=b.profile_id where (b.owner_id=who and (v_teacher or b.profile_id is null) or p.student_id=who and not p.blocked) and (nullif(p_data->>'profile_id','') is null or b.profile_id=(p_data->>'profile_id')::uuid)) x
  ) end);
  elsif p_action='link_save' then
  pid:=(p_data->>'profile_id')::uuid;
@@ -83,7 +85,7 @@ begin
  insert into public.toowee_boards(owner_id,profile_id,title,slides) values(who,pid,left(coalesce(nullif(trim(p_data->>'title'),''),'Nowa tablica'),200),'[{"id":"first","objects":[]}]') returning * into v_board;return to_jsonb(v_board);
  elsif p_action in ('board_load','board_save') then
  select * into v_board from public.toowee_boards where id=(p_data->>'id')::uuid for update;
- if not found or not(v_board.owner_id=who or exists(select 1 from public.toowee_student_profiles where id=v_board.profile_id and student_id=who and not blocked)) then raise exception 'Brak dostępu do tablicy.';end if;
+ if not found or not(v_board.owner_id=who and (v_teacher or v_board.profile_id is null) or exists(select 1 from public.toowee_student_profiles where id=v_board.profile_id and student_id=who and not blocked)) then raise exception 'Brak dostępu do tablicy.';end if;
  if p_action='board_save' then
  if v_board.revision is distinct from (p_data->>'revision')::int then raise exception 'Tablica zmieniła się na drugim urządzeniu. Odśwież widok przed zapisem.';end if;
  if jsonb_typeof(p_data->'slides') is distinct from 'array' or jsonb_array_length(p_data->'slides') not between 1 and 200 or length((p_data->'slides')::text)>25000000 then raise exception 'Tablica może mieć 1–200 slajdów i maksymalnie 25 MB.';end if;
