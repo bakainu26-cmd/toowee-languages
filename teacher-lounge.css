@@ -406,3 +406,12 @@ body[data-portal-mode=student] #importPreview input{padding:8px;font-size:14px;m
 .student-import-options summary{cursor:pointer;font-weight:600}.student-import-options .study-settings{margin-top:16px}
 
 .student-word-image-options{margin:14px 0}.student-word-image-options summary{cursor:pointer;color:#633b61;font-weight:600}.student-word-image-options .tw-word-image{margin:12px 0}.student-set-dialog>.tw-material-heading{position:sticky;top:-24px;z-index:3;padding:10px 0;background:#fffaf4}.student-word-row .tw-word-image button{justify-self:start}.student-word-row .tw-word-image [role=status]:empty{display:none}
+
+/* The student language switch lives beside the account button, independent of section navigation. */
+#studentHeaderControls{display:flex;align-items:center;gap:10px;margin-left:auto}#studentHeaderControls[hidden]{display:none!important}
+#studentLanguageControl{position:relative}#studentLanguageToggle{white-space:nowrap;background:#eee3ee;color:#633b61;border-radius:12px;padding:12px 18px;font:600 13px/1.3 Arial,sans-serif}
+#studentLanguageList{position:absolute;right:0;top:calc(100% + 8px);z-index:30;display:grid;gap:5px;min-width:195px;padding:8px;background:#fffaf4;border:1px solid #dbc8e3;border-radius:16px;box-shadow:0 8px 24px #58335722}
+#studentLanguageList[hidden]{display:none!important}#studentLanguageList>button{background:transparent;color:#633b61;text-align:left;border-radius:10px;min-height:40px;font:600 13px/1.3 Arial,sans-serif}
+#studentLanguageList>button:hover{background:#eee3ee}#studentLanguageList>button.active{background:#7b557b;color:white}
+body[data-portal-mode=student] .site-header{flex-wrap:wrap}body[data-portal-mode=student] #studentHeaderControls #studentAccountButton{margin-left:0}
+@media(max-width:650px){#studentHeaderControls{width:100%;justify-content:flex-end}#studentLanguageToggle{padding:10px 12px}#studentLanguageList{max-width:calc(100vw - 36px)}}
