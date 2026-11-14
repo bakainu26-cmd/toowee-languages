@@ -5,6 +5,9 @@ create table if not exists public.toowee_word_images(word_id uuid primary key re
 create table if not exists public.toowee_language_pairs(set_id uuid primary key,owner_id uuid not null references auth.users(id),source_lang text not null,target_lang text not null);
 create table if not exists public.toowee_notebook_links(id uuid primary key default gen_random_uuid(),owner_id uuid not null references auth.users(id),profile_id uuid not null references public.toowee_student_profiles(id) on delete cascade,title text not null,url text not null,created_at timestamptz not null default now());
 create table if not exists public.toowee_boards(id uuid primary key default gen_random_uuid(),owner_id uuid not null references auth.users(id),profile_id uuid references public.toowee_student_profiles(id) on delete cascade,title text not null,slides jsonb not null default '[]',revision int not null default 1,updated_at timestamptz not null default now());
+create table if not exists public.toowee_board_hidden(board_id uuid not null references public.toowee_boards(id) on delete cascade,user_id uuid not null references auth.users(id) on delete cascade,hidden_at timestamptz not null default now(),primary key(board_id,user_id));
+alter table public.toowee_board_hidden enable row level security;
+revoke all on public.toowee_board_hidden from public,anon,authenticated;
 create table if not exists public.toowee_email_links(token text primary key references public.toowee_invites(token) on delete cascade,email text not null);
 alter table public.toowee_word_images enable row level security;
 alter table public.toowee_language_pairs enable row level security;
@@ -69,7 +72,7 @@ begin
  return jsonb_build_object('items',case when p_action='links' then (
  select coalesce(jsonb_agg(to_jsonb(l) order by l.created_at),'[]') from public.toowee_notebook_links l join public.toowee_student_profiles p on p.id=l.profile_id where (v_teacher and l.owner_id=who or p.student_id=who and not p.blocked) and (nullif(p_data->>'profile_id','') is null or l.profile_id=(p_data->>'profile_id')::uuid)
  ) else (
- select coalesce(jsonb_agg(to_jsonb(x) order by x.updated_at desc),'[]') from (select b.id,b.owner_id,b.profile_id,b.title,b.revision,b.updated_at from public.toowee_boards b left join public.toowee_student_profiles p on p.id=b.profile_id where (b.owner_id=who and (v_teacher or b.profile_id is null) or p.student_id=who and not p.blocked) and (nullif(p_data->>'profile_id','') is null or b.profile_id=(p_data->>'profile_id')::uuid)) x
+ select coalesce(jsonb_agg(to_jsonb(x) order by x.updated_at desc),'[]') from (select b.id,b.owner_id,b.profile_id,b.title,b.revision,b.updated_at from public.toowee_boards b left join public.toowee_student_profiles p on p.id=b.profile_id where (b.owner_id=who and (v_teacher or b.profile_id is null) or p.student_id=who and not p.blocked) and (v_teacher or not exists(select 1 from public.toowee_board_hidden h where h.board_id=b.id and h.user_id=who)) and (nullif(p_data->>'profile_id','') is null or b.profile_id=(p_data->>'profile_id')::uuid)) x
  ) end);
  elsif p_action='link_save' then
  pid:=(p_data->>'profile_id')::uuid;
@@ -83,9 +86,18 @@ begin
  pid:=nullif(p_data->>'profile_id','')::uuid;
  if pid is not null and not exists(select 1 from public.toowee_student_profiles where id=pid and owner_id=who and not blocked) then raise exception 'Wybierz własnego ucznia.';end if;
  insert into public.toowee_boards(owner_id,profile_id,title,slides) values(who,pid,left(coalesce(nullif(trim(p_data->>'title'),''),'Nowa tablica'),200),'[{"id":"first","objects":[]}]') returning * into v_board;return to_jsonb(v_board);
+ elsif p_action='board_delete' then
+ select * into v_board from public.toowee_boards where id=(p_data->>'id')::uuid for update;
+ if not found then raise exception 'Brak dostępu do tablicy.';end if;
+ if v_teacher and v_board.owner_id=who then
+ delete from public.toowee_boards where id=v_board.id;return '{"deleted":true}';
+ end if;
+ if not(v_board.owner_id=who and v_board.profile_id is null or exists(select 1 from public.toowee_student_profiles where id=v_board.profile_id and student_id=who and not blocked)) then raise exception 'Brak dostępu do tablicy.';end if;
+ insert into public.toowee_board_hidden(board_id,user_id) values(v_board.id,who) on conflict do nothing;return '{"hidden":true}';
  elsif p_action in ('board_load','board_save') then
  select * into v_board from public.toowee_boards where id=(p_data->>'id')::uuid for update;
  if not found or not(v_board.owner_id=who and (v_teacher or v_board.profile_id is null) or exists(select 1 from public.toowee_student_profiles where id=v_board.profile_id and student_id=who and not blocked)) then raise exception 'Brak dostępu do tablicy.';end if;
+ if not v_teacher and exists(select 1 from public.toowee_board_hidden where board_id=v_board.id and user_id=who) then raise exception 'Tablica została usunięta z Twojej listy.';end if;
  if p_action='board_save' then
  if v_board.revision is distinct from (p_data->>'revision')::int then raise exception 'Tablica zmieniła się na drugim urządzeniu. Odśwież widok przed zapisem.';end if;
  if jsonb_typeof(p_data->'slides') is distinct from 'array' or jsonb_array_length(p_data->'slides') not between 1 and 200 or length((p_data->'slides')::text)>25000000 then raise exception 'Tablica może mieć 1–200 slajdów i maksymalnie 25 MB.';end if;

@@ -7,7 +7,7 @@ declare board_id uuid;who uuid:=auth.uid();
 begin
  if who is null or room_topic is null or room_topic !~ '^toowee-board:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' then return false;end if;
  board_id:=substring(room_topic from 14)::uuid;
- return exists(select 1 from public.toowee_boards b left join public.toowee_student_profiles p on p.id=b.profile_id where b.id=board_id and (b.owner_id=who or p.student_id=who and not p.blocked));
+ return exists(select 1 from public.toowee_boards b left join public.toowee_student_profiles p on p.id=b.profile_id where b.id=board_id and (b.owner_id=who or p.student_id=who and not p.blocked and not exists(select 1 from public.toowee_board_hidden h where h.board_id=b.id and h.user_id=who)));
 end $$;
 revoke all on function public.toowee_board_realtime_access(text) from public,anon;
 grant execute on function public.toowee_board_realtime_access(text) to authenticated;

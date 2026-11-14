@@ -101,9 +101,11 @@ function cancelEdit() {
   byId('wordForm').elements.lang.value = activeLanguage || '';
   byId('saveWord').textContent = '+ Dodaj słówko';
   byId('cancelEdit').hidden = true;
+  window.dispatchEvent(new Event('toowee-word-edit'));
 }
 function clearQuiz() { window.closeActivityFocus?.();quiz = []; byId('testArea').replaceChildren(); if (window.resetStudy) window.resetStudy(); if (window.resetGame) window.resetGame(); if(window.resetTasks)window.resetTasks(); }
 function openVocabulary() {
+  if(window.tooweeView==='student'&&window.openStudentVocabularyCatalog){window.openStudentVocabularyCatalog();return;}
   if(window.clearLearningContext)window.clearLearningContext();
   byId('filterFolder').value='';byId('search').value='';
   renderWords();tab('words');
@@ -147,6 +149,7 @@ function renderLibrary() {
   if(window.updateTaskFolders)window.updateTaskFolders();
   if (window.renderMemoryStats) window.renderMemoryStats();
   renderWords();
+  window.refreshStudentVocabulary?.();
   if(ready && window.refreshLearningSets)void window.refreshLearningSets();
   controls();
 }
@@ -288,6 +291,7 @@ byId('wordRows').addEventListener('click', async event => {
     for (const name of ['lang','word','reading','translation','example']) if(f[name])f[name].value = w[name] || '';
     f.folder.value = w.folder_id || '';
     byId('saveWord').textContent = 'Zapisz zmiany'; byId('cancelEdit').hidden = false;
+    window.dispatchEvent(new Event('toowee-word-edit'));
     f.word.focus();
   } else if (button.dataset.delete && confirm('Usunąć słówko z Twojej biblioteki?')) {
     const id = button.dataset.delete;

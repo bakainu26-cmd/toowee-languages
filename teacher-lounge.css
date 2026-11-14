@@ -374,3 +374,35 @@ body[data-portal-mode=student] #wordForm .hint{margin:10px 0 0;font-size:13px;li
 #wordForm .tw-word-image [role=status]{min-height:20px;margin:0}
 @media(max-width:1000px){body[data-portal-mode=student] #wordForm{grid-template-columns:repeat(2,minmax(0,1fr))}body[data-portal-mode=student] #wordForm .word-example-field{grid-column:1/-1}}
 @media(max-width:600px){body[data-portal-mode=student] #wordForm,#wordForm .tw-word-image{grid-template-columns:minmax(0,1fr)}body[data-portal-mode=student] #wordForm .word-example-field{grid-column:auto}body[data-portal-mode=student] #wordForm{padding:14px;gap:14px}}
+
+/* Student material catalog reuses the portal cards; editing begins inside a selected set. */
+#studentSetCatalog .tw-material-heading{flex-wrap:wrap;gap:16px;margin-bottom:20px}
+#studentSetCatalog>label{display:grid;gap:6px;max-width:520px}
+.student-set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:18px;margin:20px 0}
+.student-set-grid article{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:22px;border-radius:22px}
+.student-set-grid h3,.student-set-grid p{margin:0}.student-set-grid button{margin-top:auto}
+.student-folder-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.student-folder-tabs button[aria-pressed=true]{background:#7b557b;color:white}
+.student-set-heading{display:none}
+body[data-portal-mode=student] .student-set-heading{display:block;margin-bottom:20px}
+body[data-portal-mode=student] .student-set-heading h2{margin:18px 0 8px}
+body[data-portal-mode=student] #studentSetEditor>.actions,body[data-portal-mode=student] #studentSetEditor>hr,body[data-portal-mode=student] #studentSetEditor>label,body[data-portal-mode=student] #studentSetEditor>#filterFolder,body[data-portal-mode=student] #studentSetEditor>#search,body[data-portal-mode=student] #wordForm>div:has(#wordFolder){display:none}
+.student-set-dialog{width:min(1050px,94vw);max-height:92dvh;overflow:auto;box-sizing:border-box}
+.student-set-dialog>form{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:16px}
+.student-set-dialog label{display:grid;gap:7px;margin:0;min-width:0}
+.student-set-dialog input{box-sizing:border-box;min-width:0;width:100%}
+.student-word-rows{display:grid;gap:20px}.student-word-row{min-width:0;border:1px solid #dac5e4;border-radius:18px;padding:18px;background:#fffaf4}
+.student-word-row legend{font:700 20px Georgia,serif;color:#583357}
+.student-word-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.student-word-fields label:last-child{grid-column:1/-1}
+.student-word-row .tw-word-image{margin:12px 0;grid-template-columns:repeat(2,minmax(0,1fr))}
+.student-word-row .tw-word-image :is(img,button,p){grid-column:1/-1}
+.student-set-dialog [role=status]{min-height:26px;overflow-wrap:anywhere}
+body[data-portal-mode=student] #importPreview input{padding:8px;font-size:14px;min-width:80px}
+@media(max-width:650px){.student-word-fields,.student-word-row .tw-word-image{grid-template-columns:minmax(0,1fr)}.student-set-dialog{padding:16px}.student-word-row{padding:12px}}
+.student-import-target{display:flex;align-items:end;flex-wrap:wrap;gap:12px;padding:18px;border:1px solid #dac5e4;border-radius:18px;background:#fffaf4;margin:18px 0}
+.student-import-target>div{flex:1;min-width:min(280px,100%)}
+.student-import-options{margin:20px 0;padding:16px;border:1px solid #dac5e4;border-radius:16px;background:#fffaf4}
+.student-import-options summary{cursor:pointer;font-weight:600}.student-import-options .study-settings{margin-top:16px}
+
+.student-word-image-options{margin:14px 0}.student-word-image-options summary{cursor:pointer;color:#633b61;font-weight:600}.student-word-image-options .tw-word-image{margin:12px 0}.student-set-dialog>.tw-material-heading{position:sticky;top:-24px;z-index:3;padding:10px 0;background:#fffaf4}.student-word-row .tw-word-image button{justify-self:start}.student-word-row .tw-word-image [role=status]:empty{display:none}
