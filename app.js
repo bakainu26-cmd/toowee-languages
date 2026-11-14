@@ -96,6 +96,7 @@ function controls() {
 }
 function cancelEdit() {
   editId = null;
+  window.resetWordImage?.();
   byId('wordForm').reset();
   byId('wordForm').elements.lang.value = activeLanguage || '';
   byId('saveWord').textContent = '+ Dodaj słówko';
@@ -250,11 +251,15 @@ byId('wordForm').onsubmit = async event => {
   if (!word.word || !word.translation) { libraryStatus('Wpisz słówko i tłumaczenie.',true); return; }
   const example=f.example?.value.trim() || '';
   if(example || library.words.find(w=>w.id===editId)?.example)word.example=example;
-  const id = editId;
+  const id = editId,imageSave=window.wordImageSave;
   const success = await writeLibrary(async snapshot => {
+    await imageSave?.prepare?.();
     const {client,userId}=snapshot;if(!word.folder_id)word.folder_id=await ensureLooseWordList(snapshot,word.lang);
     if(account?.userId!==userId)throw Error('Konto zostało zmienione.');
-    return id?client.from('vocabulary_words').update(word).eq('owner_id',userId).eq('id',id).select('id').single():client.from('vocabulary_words').insert({...word,owner_id:userId}).select('id').single();
+    const result=await (id?client.from('vocabulary_words').update(word).eq('owner_id',userId).eq('id',id).select('id').single():client.from('vocabulary_words').insert({...word,owner_id:userId}).select('id').single());
+    if(result.error)return result;if(account?.userId!==userId)throw Error('Konto zostało zmienione.');
+    if(!id&&result.data?.id){editId=result.data.id;byId('saveWord').textContent='Zapisz zmiany';byId('cancelEdit').hidden=false;}
+    await imageSave?.(result.data.id);return result;
   }, id ? 'Zmiany słówka zapisane.' : 'Słówko zapisane w Supabase.');
   if (success) cancelEdit();
 };
@@ -278,6 +283,7 @@ byId('wordRows').addEventListener('click', async event => {
     const w = library.words.find(w => w.id === button.dataset.edit);
     if (!w) return;
     editId = w.id;
+    window.resetWordImage?.(w);
     const f = byId('wordForm').elements;
     for (const name of ['lang','word','reading','translation','example']) if(f[name])f[name].value = w[name] || '';
     f.folder.value = w.folder_id || '';

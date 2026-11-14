@@ -357,3 +357,20 @@ body[data-portal-mode=student] #studentAccountButton{margin-left:auto;background
 #studentAccountButton[hidden]{display:none!important}
 
 body[data-portal-mode=student] #sophieJoinEntry{display:none}
+
+/* Student vocabulary editor: rows align at their top; long example/help never stretches the word row. */
+body[data-portal-mode=student] #wordForm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start;margin:0;padding:20px;border:1px solid var(--cozy-border);border-radius:20px;background:#fffaf4}
+body[data-portal-mode=student] #wordForm>div{min-width:0}
+body[data-portal-mode=student] #wordForm label{margin:0 0 7px}
+body[data-portal-mode=student] #wordForm .word-example-field{grid-column:1/3}
+body[data-portal-mode=student] #wordForm textarea{width:100%;min-height:110px;resize:vertical}
+body[data-portal-mode=student] #wordForm .hint{margin:10px 0 0;font-size:13px;line-height:1.5;padding:12px}
+#wordForm .word-image-editor{grid-column:1/-1;min-width:0}
+#wordForm .tw-word-image{margin:0;min-width:0;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+#wordForm .tw-word-image label{display:grid;gap:7px;min-width:0}
+#wordForm .tw-word-image :is(img,button,[role=status]){grid-column:1/-1}
+#wordForm .tw-word-image input{min-width:0;max-width:100%}
+#wordForm .tw-word-image button{justify-self:start}
+#wordForm .tw-word-image [role=status]{min-height:20px;margin:0}
+@media(max-width:1000px){body[data-portal-mode=student] #wordForm{grid-template-columns:repeat(2,minmax(0,1fr))}body[data-portal-mode=student] #wordForm .word-example-field{grid-column:1/-1}}
+@media(max-width:600px){body[data-portal-mode=student] #wordForm,#wordForm .tw-word-image{grid-template-columns:minmax(0,1fr)}body[data-portal-mode=student] #wordForm .word-example-field{grid-column:auto}body[data-portal-mode=student] #wordForm{padding:14px;gap:14px}}
