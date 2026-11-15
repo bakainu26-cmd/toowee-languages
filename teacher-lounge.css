@@ -429,3 +429,5 @@ body:is([data-portal-mode=teacher],[data-portal-mode=student]) #portalHome{margi
 
 #teacherWelcome .language-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;min-width:0}
 #teacherWelcome .toowee-language-flag{display:block;width:clamp(100px,12vw,160px);height:auto;flex:none;object-fit:contain}
+
+.teacher-language-card .toowee-language-flag{display:block;width:130px;height:auto;object-fit:contain}@media(max-width:700px){.teacher-language-card .toowee-language-flag{width:90px}}
