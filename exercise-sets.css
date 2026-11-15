@@ -4,3 +4,8 @@
 .exercise-editor{grid-template-columns:minmax(0,1fr);align-items:stretch}body[data-portal-mode=teacher] #teacherControls .exercise-set-card{background:#eee3f2;color:#543353}body[data-portal-mode=teacher] #teacherControls .exercise-set-card:hover{background:#e6d8ec}body[data-portal-mode=teacher] #teacherControls .exercise-toolbar button[aria-pressed=true]{background:#795378;color:white}
 
 .exercise-auto-quiz{flex-direction:row!important;align-items:center;background:#eee3f2;border-radius:14px;padding:16px;margin:16px 0}.exercise-auto-quiz input{width:20px;flex-shrink:0}.exercise-import-preview{margin:20px 0}.exercise-import-preview .exercise-edit-card{background:#fff}
+/* Approved artwork applies only to the exercise-set library, not vocabulary folders. */
+.exercise-folder-actions .tw-material-heading>button:first-child{display:flex;align-items:center;gap:12px;text-align:left;flex:1;min-width:0}
+.exercise-folder-actions .tw-material-heading>button:first-child:before{content:'';display:block;flex:none;width:58px;height:58px;background:url('assets/exercise-folder-box.webp') center/contain no-repeat}
+.exercise-set-card>.material-icon-set{width:72px;height:72px;background-image:url('assets/exercise-set-cards.webp');background-size:contain;background-position:center;margin:0}
+@media(max-width:600px){.exercise-folder-actions .tw-material-heading>button:first-child:before{width:46px;height:46px}}
