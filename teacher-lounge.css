@@ -504,3 +504,9 @@ body[data-portal-mode=teacher] #studentMaterialFolders>.vocabulary-create-action
 body[data-portal-mode=teacher] #studentMaterialFolders>.vocabulary-create-actions>button{display:grid!important;place-items:center!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;padding:5px!important;border-radius:11px!important;background:#eee3ee!important;border:1px solid #dfcde5!important;box-shadow:none!important}
 body[data-portal-mode=teacher] #studentMaterialFolders>.vocabulary-create-actions .material-create-art{width:32px!important;height:32px!important;object-fit:contain}
 #studentMaterialFolders>.vocabulary-create-actions>button>span{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%);white-space:nowrap}
+
+.teacher-folder-create-form{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;width:100%;padding:16px 0;box-sizing:border-box}
+.teacher-folder-create-form>label{display:flex;flex-direction:column;gap:10px;flex:1;min-width:220px;margin:0;font-weight:600;line-height:1.5}
+.teacher-folder-create-form>label input{box-sizing:border-box;width:100%;margin:0;min-height:44px}
+.teacher-folder-create-form input:focus{outline:2px solid #9f7bab!important;outline-offset:2px!important;box-shadow:none!important}
+.teacher-folder-create-form>button{flex:none;min-height:44px;margin:0}
