@@ -13,14 +13,11 @@
  window.openTooWeeHome=open;
  for(const selector of ['#teacherSidebar .teacher-entry-grid','#studentSidebar nav','.site-header']){const parent=document.querySelector(selector);if(!parent)continue;const b=make('button','Strona główna');b.type='button';b.className='alt portal-home-link';b.addEventListener('click',open);if(selector==='.site-header')b.id='adminHomeLink';parent.prepend(b);links.push(b);}
  const brand=document.querySelector('.site-logo-button');if(brand){brand.removeAttribute('onclick');brand.onclick=open;brand.setAttribute('aria-label','TooWee Languages — strona główna');}
- // A row is one disclosure target: text, whitespace and chevron all open the same list.
+ // Labels navigate through existing handlers; only the separate chevron expands.
  document.addEventListener('click',e=>{
   const target=e.target.closest?.('button');
   if(target?.classList.contains('portal-home-link')||target===brand||brand?.contains(e.target))return;
   if(e.target.closest?.('#teacherSidebar,#studentSidebar,#studentHeaderControls,#adminViewPanel'))close();
-  const row=e.target.closest?.('#teacherSidebar .teacher-sidebar-nav-row,#studentSidebar .teacher-sidebar-nav-row');
-  const toggle=row?.querySelector(':scope > .teacher-sidebar-toggle');
-  if(toggle&&!toggle.contains(e.target)){e.preventDefault();e.stopImmediatePropagation();toggle.click();}
  },true);
  window.addEventListener('toowee-tab',close);
  const sync=()=>{const next=window.tooweeView;if(!['student','teacher','admin'].includes(next)){role=null;close();return;}if(next!==role){role=next;open();}};
