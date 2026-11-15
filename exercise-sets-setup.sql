@@ -9,6 +9,24 @@ create table if not exists public.toowee_exercise_sets(
  revision integer not null default 1,created_at timestamptz not null default now(),updated_at timestamptz not null default now()
 );
 alter table public.toowee_exercise_sets add column if not exists folder_id uuid references public.toowee_material_folders(id) on delete set null;
+-- Exercise-library folders are independent from pupil vocabulary folders.
+create table if not exists public.toowee_exercise_folders(
+ id uuid primary key default gen_random_uuid(),owner_id uuid not null references auth.users(id) on delete cascade,
+ name text not null check(length(btrim(name)) between 1 and 200),lang text not null check(lang in ('English','Japanese','Spanish')),
+ parent_id uuid references public.toowee_exercise_folders(id) on delete set null,created_at timestamptz not null default now()
+);
+alter table public.toowee_exercise_folders enable row level security;
+revoke all on public.toowee_exercise_folders from public,anon,authenticated;
+-- Copy only folders actually used by exercise sets and their ancestors.
+with recursive used as (
+ select f.id,f.owner_id,f.name,f.lang,f.parent_id from public.toowee_material_folders f where exists(select 1 from public.toowee_exercise_sets e where e.folder_id=f.id and e.owner_id=f.owner_id)
+ union
+ select f.id,f.owner_id,f.name,f.lang,f.parent_id from public.toowee_material_folders f join used u on u.parent_id=f.id and u.owner_id=f.owner_id
+)
+insert into public.toowee_exercise_folders(id,owner_id,name,lang,parent_id) select id,owner_id,name,lang,null from used on conflict(id) do nothing;
+update public.toowee_exercise_folders e set parent_id=f.parent_id from public.toowee_material_folders f where e.id=f.id and e.owner_id=f.owner_id and e.parent_id is null and exists(select 1 from public.toowee_exercise_folders p where p.id=f.parent_id and p.owner_id=e.owner_id);
+alter table public.toowee_exercise_sets drop constraint if exists toowee_exercise_sets_folder_id_fkey;
+alter table public.toowee_exercise_sets add constraint toowee_exercise_sets_folder_id_fkey foreign key(folder_id) references public.toowee_exercise_folders(id) on delete set null;
 create table if not exists public.toowee_exercise_materials(
  set_id uuid primary key references public.toowee_exercise_sets(id) on delete cascade,
  owner_id uuid not null references auth.users(id) on delete cascade,
@@ -26,7 +44,7 @@ begin
  if who is null or (p_action not in ('assigned','get') and not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin'))) then raise exception 'Zestawy są dostępne dla nauczycieli.';end if;
  if p_action='get' and not exists(select 1 from public.toowee_accounts where id=who and role in ('teacher','admin')) and not exists(select 1 from public.toowee_material_deliveries d join public.toowee_student_profiles p on p.id=d.profile_id join public.toowee_exercise_sets e on e.id=d.source_id and e.owner_id=d.owner_id where d.kind='exercise' and d.source_id=(p_data->>'id')::uuid and p.owner_id=d.owner_id and p.student_id=who and not p.blocked) then raise exception 'Brak dostępu do zestawu.';end if;
  if p_action='assign_folder' then
- if not exists(select 1 from public.toowee_material_folders where id=(p_data->>'folder_id')::uuid and owner_id=who) then raise exception 'Brak dostępu do folderu.';end if;
+ if not exists(select 1 from public.toowee_exercise_folders where id=(p_data->>'folder_id')::uuid and owner_id=who) then raise exception 'Brak dostępu do folderu.';end if;
  for s in select * from public.toowee_exercise_sets where owner_id=who and folder_id=(p_data->>'folder_id')::uuid loop
   perform public.toowee_exercise_sets('assign',p_data||jsonb_build_object('id',s.id));
  end loop;return jsonb_build_object('saved',true);
@@ -38,9 +56,27 @@ begin
  if p_action='recipients' then
  return jsonb_build_object('profiles',(select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',trim(first_name||' '||last_name))),'[]') from public.toowee_student_profiles where owner_id=who and not blocked),'groups',(select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',name,'lang',lang)),'[]') from public.toowee_groups where owner_id=who));
  end if;
+ if p_action='folder_create' then
+ v_title:=btrim(p_data->>'name');v_lang:=p_data->>'lang';
+ if coalesce(length(v_title),0) not between 1 and 200 or v_lang is null or v_lang not in ('English','Japanese','Spanish') then raise exception 'Podaj nazwę folderu i język.';end if;
+ insert into public.toowee_exercise_folders(owner_id,name,lang) values(who,v_title,v_lang) returning id into fid;
+ return jsonb_build_object('id',fid,'saved',true);
+ end if;
+ if p_action='folder_delete' then
+ if p_data->>'confirm_id' is distinct from p_data->>'id' then raise exception 'Potwierdź usunięcie folderu.';end if;
+ delete from public.toowee_exercise_folders where id=(p_data->>'id')::uuid and owner_id=who;
+ if not found then raise exception 'Brak dostępu do folderu zestawów.';end if;
+ return jsonb_build_object('deleted',true);
+ end if;
+ if p_action='folder_rename' then
+ v_title:=btrim(p_data->>'name');if coalesce(length(v_title),0) not between 1 and 200 then raise exception 'Podaj nazwę folderu.';end if;
+ update public.toowee_exercise_folders set name=v_title where id=(p_data->>'id')::uuid and owner_id=who;
+ if not found then raise exception 'Brak dostępu do folderu zestawów.';end if;
+ return jsonb_build_object('saved',true);
+ end if;
  if p_action='folders' then
- select coalesce(jsonb_agg(to_jsonb(f)),'[]') into result from public.toowee_material_folders f where f.owner_id=who;
- return jsonb_build_object('folders',result);
+ select coalesce(jsonb_agg(to_jsonb(f)),'[]') into result from public.toowee_exercise_folders f where f.owner_id=who;
+ return jsonb_build_object('folders',result,'library','exercise');
  end if;
  if p_action='import_vocabulary' then
   select name,lang into v_title,v_lang from public.vocabulary_folders where id=(p_data->>'folder_id')::uuid and owner_id=who;
@@ -71,7 +107,7 @@ begin
   if jsonb_typeof(cards) is distinct from 'array' then raise exception 'Nieprawidłowe karty.';end if;
   if jsonb_array_length(cards) not between 1 and 500 or length(cards::text)>4000000 then raise exception 'Zestaw musi zawierać od 1 do 500 kart.';end if;
   fid:=case when p_data?'folder_id' then nullif(p_data->>'folder_id','')::uuid else s.folder_id end;
-  if fid is not null and not exists(select 1 from public.toowee_material_folders where id=fid and owner_id=who and lang=v_lang) then raise exception 'Wybierz własny folder w języku zestawu.';end if;
+  if fid is not null and not exists(select 1 from public.toowee_exercise_folders where id=fid and owner_id=who and lang=v_lang) then raise exception 'Wybierz własny folder w języku zestawu.';end if;
   names:='{}';
   for item in select value from jsonb_array_elements(cards) loop
    if coalesce(item->>'type','') not in ('vocabulary','question','open','quiz') or coalesce(length(trim(item->>'prompt')),0) not between 1 and 2000 or length(coalesce(item->>'answer',''))>2000 or (item->>'type'<>'open' and coalesce(length(trim(item->>'answer')),0)=0) or length(coalesce(item->>'reading',''))>500 then raise exception 'Uzupełnij zadanie i odpowiedź każdej karty.';end if;

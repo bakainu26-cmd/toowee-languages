@@ -7,7 +7,7 @@
   function groups() {
     const result=activeFolders().map(f=>({...f,words:activeWords().filter(w=>w.folder_id===f.id)}));
     const loose=activeWords().filter(w=>!w.folder_id);
-    if(loose.length)result.push({id:null,name:'Bez zestawu',words:loose});
+    if(loose.length)result.push({id:null,name:'Bez listy',words:loose});
     return result;
   }
   function clearContext(){context=null;el('learningMethods').hidden=true;el('learningSets').hidden=false;el('learningSetTitle').textContent='';}
@@ -30,7 +30,7 @@
       const info=document.createElement('p');info.textContent=counts.learn+' do nauki · '+counts.review+' do powtórki · '+counts.learned+' nauczone · '+counts.waiting+' w utrwalaniu';
       const button=document.createElement('button');button.type='button';button.disabled=!available();
       const mode=counts[view] ? view : 'waiting';
-      button.textContent=mode==='waiting' ? 'Ćwicz dodatkowo' : 'Otwórz zestaw';
+      button.textContent=mode==='waiting' ? 'Ćwicz dodatkowo' : 'Otwórz listę';
       button.onclick=()=>openSet(group,mode);
       card.append(title,info);
       const future=group.words.map(w=>records.get(w.id)).filter(p=>p?.stage>0&&!srs.isDue(p)).sort((a,b)=>new Date(a.due_at)-new Date(b.due_at))[0];
@@ -60,11 +60,11 @@
   }
   async function refresh() {
     if(!available())return;
-    const current=++version,snapshot={...account};loading=true;el('learningStatus').textContent='Wczytywanie zestawów i terminów powtórek…';render();
+    const current=++version,snapshot={...account};loading=true;el('learningStatus').textContent='Wczytywanie list słówek i terminów powtórek…';render();
     try{
       const next=new Map();for(let start=0;;start+=500){const {data,error}=await snapshot.client.from('vocabulary_progress').select('*').eq('owner_id',snapshot.userId).order('word_id').range(start,start+499);if(error)throw error;data.forEach(p=>next.set(p.word_id,p));if(data.length<500)break;}
       if(current!==version || snapshot.userId!==account?.userId)return;
-      records=next;owner=snapshot.userId;loaded=true;el('learningStatus').textContent='Każdy zestaw może mieć słówka w kilku kategoriach. „W utrwalaniu” oznacza etapy 1–3 przed kolejną powtórką.';
+      records=next;owner=snapshot.userId;loaded=true;el('learningStatus').textContent='Każda lista może mieć słówka w kilku kategoriach. „W utrwalaniu” oznacza etapy 1–3 przed kolejną powtórką.';
     }catch(error){if(current===version){loaded=false;el('learningStatus').textContent='Nie udało się wczytać powtórek. '+(error.message || 'Spróbuj ponownie.');}}
     finally{if(current===version){loading=false;render();}}
   }
