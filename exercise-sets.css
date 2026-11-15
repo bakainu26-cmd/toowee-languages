@@ -9,3 +9,32 @@
 .exercise-folder-actions .tw-material-heading>button:first-child:before{content:'';display:block;flex:none;width:58px;height:58px;background:url('assets/exercise-folder-box.webp') center/contain no-repeat}
 .exercise-set-card>.material-icon-set{width:72px;height:72px;background-image:url('assets/exercise-set-cards.webp');background-size:contain;background-position:center;margin:0}
 @media(max-width:600px){.exercise-folder-actions .tw-material-heading>button:first-child:before{width:46px;height:46px}}
+
+/* Reuse vocabulary layout controls, with dedicated exercise artwork. */
+#teacherPanel-resources{max-width:none;min-width:0}
+.exercise-library-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,230px)}
+.exercise-library-filters input,.exercise-library-filters select{width:100%;min-width:0}
+.exercise-create-actions{margin:20px 0;display:flex;gap:18px;flex-wrap:wrap}
+.exercise-create-actions>button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-width:170px;min-height:132px}
+.exercise-create-actions .material-create-art{object-fit:contain}
+#exerciseLibraryContent .exercise-folder-actions,#exerciseLibraryContent .exercise-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin:18px 0;align-items:start}
+#exerciseLibraryContent .tw-material-heading{position:relative;align-items:flex-start;padding:16px;min-width:0}
+#exerciseLibraryContent .tw-material-heading>button:first-child{flex-direction:column;align-items:flex-start;background:transparent;padding:0;min-width:0;font:600 21px/1.25 Georgia,serif}
+#exerciseLibraryContent .tw-material-heading>button:first-child:before{width:64px;height:64px}
+.exercise-set-shell{position:relative;min-width:0}
+.exercise-set-shell>.material-copy-dropdown{position:absolute;top:12px;right:12px;z-index:2}
+#teacherPanel-resources .exercise-set-card{width:100%;min-height:180px;padding:18px;gap:8px;box-sizing:border-box;min-width:0}
+#teacherPanel-resources .exercise-set-card h3{font:600 21px/1.25 Georgia,serif;padding-right:20px}
+#teacherPanel-resources .exercise-set-card>.material-icon-set{width:58px;height:58px}
+#exerciseLibraryContent[data-material-view=list] :is(.exercise-folder-actions,.exercise-grid){grid-template-columns:1fr}
+#exerciseLibraryContent[data-material-view=list] .tw-material-heading>button:first-child{flex-direction:row;align-items:center;font-size:18px}
+#exerciseLibraryContent[data-material-view=list] .exercise-set-card{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;min-height:74px;padding:12px 54px 12px 14px;gap:6px 14px}
+#exerciseLibraryContent[data-material-view=list] .exercise-set-card>.material-icon-set{width:44px;height:44px;grid-row:1/4}
+#exerciseLibraryContent[data-material-view=list] .exercise-set-card h3{font-size:18px;margin:0}
+#exerciseLibraryContent[data-material-view=list] .exercise-set-card small{font-size:13px}
+#teacherPanel-resources[data-exercise-view=detail] .exercise-preview-card{display:grid;grid-template-columns:minmax(90px,.3fr) minmax(0,1fr) minmax(0,1fr);gap:8px 18px;align-items:start;padding:14px 18px;margin:8px 0;border-radius:14px;background:#fffaf4}
+#teacherPanel-resources[data-exercise-view=detail] .exercise-preview-card h3{font:600 18px/1.45 Arial,sans-serif;margin:0}
+#teacherPanel-resources[data-exercise-view=detail] .exercise-preview-card p{font-size:15px;margin:0}
+#teacherPanel-resources[data-exercise-view=detail] .exercise-preview-card img{max-height:80px;max-width:100px}
+#teacherPanel-resources[data-exercise-view=detail] .exercise-compatibility{padding:12px 18px;margin:12px 0;font-size:14px}
+@media(max-width:650px){.exercise-library-filters{grid-template-columns:1fr}#teacherPanel-resources[data-exercise-view=detail] .exercise-preview-card{grid-template-columns:1fr}#exerciseLibraryContent[data-material-view=list] .exercise-set-card{grid-template-columns:40px minmax(0,1fr)}.exercise-create-actions>button{min-width:140px}}
