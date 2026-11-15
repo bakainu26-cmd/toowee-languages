@@ -498,3 +498,9 @@ dialog.teacher-list-editor.is-maximized{max-width:none;max-height:none;width:100
 @media(min-width:1000px){.teacher-list-editor .teacher-list-meta{grid-template-columns:2fr 1fr 1fr}.teacher-list-editor .teacher-list-word-fields{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
 .teacher-list-import-options{margin-bottom:16px}.teacher-list-import-options>summary{cursor:pointer;font-weight:600;padding:10px 0}.teacher-list-import-preview{overflow-x:auto}.teacher-list-import-preview table{width:100%;border-collapse:collapse;font:400 15px/1.5 Arial,sans-serif}.teacher-list-import-preview :is(th,td){text-align:left;padding:12px;border-bottom:1px solid #e1d2e5;white-space:normal;overflow-wrap:anywhere}.teacher-list-import-preview th{background:#f0e6f2;font-weight:600}
+
+/* Compact creation controls in an individual pupil's vocabulary, too. */
+body[data-portal-mode=teacher] #studentMaterialFolders>.vocabulary-create-actions{display:flex!important;justify-content:flex-end!important;gap:8px!important;grid-column:1/-1;margin:12px 0!important}
+body[data-portal-mode=teacher] #studentMaterialFolders>.vocabulary-create-actions>button{display:grid!important;place-items:center!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;padding:5px!important;border-radius:11px!important;background:#eee3ee!important;border:1px solid #dfcde5!important;box-shadow:none!important}
+body[data-portal-mode=teacher] #studentMaterialFolders>.vocabulary-create-actions .material-create-art{width:32px!important;height:32px!important;object-fit:contain}
+#studentMaterialFolders>.vocabulary-create-actions>button>span{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%);white-space:nowrap}
