@@ -415,3 +415,14 @@ body[data-portal-mode=student] #importPreview input{padding:8px;font-size:14px;m
 #studentLanguageList>button:hover{background:#eee3ee}#studentLanguageList>button.active{background:#7b557b;color:white}
 body[data-portal-mode=student] .site-header{flex-wrap:wrap}body[data-portal-mode=student] #studentHeaderControls #studentAccountButton{margin-left:0}
 @media(max-width:650px){#studentHeaderControls{width:100%;justify-content:flex-end}#studentLanguageToggle{padding:10px 12px}#studentLanguageList{max-width:calc(100vw - 36px)}}
+/* Shared home page across the existing role panels. */
+#portalHome{box-sizing:border-box;max-width:1100px;margin:48px auto;padding:clamp(24px,6vw,80px);text-align:center;background:#fffaf4;border:1px solid #e5d6e5;border-radius:26px;box-shadow:0 8px 30px #633b6108}
+#portalHome[hidden]{display:none!important}
+#portalHome img{display:block;width:clamp(140px,20vw,220px);height:auto;margin:0 auto 24px}
+#portalHome h1{font:600 clamp(30px,4vw,50px)/1.2 Georgia,serif;color:#63335f;margin:0 0 18px}
+#portalHome .portal-home-slogan{font:500 clamp(20px,2.5vw,30px)/1.5 Arial,sans-serif;color:#7658a4;margin:0 0 16px}
+body[data-portal-home=open] main{display:none!important}
+body:is([data-portal-mode=teacher],[data-portal-mode=student]) #portalHome{margin-left:calc(245px + 3vw);margin-right:3vw}
+#adminHomeLink{display:none}body[data-portal-mode=admin] #adminHomeLink{display:block;margin-left:auto;order:10}
+.portal-home-link[aria-current=page]{background:#7b557b!important;color:#fff!important}
+@media(max-width:760px){body:is([data-portal-mode=teacher],[data-portal-mode=student]) #portalHome{margin:20px}}
