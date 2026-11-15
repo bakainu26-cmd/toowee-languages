@@ -49,7 +49,7 @@
   }
   function updateImportFolders() {
     const chosen=el('importFolder').value;
-    el('importFolder').replaceChildren(new Option(window.tooweeView==='student'?'Wybierz zestaw':'Słówka luzem (domyślna lista)',''));
+    el('importFolder').replaceChildren(new Option('Wybierz listę słówek',''));
     for(const folder of activeFolders()) el('importFolder').add(new Option(folder.name,folder.id));
     el('importFolder').value=activeFolders().some(f=>f.id===chosen) ? chosen : '';
     refreshPreview();

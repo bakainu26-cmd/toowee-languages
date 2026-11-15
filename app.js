@@ -20,17 +20,8 @@ function activeFolders() {
     return languages.size===1 && languages.has(activeLanguage);
   });
 }
-// A language-specific list for words added without an explicit list selection.
-const looseWordLists=new Map();
-async function ensureLooseWordList({client,userId},language){
-  if(account?.userId!==userId||!Object.hasOwn(languageInfo,language))throw Error('Konto lub język zostały zmienione.');
-  const found=library.folders.find(f=>f.owner_id===userId&&f.lang===language&&f.name==='Słówka luzem');
-  if(found)return found.id;
-  const key=userId+':'+language;
-  if(looseWordLists.has(key))return looseWordLists.get(key);
-  const pending=(async()=>{const r=await client.from('vocabulary_folders').insert({owner_id:userId,lang:language,name:'Słówka luzem'}).select('id').single();if(r.error)throw r.error;if(account?.userId!==userId)throw Error('Konto zostało zmienione.');const row={id:r.data.id,owner_id:userId,lang:language,name:'Słówka luzem'};if(!library.folders.some(f=>f.id===row.id))library.folders.push(row);return row.id;})();
-  looseWordLists.set(key,pending);try{return await pending;}finally{looseWordLists.delete(key);}
-}
+// Saving always requires an explicitly selected, named vocabulary list.
+async function ensureLooseWordList(){throw Error('Wybierz nazwaną listę słówek przed zapisem. Słówka nie zostaną zapisane luzem.');}
 window.ensureLooseWordList=ensureLooseWordList;
 function renderUnassignedFolders() {
   const folders=library.folders.filter(folder=>!folder.lang && !library.words.some(w=>w.folder_id===folder.id));
@@ -136,7 +127,7 @@ function renderLibrary() {
   const options = activeFolders().map(f => '<option value="' + safe(f.id) + '">' + safe(f.name) + '</option>').join('');
   const selected = byId('wordFolder').value;
   const filter = byId('filterFolder').value;
-  byId('wordFolder').innerHTML = '<option value="">Słówka luzem (domyślna lista)</option>' + options;
+  byId('wordFolder').innerHTML = '<option value="">Wybierz listę słówek</option>' + options;
   byId('wordFolder').value = selected;
   byId('filterFolder').innerHTML = '<option value="">Wszystkie foldery</option>' + options;
   byId('filterFolder').value = filter;
