@@ -426,3 +426,6 @@ body:is([data-portal-mode=teacher],[data-portal-mode=student]) #portalHome{margi
 #adminHomeLink{display:none}body[data-portal-mode=admin] #adminHomeLink{display:block;margin-left:auto;order:10}
 .portal-home-link[aria-current=page]{background:#7b557b!important;color:#fff!important}
 @media(max-width:760px){body:is([data-portal-mode=teacher],[data-portal-mode=student]) #portalHome{margin:20px}}
+
+#teacherWelcome .language-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;min-width:0}
+#teacherWelcome .toowee-language-flag{display:block;width:clamp(100px,12vw,160px);height:auto;flex:none;object-fit:contain}
