@@ -9,7 +9,7 @@
  const byline=make('p','by Magdalena Tułacz');byline.className='hint';home.append(logo,title,slogan,byline);document.querySelector('main').before(home);
  const links=[];let role=null;
  function close(){home.hidden=true;delete document.body.dataset.portalHome;for(const b of links)b.removeAttribute('aria-current');}
- function open(){if(!['student','teacher','admin'].includes(window.tooweeView))return;window.closeActivityFocus?.();window.pauseStudySession?.();home.hidden=false;document.body.dataset.portalHome='open';for(const b of links)b.setAttribute('aria-current','page');}
+ function open(){if(!['student','teacher','admin'].includes(window.tooweeView))return;window.closeActivityFocus?.();window.pauseStudySession?.();home.hidden=false;for(const b of document.querySelectorAll('#teacherSidebar .active,#studentSidebar .active,#teacherSidebar [aria-current=page],#studentSidebar [aria-current=page]')){b.classList.remove('active');b.removeAttribute('aria-current');if(b.hasAttribute('aria-pressed'))b.setAttribute('aria-pressed','false');}document.body.dataset.portalHome='open';for(const b of links)b.setAttribute('aria-current','page');}
  window.openTooWeeHome=open;
  for(const selector of ['#teacherSidebar .teacher-entry-grid','#studentSidebar nav','.site-header']){const parent=document.querySelector(selector);if(!parent)continue;const b=make('button','Strona główna');b.type='button';b.className='alt portal-home-link';b.addEventListener('click',open);if(selector==='.site-header')b.id='adminHomeLink';parent.prepend(b);links.push(b);}
  const brand=document.querySelector('.site-logo-button');if(brand){brand.removeAttribute('onclick');brand.onclick=open;brand.setAttribute('aria-label','TooWee Languages — strona główna');}
