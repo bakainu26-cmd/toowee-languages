@@ -431,3 +431,12 @@ body:is([data-portal-mode=teacher],[data-portal-mode=student]) #portalHome{margi
 #teacherWelcome .toowee-language-flag{display:block;width:clamp(100px,12vw,160px);height:auto;flex:none;object-fit:contain}
 
 .teacher-language-card .toowee-language-flag{display:block;width:130px;height:auto;object-fit:contain}@media(max-width:700px){.teacher-language-card .toowee-language-flag{width:90px}}
+
+/* Approved painted flags, shared as one cached image across menus and cards. */
+.toowee-language-flag{display:inline-block;width:30px;height:24px;flex:none;vertical-align:middle;background-image:url('assets/language-flags-gouache.webp');background-size:300% auto;background-repeat:no-repeat;background-position:0% 50%;border-radius:4px}
+.toowee-language-flag[data-language-flag=English]{background-position:50% 50%}
+.toowee-language-flag[data-language-flag=Spanish]{background-position:100% 50%}
+#teacherWelcome .toowee-language-flag,.teacher-language-card .toowee-language-flag{width:160px;height:120px}
+#teacherLanguageList .toowee-language-flag{margin-right:8px}
+#studentLanguageList>button,#studentLanguageToggle,#teacherSettingsLanguages label{display:flex;align-items:center;gap:8px}
+@media(max-width:700px){.teacher-language-card .toowee-language-flag{width:90px;height:68px}}
