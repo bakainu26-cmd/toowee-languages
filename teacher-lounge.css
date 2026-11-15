@@ -496,3 +496,5 @@ dialog.teacher-list-editor.is-maximized{max-width:none;max-height:none;width:100
 .teacher-list-editor .teacher-list-word-row details{margin-top:12px}
 .teacher-list-editor footer{flex-shrink:0;z-index:1;border-top:1px solid #e7dce9;min-height:48px}
 @media(min-width:1000px){.teacher-list-editor .teacher-list-meta{grid-template-columns:2fr 1fr 1fr}.teacher-list-editor .teacher-list-word-fields{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+.teacher-list-import-options{margin-bottom:16px}.teacher-list-import-options>summary{cursor:pointer;font-weight:600;padding:10px 0}.teacher-list-import-preview{overflow-x:auto}.teacher-list-import-preview table{width:100%;border-collapse:collapse;font:400 15px/1.5 Arial,sans-serif}.teacher-list-import-preview :is(th,td){text-align:left;padding:12px;border-bottom:1px solid #e1d2e5;white-space:normal;overflow-wrap:anywhere}.teacher-list-import-preview th{background:#f0e6f2;font-weight:600}
