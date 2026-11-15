@@ -174,6 +174,12 @@
   el('startGame').onclick=startGame;el('replayGame').onclick=startGame;
   el('nextGameQuestion').onclick=()=>{if(['quiz','write'].includes(kind) && inSession() && answered && questionIndex<questions.length-1){questionIndex++;renderQuestion();}};
   el('gameWriteForm').onsubmit=checkWritten;
+  window.addEventListener('keydown',event=>{
+    if(event.key!=='Enter'||event.isComposing||event.keyCode===229||event.repeat||event.altKey||event.ctrlKey||event.metaKey)return;
+    if(kind!=='write'||!inSession()||!answered||el('games').hidden||document.querySelector?.('dialog[open]'))return;
+    if(el('nextGameQuestion').hidden||el('nextGameQuestion').disabled)return;
+    event.preventDefault();el('nextGameQuestion').onclick();
+  });
   window.openGamesLobby=(allowWorld=true)=>{if(window.returnToTeacherGameCatalog?.())return;const toWorld=allowWorld && window.worldGameMission===true;window.worldGameMission=false;window.closeActivityFocus?.();if(window.clearLearningContext)window.clearLearningContext();el('gameFolder').value='';resetGame();tab(toWorld?'world':'games');if(!toWorld)el('games').scrollIntoView?.({block:'start'});};
   window.updateGameControls=updateGameControls;window.updateGameFolders=updateGameFolders;window.resetGame=resetGame;
   window.addEventListener('toowee-game-delivery',updateDirectionLabels);
