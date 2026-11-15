@@ -35,12 +35,18 @@ window.TooweeImport = Object.freeze({
       if(example.length>2000){errors.push({line:i+1,message:'Zdanie może mieć maksymalnie 2000 znaków.'});continue;}
       // Markdown section headings are labels, not vocabulary entries.
       if(options.language==='Japanese' && /^#{1,6}\s+\S/.test(record)) continue;
-      if(options.threeColumns && options.dash) {errors.push({line:i+1,message:'Dla trzech kolumn wybierz tabulator lub własny separator.'});continue;}
-      const parts=splitRecord(record);
+      if(options.threeColumns && options.dash && !options.autoJapanese) {errors.push({line:i+1,message:'Dla trzech kolumn wybierz tabulator lub własny separator.'});continue;}
+      let parts;
+      const autoJapanese=options.language==='Japanese'&&options.autoJapanese;
+      if(autoJapanese){
+        if(record.includes('\t')){const columns=record.split('\t');parts=columns.length>=3?[columns[0],columns[1],columns.slice(2).join('\t')]:columns;}
+        else {const dash=/\s+[-–—]\s+/.exec(record);parts=dash?[record.slice(0,dash.index),record.slice(dash.index+dash[0].length)]:null;}
+      }else parts=splitRecord(record);
+      const threeColumns=autoJapanese?parts?.length===3:options.threeColumns;
       if(!parts) {errors.push({line:i+1,message:options.threeColumns ? 'Nie znaleziono trzech kolumn.' : 'Nie znaleziono separatora słówka i tłumaczenia.'});continue;}
-      let word=parts[0].trim(),reading=options.threeColumns ? parts[1].trim() : '',translation=parts[parts.length-1].trim();
-      if(options.reverse && !options.threeColumns) [word,translation]=[translation,word];
-      if(options.language==='Japanese' && !options.threeColumns) {
+      let word=parts[0].trim(),reading=threeColumns ? parts[1].trim() : '',translation=parts[parts.length-1].trim();
+      if(options.reverse && !threeColumns) [word,translation]=[translation,word];
+      if(options.language==='Japanese' && !threeColumns) {
         // Japanese notes may wrap the term in inline code or bold.
         word=word.replace(/^(`+|\*\*|__)([\s\S]+?)\1$/, '$2').trim();
         const match=/^(.*?)\s*(?:（([ぁ-ゖァ-ヺー・\s〜～]+)）|\(([ぁ-ゖァ-ヺー・\s〜～]+)\))$/.exec(word);
