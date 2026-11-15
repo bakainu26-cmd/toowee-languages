@@ -454,3 +454,34 @@ body:is([data-portal-mode=teacher],[data-portal-mode=student]) #portalHome{margi
 #vocabularyViewControls{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0 18px}
 #vocabularyViewControls>.actions{margin:0;display:flex;gap:8px;flex-wrap:wrap}
 #vocabularyViewControls>.material-view-switch{margin:0 0 0 auto}
+.teacher-list-editor{box-sizing:border-box;width:min(820px,94vw);height:min(760px,90dvh);max-width:100vw;max-height:100dvh;padding:20px;border:1px solid #dbc8e3;border-radius:22px;background:#fffaf4;color:#59345c;overflow:hidden}
+.teacher-list-editor[open]{display:flex;flex-direction:column;gap:14px}
+.teacher-list-editor::backdrop{background:#38233e77}
+.teacher-list-editor.is-maximized{position:fixed;inset:0;width:100vw;height:100dvh;margin:0;border-radius:0}
+.teacher-list-editor>header{display:flex;align-items:center;gap:10px;flex:none}
+.teacher-list-editor>header h2{margin:0 auto 0 0;font:600 25px/1.3 Georgia,serif}
+.teacher-list-editor>form{display:flex;flex-direction:column;gap:16px;overflow:auto;min-height:0;padding:2px 5px}
+.teacher-list-editor button{border:1px solid #dbc8e3;border-radius:12px;background:#eee3ee;color:#63335f;font:600 14px/1.3 Arial,sans-serif;padding:10px 14px;cursor:pointer;transform:none!important;position:static}
+.teacher-list-editor button:hover{background:#e4d5e9;transform:none!important;box-shadow:none!important}
+.teacher-list-editor button:disabled{opacity:.6;cursor:default}
+.teacher-list-editor label{display:flex;flex-direction:column;gap:6px;font:600 14px/1.35 Arial,sans-serif;min-width:0}
+.teacher-list-editor :is(input,select,textarea){box-sizing:border-box;width:100%;min-width:0;font:400 15px/1.4 Arial,sans-serif;padding:9px 11px;border:1px solid #ddcbd9;border-radius:10px;background:#fffdf8;color:#52354c}
+.teacher-list-editor textarea{resize:vertical}
+.teacher-list-meta,.teacher-list-word-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.teacher-list-meta>div{grid-column:1/-1}
+.teacher-list-meta fieldset{border:1px solid #ddcbd9;border-radius:12px;padding:12px}
+.teacher-list-entry-tabs{display:flex;gap:12px;flex-wrap:wrap}
+.teacher-list-entry-tabs>button{display:flex;align-items:center;gap:10px;min-height:64px;flex:1;justify-content:center}
+.teacher-list-entry-tabs>button[aria-pressed=true]{background:#ddc8e5;border-color:#a880b6}
+.teacher-list-entry-tabs img{object-fit:contain;flex:none}
+.teacher-list-word-row{margin:0 0 12px;border:1px solid #e1d2e5;border-radius:14px;padding:14px;min-width:0}
+.teacher-list-word-row legend{font:600 14px Arial,sans-serif}
+.teacher-list-word-row>button{margin-top:10px;font-size:12px;padding:6px 9px}
+.teacher-list-import-help{padding:12px 14px;background:#f0e6f2;border-radius:12px;font:400 14px/1.5 Arial,sans-serif;margin-bottom:12px}
+.teacher-list-import-help p{margin:8px 0}
+.teacher-list-import-help pre{white-space:pre-wrap;background:#fffaf4;padding:10px;border-radius:8px;font-size:13px}
+.teacher-list-import-preview,.teacher-list-editor-status{white-space:pre-wrap;font-size:14px;overflow-wrap:anywhere}
+.teacher-list-editor footer{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;bottom:0;background:#fffaf4;padding:10px 0}
+.teacher-list-editor footer>button{background:#693b66;color:#fff;flex:none}
+.teacher-list-editor [hidden]{display:none!important}
+@media(max-width:600px){.teacher-list-editor{padding:14px}.teacher-list-meta,.teacher-list-word-fields{grid-template-columns:1fr}.teacher-list-editor>header{flex-wrap:wrap}.teacher-list-editor>header h2{font-size:21px}.teacher-list-editor footer{flex-wrap:wrap}}
