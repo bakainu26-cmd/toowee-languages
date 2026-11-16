@@ -510,3 +510,6 @@ body[data-portal-mode=teacher] #studentMaterialFolders>.vocabulary-create-action
 .teacher-folder-create-form>label input{box-sizing:border-box;width:100%;margin:0;min-height:44px}
 .teacher-folder-create-form input:focus{outline:2px solid #9f7bab!important;outline-offset:2px!important;box-shadow:none!important}
 .teacher-folder-create-form>button{flex:none;min-height:44px;margin:0}
+
+/* One compact size for all three pupil toolbar buttons. */
+body[data-portal-mode=teacher] #teacherControls .teacher-pupil-actions>button,body[data-portal-mode=teacher] #teacherControls .teacher-pupil-views>button{box-sizing:border-box;height:38px!important;min-height:38px!important;padding:7px 12px!important;font-size:13px!important;font-weight:600!important;line-height:1.4!important;border-width:1px!important;border-radius:10px!important;margin:0!important}
