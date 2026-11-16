@@ -62,7 +62,7 @@
   function finish(text){
     if(finished)return;
     if(!finished && kind==='match' && matched.size>=6 && matched.size===pairs.length && worldRewardId && window.recordWorldGame)void window.recordWorldGame({event_id:worldRewardId,owner:sessionOwner,language:sessionLanguage,ids:[...matched]});
-    finished=true;el('gameResult').hidden=false;el('gameResultText').textContent=text+' Czas: '+Math.max(0,Math.floor((Date.now()-startedAt)/1000))+' s.';
+    finished=true;el('games').dataset.gamePhase='results';window.TooWeeGameUI?.GameResultsScreen(el('gameResult'));el('gameResult').hidden=false;el('gameResultText').textContent=text+' Czas: '+Math.max(0,Math.floor((Date.now()-startedAt)/1000))+' s.';
     status('Gra zakończona! Zagraj ponownie lub wybierz „Wyjdź” u góry, aby wrócić do wyboru gier.');updateGameControls();el('gameResult').scrollIntoView?.({block:'nearest'});
   }
   function renderColumn(id,items,side){
