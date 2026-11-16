@@ -1,0 +1,84 @@
+/* Shared TooWee game chrome; boards, cards, toys and scoring stay game-specific. */
+.tw-game-ui{--game-bg:#fbf7ef;--game-card:#fffaf4;--game-text:#512b4f;--game-muted:#806d7b;--game-border:#d6bfdf;--game-button:#eee3f0;--game-button-hover:#e4d3ea;--game-good:#e5efdc;--game-bad:#f6dfe6;--game-radius:18px;--game-gap:clamp(10px,1.5vw,20px);color:var(--game-text);font-family:Arial,system-ui,sans-serif;box-sizing:border-box}
+.tw-game-ui *{box-sizing:border-box}
+.tw-game-ui :is(h1,h2,h3,h4){color:var(--game-text)}
+.tw-game-ui :is(button,input,select,textarea){font-family:inherit}
+.tw-game-ui :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea){min-width:0;max-width:100%;border:1px solid var(--game-border);border-radius:12px;background:#fffdf8;color:var(--game-text);font-size:16px;line-height:1.4;padding:10px 12px}
+.tw-game-ui :is(input[type=checkbox],input[type=radio],input[type=range]){accent-color:#8a6699}
+.tw-game-ui :is(button,input,select,textarea,summary):focus-visible{outline:3px solid #9871aa;outline-offset:3px}
+.tw-game-ui .tw-game-controls>button,.tw-game-ui .tw-game-header>button,.tw-game-ui .toowee-setup-actions>button,.tw-game-ui .tw-online-copies>button{min-height:44px;max-width:100%;border:1px solid #bb98c6;border-radius:12px;background:var(--game-button);color:var(--game-text);font:600 15px/1.35 Arial,system-ui,sans-serif;padding:10px 18px;box-shadow:none;cursor:pointer;transform:none}
+.tw-game-ui .tw-game-controls>button:hover:not(:disabled),.tw-game-ui .tw-game-header>button:hover:not(:disabled),.tw-game-ui .tw-online-copies>button:hover:not(:disabled){background:var(--game-button-hover);transform:none}
+.tw-game-ui button:disabled{cursor:default}
+.tw-game-ui .tw-game-header{display:flex;align-items:center;flex-wrap:nowrap;gap:var(--game-gap);flex:0 0 auto;width:100%;min-height:76px;height:auto;max-width:none;margin:0;padding:12px 18px;border-bottom:1px solid var(--game-border);background:var(--game-card);box-shadow:none}
+.tw-game-ui .tw-game-title{font:700 clamp(21px,2.2vw,30px)/1.2 Georgia,serif;color:var(--game-text);min-width:0;overflow-wrap:anywhere;margin:0;flex:1}
+.tw-game-ui .tw-game-header>div:has(h2){min-width:0;flex:1}
+.tw-game-ui .tw-game-header :is(.activity-game-icon,.collection-game-icon){width:52px;height:52px;object-fit:contain;vertical-align:middle}
+.tw-game-ui .tw-game-controls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin:0}
+.tw-game-ui .tw-game-header>.tw-game-controls{margin-left:auto;flex:none}
+.tw-game-ui .tw-game-body{min-width:0;min-height:0;flex:1 1 0}
+.tw-game-ui .tw-game-footer{flex:0 0 auto;min-height:60px;display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:10px 18px;margin:0;border-top:1px solid var(--game-border);background:var(--game-card)}
+.tw-game-ui .tw-game-feedback{box-sizing:border-box;flex:0 0 auto;min-height:3em;max-height:3em;overflow:auto;overflow-wrap:anywhere;margin:0;padding:8px 16px;font:400 14px/1.45 Arial,system-ui,sans-serif;background:#f0e8f3;color:var(--game-text)}
+.tw-game-ui .tw-game-feedback:empty{visibility:hidden}
+.tw-game-ui.tw-game-viewport{height:100dvh;max-height:100dvh;width:100%;max-width:none;min-height:0;margin:0;overflow:hidden;overscroll-behavior:contain;background:var(--game-bg)}
+dialog.tw-game-ui.tw-game-viewport[open]{display:flex;flex-direction:column;border:0;border-radius:0;inset:0;padding:0}
+.tw-game-ui.tw-game-viewport>.tw-game-body{padding:var(--game-gap);overflow:hidden}
+.tw-game-ui.tw-game-viewport[data-game-phase=setup]>.tw-game-body,.tw-game-ui.tw-game-viewport[data-game-phase=results]>.tw-game-body{overflow:auto;scrollbar-gutter:stable}
+.tw-game-ui.tw-game-setup{width:100%;max-width:1440px;margin:0 auto;padding:var(--game-gap)}
+.tw-game-ui.tw-game-setup .toowee-setup-heading{padding:10px 0 18px;border:0;background:transparent;min-height:80px}
+.tw-game-ui.tw-game-setup .toowee-setup-heading img{width:80px;height:72px;object-fit:contain}
+.tw-game-ui.tw-game-setup .toowee-setup-columns{gap:var(--game-gap)}
+.tw-game-ui.tw-game-setup .toowee-setup-card{border:1px solid var(--game-border);border-radius:var(--game-radius);background:var(--game-card);padding:20px;min-width:0}
+.tw-game-ui.tw-game-setup .toowee-setup-footer{position:sticky;bottom:0;z-index:2;justify-content:space-between;border-radius:0 0 var(--game-radius) var(--game-radius);box-shadow:0 -3px 12px #512b4f08}
+.tw-game-ui.tw-game-setup :is(.toowee-search-options button,.toowee-material-tabs button,.toowee-date-periods button){border:1px solid var(--game-border);border-radius:10px;background:var(--game-button);color:var(--game-text);font-size:14px;min-height:40px;transform:none}
+.tw-game-ui.tw-online{border-color:var(--game-border);background:var(--game-bg);padding:var(--game-gap)}
+.tw-game-ui .tw-online-header{min-height:86px;padding:10px 0 18px;margin-bottom:var(--game-gap);background:transparent}
+.tw-game-ui .tw-online-logo{width:64px;height:64px}
+.tw-game-ui .tw-online-game-art{width:80px;height:72px}
+.tw-game-ui .tw-online-header h2{font-size:clamp(23px,2.2vw,32px)}
+.tw-game-ui .tw-online-header p{color:var(--game-muted);font-size:14px}
+.tw-game-ui .tw-online-body{gap:var(--game-gap)}
+.tw-game-ui .tw-online-card{background:var(--game-card);border:1px solid var(--game-border);border-radius:var(--game-radius);padding:20px;min-height:0}
+.tw-game-ui .tw-online-card h3{font-size:24px}
+.tw-game-ui .tw-online-note{min-width:0;gap:12px}
+.tw-game-ui .tw-online-envelope{width:95px;flex-basis:95px;background-size:768px 512px;background-position:-81px -178px;height:48px}
+.tw-game-ui .tw-online-footer{background:transparent;padding:12px 0 0;justify-content:space-between}
+.tw-game-ui .tw-online-feedback:empty{display:block}
+.tw-game-ui .tw-online-participants ul{max-height:36dvh;overflow:auto;scrollbar-gutter:stable;overflow-wrap:anywhere}
+.tw-game-ui .tw-online-code{min-height:112px}
+.tw-game-ui .tw-game-results{background:var(--game-card);border:1px solid var(--game-border);border-radius:var(--game-radius);padding:clamp(16px,2vw,28px);color:var(--game-text);width:100%;min-width:0}
+.tw-game-ui .tw-game-results-title{font:700 clamp(24px,2.5vw,34px)/1.25 Georgia,serif;margin:0 0 16px}
+.tw-game-ui .collection-podium-place,.tw-game-ui .magic-report-status{border-color:var(--game-border);border-radius:var(--game-radius);background:#f0e8f3;color:var(--game-text)}
+.tw-game-ui #gameQuizFeedback{min-height:3em;max-height:3em;overflow:auto}
+.tw-game-ui #gameScore{min-height:1.5em;font-variant-numeric:tabular-nums}
+.tw-game-ui :is(.sophie-timer,.sophie-room-code,.collection-toolbar,.magic-report-status){font-variant-numeric:tabular-nums}
+.tw-game-ui .sophie-stage,.tw-game-ui .sophie-ranking{background:var(--game-card);border-color:var(--game-border);border-radius:var(--game-radius)}
+.tw-game-ui .sophie-arena{gap:var(--game-gap)}
+.tw-game-ui .sophie-stage{overflow:auto;scrollbar-gutter:stable}
+.tw-game-ui .tw-online-help{max-height:18dvh;overflow:auto}
+.tw-game-ui .tw-online-help[hidden],.tw-game-ui [hidden]{display:none!important}
+@media(max-width:760px){.tw-game-ui .tw-game-header{gap:8px;padding:10px;flex-wrap:wrap;min-height:76px}.tw-game-ui .tw-game-header>.tw-game-controls{margin-left:auto}.tw-game-ui .tw-game-title{font-size:21px}.tw-game-ui .tw-game-controls>button{padding:8px 12px}.tw-game-ui .tw-online-logo{display:none}.tw-game-ui .tw-online-body{grid-template-columns:minmax(0,1fr)}.tw-game-ui .tw-online-game-art{width:52px;height:48px}.tw-game-ui .tw-online-note{display:none}.tw-game-ui .tw-game-footer{flex-wrap:wrap}.tw-game-ui.tw-game-setup .toowee-setup-columns{grid-template-columns:minmax(0,1fr)}}
+@media(max-height:700px){.tw-game-ui .tw-game-header{min-height:58px;padding:8px 12px}.tw-game-ui .tw-game-header :is(.activity-game-icon,.collection-game-icon){width:38px;height:38px}.tw-game-ui .tw-game-footer{min-height:48px;padding:6px 12px}.tw-game-ui .tw-game-feedback{font-size:12px}.tw-game-ui .tw-online-code{min-height:80px;margin:8px 0}.tw-game-ui .tw-online-card{padding:12px}.tw-game-ui .tw-online-header{margin-bottom:10px}}
+@media(prefers-reduced-motion:no-preference){.tw-game-ui .tw-game-results{animation:tw-game-result-in .16s ease-out}@keyframes tw-game-result-in{from{opacity:.5}to{opacity:1}}}
+
+.tw-game-help-dialog{width:min(600px,92vw);max-height:90dvh;overflow:auto;border:1px solid var(--game-border);border-radius:20px;padding:24px;background:#fffaf4;color:#512b4f}
+.tw-game-help-dialog::backdrop{background:#38233e77}
+.tw-game-ui .tw-game-header>.tw-game-controls{order:3}
+.tw-game-ui .tw-game-header>.tw-game-title{order:1}
+.tw-game-ui .tw-game-header>div:has(h2){order:1}
+.tw-game-ui .tw-game-header>img,.tw-game-ui .tw-game-header>span{order:2}
+.tw-game-ui .tw-game-header>.tw-game-controls>button{white-space:normal}
+#sophieDialog.tw-game-ui :is(#sophieBack),#collectionsDialog.tw-game-ui :is(#collectionsClose,#collectionsHelpButton),#magicDiceHostDialog.tw-game-ui .tw-game-header button{background:var(--game-button)!important;border:1px solid #bb98c6!important;color:var(--game-text)!important}
+#collectionsDialog.tw-game-ui[data-game-phase=waiting] #collectionsContent{display:flex;flex-direction:column;overflow:hidden}
+#collectionsDialog.tw-game-ui[data-game-phase=waiting] #collectionsContent>.tw-online-header,#collectionsDialog.tw-game-ui[data-game-phase=waiting] #collectionsContent>.tw-online-footer{flex:none}
+#collectionsDialog.tw-game-ui[data-game-phase=waiting] #collectionsContent>.tw-online-body{flex:1;min-height:0}
+#collectionsDialog.tw-game-ui[data-game-phase=waiting] .tw-online-invite{overflow:auto;scrollbar-gutter:stable}
+#magicDiceHostDialog.tw-game-ui.tw-game-viewport{max-height:100dvh;max-width:none;width:100vw}
+#magicDiceHostDialog.tw-game-ui>.tw-online-body{overflow:auto}
+body[data-magic-player] main.tw-game-ui{display:flex;flex-direction:column;padding:12px;gap:12px}
+body[data-magic-player] main.tw-game-ui>#magicDiceGame{flex:1;min-height:0;margin:0}
+body[data-magic-player] main.tw-game-ui[data-game-phase=results]{overflow:auto}
+
+.tw-game-ui .tw-online-link-label{display:flex;flex-direction:column;gap:6px;font-size:14px;margin-bottom:12px}
+.tw-game-ui .tw-online-link-label input{width:100%;text-overflow:ellipsis}
+body[data-magic-player] main.tw-game-ui[data-game-phase=setup]{overflow:auto}
+.tw-game-ui[data-game-phase=results]>.tw-game-results{overflow:auto;min-height:0}

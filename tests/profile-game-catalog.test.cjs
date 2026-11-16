@@ -9,7 +9,7 @@ let special,focused,materialCalls=[],modeCalls=[],errors=[];w.addEventListener('
 Object.assign(w,{ready:true,saving:false,account:{userId:'teacher'},activeLanguage:'English',tooweeView:'teacher',languageInfo:{Japanese:{code:'ja'},English:{code:'en'}},activeWords:()=>[en],activeFolders:()=>[],tab(){},chooseLanguage:l=>{w.activeLanguage=l;},tooweeStudentProfiles:[{id:'p1',first_name:'Magda',last_name:'Test',languages:['English','Japanese']}],captureTeacherStudentNavigation:()=>({profile:'p1',lang:'Japanese'}),getStudentGameMaterials:async(id,l)=>{materialCalls.push([id,l]);return ctx();},TooweeGameDelivery:{pick:async(kind)=>{modeCalls.push(kind);return ['sophie','collections'].includes(kind)?'online':'classroom';}},openSophieForStudentProfile:async c=>{special=c;},openCollectionsForStudent:async c=>{special=c;},openActivityFocus:(id,name,playing,kind)=>{if(playing)focused=kind;}});
 for(const [key,kind] of [['TooweeMagicDice','dice'],['TooweeEscape','escape'],['TooweeFalling','falling']])w[key]={reset(){},updateControls(){},start(rows){assert.deepEqual(Array.from(rows,r=>r.id).sort(),words.map(r=>r.id).sort());focused=kind;}};
 w.TooweeSwordsBombsHearts={open:async c=>{special=c;}};
-w.eval(read('games.js'));w.eval(read('teacher-game-setup.js'));w.eval(read('teacher-game-catalog.js'));
+w.eval(read('game-ui.js'));w.eval(read('games.js'));w.eval(read('teacher-game-setup.js'));w.eval(read('teacher-game-catalog.js'));
 w.showTeacherSection=()=>w.openTeacherGameCatalog('English');
 w.openTeacherGameCatalog(null);
 const profileGrid=d.querySelector('#profileGamesPanel>.teacher-game-directory');assert(profileGrid);const expected=['dice','collections','sophie','match','memory','quiz','write','escape','falling','sbh'];

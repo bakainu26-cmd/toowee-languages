@@ -1,0 +1,54 @@
+name: Shared game UI checks
+on:
+  pull_request:
+    paths:
+      - '*game*'
+      - 'activity-focus.*'
+      - 'sophie-live.*'
+      - 'collections.*'
+      - 'magic-dice*'
+      - 'swords-bombs-hearts*'
+      - 'online-lobby.*'
+      - 'index.html'
+      - 'tests/game-ui*'
+      - '.github/workflows/game-ui.yml'
+permissions:
+  contents: read
+jobs:
+  shared-ui:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install DOM test dependency
+        run: npm install --no-save --no-package-lock jsdom@26 playwright@1.56.1 @electric-sql/pglite@0.3.14
+      - name: Check changed game JavaScript syntax
+        run: |
+          for file in game-ui.js activity-focus.js games.js teacher-game-setup.js online-lobby.js sophie-live.js collections.js magic-dice-live.js magic-dice-share.js swords-bombs-hearts-play.js; do
+            node --check "$file"
+          done
+      - name: Shared presentation and live lobby regression
+        run: node tests/game-ui-shared.test.cjs
+      - name: Pupil and list game scope regression
+        run: node tests/profile-game-catalog.test.cjs
+      - name: Written game keyboard regression
+        run: node tests/games-enter-next.test.cjs
+      - name: Sophie room start and participant update
+        run: node tests/sophie-start-lobby.test.cjs
+      - name: Collections host/player round with a real local database
+        run: node tests/collections-round-flow.test.cjs
+      - name: Online Dice final-result synchronization and retry
+        run: node tests/magic-dice-final-sync.test.cjs
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Shared viewport geometry and screenshots
+        run: node tests/game-ui-viewport.test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-game-ui-screenshots
+          path: test-artifacts/game-ui/
+          if-no-files-found: ignore

@@ -6,7 +6,7 @@
   function hashFor(s){return '#/'+({games:'gry',tasks:'zadania',tests:'test'}[s.id])+'/'+(s.kind || 'sesja')+(s.playing && s.id==='games'?'/gra':'');}
   function leave(){
     document.body.classList.remove('activity-focus');
-    for(const id of Object.keys(titles)){el(id).classList.remove('activity-screen','activity-playing');el(id).removeAttribute('data-activity-kind');}
+    for(const id of Object.keys(titles)){el(id).classList.remove('activity-screen','activity-playing','tw-game-viewport');el(id).removeAttribute('data-activity-kind');}
     for(const group of groups)for(const item of group)item.hidden=false;
     if(pager)pager.hidden=true;state=null;groups=[];page=0;
   }
@@ -31,11 +31,12 @@
     state={id,title,playing,kind,owner:account.userId,language:activeLanguage};page=0;
     header(id);el('activityHeader-'+id).querySelector('button').textContent='← '+(id==='games'?(window.worldGameMission?'Wróć na mapę':'Wybór gry'):'Ustawienia');el('activityTitle-'+id).textContent=title;if(id==='games'&&kind){const icon=document.createElement('img');icon.src='assets/game-icons/'+kind+'.webp';icon.alt='';icon.className='activity-game-icon';el('activityTitle-'+id).prepend(icon);}
     el(id).classList.add('activity-screen');el(id).classList.toggle('activity-playing',playing);el(id).dataset.activityKind=kind;
+    if(id==='games')window.TooWeeGameUI?.GameLayout(el(id),{kind,phase:playing?'playing':'setup',role:'host',viewport:true,header:el('activityHeader-'+id),feedback:el('gameStatus')});
     document.body.classList.add('activity-focus');tab(id);
     const hash=hashFor(state);if(location.hash!==hash)history[before?'replaceState':'pushState'](null,'',hash);
     paginate();el('activityHeader-'+id).querySelector('button').focus({preventScroll:true});
   }
-  function setPlaying(value){if(!state || state.id!=='games')return;const before=hashFor(state);state.playing=value;el('games').classList.toggle('activity-playing',value);if(location.hash===before)history.replaceState(null,'',hashFor(state));}
+  function setPlaying(value){if(!state || state.id!=='games')return;const before=hashFor(state);state.playing=value;el('games').dataset.gamePhase=value?'playing':'setup';el('games').classList.toggle('activity-playing',value);if(location.hash===before)history.replaceState(null,'',hashFor(state));}
   function paginate(){
     if(!state)return;
     const oldGroups=groups;for(const group of oldGroups)for(const item of group)item.hidden=false;
