@@ -23,4 +23,7 @@ for(const kind of expected){special=null;focused=null;profileGrid.querySelector(
  d.getElementById('startGame').click();assert.equal(focused,kind,kind+' starts');
 }
 assert.deepEqual(errors,[]);assert.deepEqual(modeCalls,expected);assert(materialCalls.every(([id,l])=>id==='p1'&&l==='Japanese'));
+// Directly opening one list must not include another list from the same pupil/language.
+w.getStudentGameMaterials=async()=>({...ctx(),sets:[...ctx().sets,{id:'other-jp',name:'Inna lista',lang:'Japanese'}],words:[...ctx().words,{id:'excluded',folder_id:'other-jp',lang:'Japanese',word:'秘密',translation:'sekret'}]});
+for(const kind of ['write','sophie','collections']){await w.openTeacherListGameCatalog('p1','jp-set','Japanese');assert.equal(d.querySelectorAll('[data-game-directory-source="list"] [data-teacher-game-kind]').length,10);d.querySelector('[data-game-directory-source="list"] [data-teacher-game-kind="'+kind+'"]').click();await pause();const scoped=w.captureTeacherGameNavigation().context;assert.equal(scoped.list_id,'jp-set');assert.equal(scoped.sets.length,1);assert.deepEqual(Array.from(scoped.words,x=>x.id).sort(),words.map(x=>x.id).sort());if(kind==='write')assert.equal(w.tooweeTeacherGameContext.words.length,4);else assert.equal(special.words.length,4);}
 w.close();console.log('PASS all ten profile games share catalog and launch with selected pupil and Japanese, without reselection');})().catch(e=>{console.error(e);process.exit(1)});
