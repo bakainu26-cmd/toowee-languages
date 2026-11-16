@@ -29,7 +29,7 @@ The accompanying pull-request workflow checks changed JS syntax and runs:
 - existing pupil/list catalog and written Enter/IME tests;
 - Playwright geometry checks and screenshots at 1280×720, 1920×1080 and 768×1024 for shared chrome under changing feedback.
 
-These tests are prepared for CI. They have not been executed in the current assistant session because the executor and interactive browser are unavailable. The viewport fixture tests the common shell, not every game's actual board.
+GitHub Actions has passed JavaScript syntax, shared DOM/lobby tests, the pupil/list catalog regression and Enter/IME regression. The first browser-install step failed because ubuntu-latest selected an unsupported OS for the pinned Playwright version; the workflow now pins Ubuntu 22.04. Browser geometry checks are pending the rerun. No local executor or interactive browser is available in this assistant session. The viewport fixture tests the common shell, not every game's actual board.
 
 Before merging, review the CI result and screenshots, then test actual Classroom boards (especially Collections and multi-player Dice) at the target sizes, and a real two-client online join/start/answer/end/result-save flow. Synthetic DOM and geometry tests cannot establish production synchronization or statistics writes. Configuration and long statistical reports may scroll within their content panes; the playing shell keeps the header/footer fixed. Native board fitters remain responsible for their board internals.
 

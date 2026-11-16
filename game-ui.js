@@ -18,6 +18,6 @@
  function GameWaitingRoom(root,o={}){GameLayout(root,{kind:o.kind,role:o.host?'host':'player',phase:o.active?'playing':'waiting',header:root.querySelector('.tw-online-header'),body:root.querySelector('.tw-online-body'),footer:root.querySelector('.tw-online-footer')});GameFeedback(root.querySelector('.tw-online-feedback'));}
  window.TooWeeGameUI=Object.freeze({GameLayout,GameHeader,GameControls,GameFeedback,GameSetupLayout,GameWaitingRoom,GameResultsScreen});
  // Standalone pages do not load the main portal's activity-focus controller.
- function standalone(){const main=document.querySelector('body[data-magic-player] main');if(main)GameLayout(main,{kind:'dice',phase:'setup',role:'player',viewport:true,header:main.querySelector('h1'),feedback:document.getElementById('notice')});}
+ function standalone(){const main=document.querySelector('body[data-magic-player] main');if(main){GameLayout(main,{kind:'dice',phase:'setup',role:'player',viewport:true,header:main.querySelector('h1'),feedback:document.getElementById('notice')});const controls=main.querySelector('h1 .tw-game-controls');if(controls){const exit=document.createElement('button');exit.type='button';exit.textContent='Wyjdź';exit.onclick=()=>window.location.assign('./');controls.append(exit);}}}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',standalone,{once:true});else standalone();
 })();
