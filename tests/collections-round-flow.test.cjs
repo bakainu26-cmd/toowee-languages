@@ -14,7 +14,7 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms));
 function view(id,isHost){const dom=new JSDOM('<main></main>',{url:'https://example.test/'+(isHost?'':'?kolekcje='+code),runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
  w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
  const native=w.setTimeout.bind(w);w.setTimeout=(fn,ms,...a)=>native(fn,ms===1200?35:ms,...a);w.tooweeView=isHost?'teacher':'student';w.tooweeProfile={role:isHost?'teacher':'student'};
- w.eval(script('online-lobby.js'));w.eval(script('collections.js'));w.localStorage.setItem('toowee-collections-last',code);w.dispatchEvent(new w.CustomEvent('toowee-account',{detail:{userId:id,client:clientFor(id)}}));return dom;
+ w.eval(script('game-ui.js'));w.eval(script('online-lobby.js'));w.eval(script('collections.js'));w.localStorage.setItem('toowee-collections-last',code);w.dispatchEvent(new w.CustomEvent('toowee-account',{detail:{userId:id,client:clientFor(id)}}));return dom;
 }
 const pupil=view(student,false),teacherView=view(host,true),pd=pupil.window.document,hd=teacherView.window.document;
 const waitFor=async(fn,label)=>{for(let i=0;i<100;i++){if(fn())return;await pause(20);}throw Error('Timeout: '+label);};
