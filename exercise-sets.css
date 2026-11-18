@@ -97,3 +97,15 @@
 #teacherPanel-resources .exercise-view-controls .exercise-sections{margin:0}
 .exercise-view-controls .material-view-switch{margin:0 0 0 auto}
 #exerciseLibraryContent{clear:both}
+
+#exerciseImportDialog {
+  max-height: 92dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.exercise-import-actions {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0;
+  background: #fffaf5;
+}

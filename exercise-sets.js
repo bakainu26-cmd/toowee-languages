@@ -81,7 +81,7 @@
   }finally{save.disabled=false;}
  };
  body.append(top,form);form.append(cards,button('+ Dodaj kartę',()=>{if(draft.cards.length>=500)throw Error('Maksymalnie 500 kart.');draft.cards.push({id:core.id(),type:'question',prompt:'',answer:'',wrong:[],reading:'',image:''});saveDraft();render();}),button('Uzupełnij błędne odpowiedzi z innych kart',()=>{const pool=draft.cards;draft.cards=pool.map(c=>core.enrich([c],pool,c.type==='quiz'?(c.quizOptionCount||Math.max(2,c.wrong.length+1)):4)[0]);saveDraft();render();status.textContent='Uzupełniono propozycje. Sprawdź je i kliknij „Zapisz zestaw”, aby zachować zmiany.';}),save,saveNote,node('small','Zmiany są przechowywane jako szkic w tej przeglądarce. Przycisk „Zapisz zestaw” zapisuje je na Twoim koncie.'));render();}
- const importDialog=node('dialog');importDialog.className='exercise-dialog';importDialog.id='exerciseImportDialog';document.body.append(importDialog);
+ const importDialog=node('dialog');importDialog.className='exercise-dialog';importDialog.id='exerciseImportDialog';importDialog.dataset.dialogLayout='viewport';document.body.append(importDialog);
  function show(d){if(!d.open){if(d.showModal)d.showModal();else d.setAttribute('open','');}}
  function close(d){d.close?.();d.removeAttribute('open');}
  const quizOptionCounts={2:'2 (A, B)',3:'3 (A, B, C)',4:'4 (A, B, C, D)'};
@@ -116,7 +116,8 @@
   field(importDialog,'Rodzaj importu',format);field(importDialog,'Liczba odpowiedzi',count);field(importDialog,'Układ tekstu',layout);field(importDialog,'Separator kolumn',sep);
   importDialog.append(guide,sample,button('Kopiuj szablon',async()=>{try{await navigator.clipboard.writeText(sampleFor());}catch{text.value=sampleFor();update();}}),text);
   const quizLabel=field(importDialog,'Utwórz quiz — dobierz błędne odpowiedzi z innych kart',auto);quizLabel.className='exercise-auto-quiz';
-  importDialog.append(button('Pokaż podgląd importu',()=>{parsed=core.parseSmart(text.value,{format:format.value,separator:sep.value,layout:layout.value,optionCount:optionCount()});if(auto.checked)generate();else draw();}),note,preview,add);
+  const actions=node('div',undefined,'exercise-import-actions');actions.append(add);
+  importDialog.append(button('Pokaż podgląd importu',()=>{parsed=core.parseSmart(text.value,{format:format.value,separator:sep.value,layout:layout.value,optionCount:optionCount()});if(auto.checked)generate();else draw();}),note,preview,actions);
   update();show(importDialog);
  }
  const gameNames={sbh:'⚔️ Miecze, Bomby i Serduszka',board:'Plansza pytań',flashcards:'Fiszki',write:'Wpisz odpowiedź',quiz:'Quiz ABCD',dice:'Magic Dice',sophie:'Saszetki Sophie',collections:'Kolekcje Sophisi',match:'Połącz w pary',memory:'Memory'};
