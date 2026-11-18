@@ -37,6 +37,9 @@ alter table public.toowee_exercise_materials enable row level security;
 revoke all on public.toowee_exercise_sets,public.toowee_exercise_materials from public,anon,authenticated;
 create index if not exists toowee_exercises_owner_idx on public.toowee_exercise_sets(owner_id,updated_at desc);
 create index if not exists toowee_exercises_public_idx on public.toowee_exercise_sets(lang,updated_at desc) where is_public;
+alter table public.toowee_exercise_sets add column if not exists target_lang text
+ check (target_lang in ('Polish','English','Japanese','Spanish'));
+
 create or replace function public.toowee_exercise_sets(p_action text,p_data jsonb default '{}') returns jsonb
 language plpgsql security definer set search_path=public,pg_temp as $$
 declare who uuid:=auth.uid();s public.toowee_exercise_sets; item jsonb; cards jsonb; wrong jsonb; names text[]; result jsonb; fid uuid; req uuid; expected integer; page integer; v_lang text; v_title text; v_description text; v_public boolean; recipient uuid; recipient_ids uuid[];
@@ -114,11 +117,11 @@ begin
    if coalesce(item->>'id','')!~'^[a-f0-9-]{36}$' or (item->>'id')=any(names) then raise exception 'Nieprawidłowe lub powtórzone identyfikatory kart.';end if;names:=array_append(names,item->>'id');
    if coalesce(item->>'image','')<>'' and (length(item->>'image')>2000 or (item->>'image')!~'^https://[^[:space:]]+$') then raise exception 'Obrazek wymaga adresu HTTPS.';end if;
    wrong:=coalesce(item->'wrong','[]');if jsonb_typeof(wrong) is distinct from 'array' then raise exception 'Nieprawidłowe odpowiedzi.';end if;
-   if jsonb_array_length(wrong)>3 or (item->>'type'='quiz' and jsonb_array_length(wrong)<>3) then raise exception 'Quiz ABCD wymaga 3 błędnych odpowiedzi.';end if;
+   if jsonb_array_length(wrong)>3 or (item->>'type'='quiz' and jsonb_array_length(wrong)<1) then raise exception 'Quiz wymaga od 1 do 3 błędnych odpowiedzi.';end if;
    if exists(select 1 from jsonb_array_elements(wrong) w where jsonb_typeof(w)<>'string' or length(trim(w#>>'{}')) not between 1 and 2000) or (select count(distinct lower(trim(v))) from (select value v from jsonb_array_elements_text(wrong) union all select item->>'answer') a)<>jsonb_array_length(wrong)+1 then raise exception 'Odpowiedzi muszą być różne i niepuste.';end if;
   end loop;
-  insert into public.toowee_exercise_sets(id,owner_id,title,description,lang,cards,is_public,folder_id) values(req,who,v_title,v_description,v_lang,cards,v_public,fid)
-  on conflict(id) do update set folder_id=excluded.folder_id,title=excluded.title,description=excluded.description,lang=excluded.lang,cards=excluded.cards,is_public=excluded.is_public,revision=toowee_exercise_sets.revision+1,updated_at=now() returning * into s;
+  insert into public.toowee_exercise_sets(id,owner_id,title,description,lang,cards,is_public,folder_id,target_lang) values(req,who,v_title,v_description,v_lang,cards,v_public,fid,case when p_data?'target_lang' then p_data->>'target_lang' else s.target_lang end)
+  on conflict(id) do update set folder_id=excluded.folder_id,target_lang=excluded.target_lang,title=excluded.title,description=excluded.description,lang=excluded.lang,cards=excluded.cards,is_public=excluded.is_public,revision=toowee_exercise_sets.revision+1,updated_at=now() returning * into s;
  else
   select * into s from public.toowee_exercise_sets where id=(p_data->>'id')::uuid for update;
   if not found or(s.owner_id<>who and not s.is_public and not(p_action='get' and exists(select 1 from public.toowee_material_deliveries d join public.toowee_student_profiles p on p.id=d.profile_id where d.kind='exercise' and d.source_id=s.id and d.owner_id=s.owner_id and p.owner_id=s.owner_id and p.student_id=who and not p.blocked))) then raise exception 'Ten zestaw jest prywatny lub nie jest już dostępny.';end if;
@@ -148,7 +151,7 @@ begin
  if p_action='copy' then
   req:=(p_data->>'new_id')::uuid;if req is null then raise exception 'Brak identyfikatora kopii.';end if;
   if exists(select 1 from public.toowee_exercise_sets where id=req and owner_id<>who) then raise exception 'Nieprawidłowy identyfikator kopii.';end if;
-  insert into public.toowee_exercise_sets(id,owner_id,title,description,lang,cards,is_public,source_id) values(req,who,left(s.title||' — kopia',200),s.description,s.lang,s.cards,false,s.id) on conflict(id) do nothing;
+  insert into public.toowee_exercise_sets(id,owner_id,title,description,lang,cards,is_public,source_id,target_lang) values(req,who,left(s.title||' — kopia',200),s.description,s.lang,s.cards,false,s.id,s.target_lang) on conflict(id) do nothing;
   select * into s from public.toowee_exercise_sets where id=req;
  elsif p_action='prepare_game' then
   if s.owner_id<>who then raise exception 'Najpierw zapisz własną kopię.';end if;
@@ -168,7 +171,7 @@ begin
   return jsonb_build_object('name',s.title,'lang',s.lang,'folders','[]'::jsonb,'sets',jsonb_build_array(jsonb_build_object('id',fid,'name',s.title,'lang',s.lang)),'words',result);
  elsif p_action not in ('get','save','copy') then raise exception 'Nieznana operacja.';
  end if;
- return jsonb_build_object('id',s.id,'title',s.title,'description',s.description,'lang',s.lang,'cards',s.cards,'is_public',s.is_public,'mine',s.owner_id=who,'revision',s.revision,'source_id',s.source_id,'folder_id',case when s.owner_id=who then s.folder_id else null end,'author',(select coalesce(nullif(display_name,''),'Nauczyciel') from public.toowee_accounts where id=s.owner_id));
+ return jsonb_build_object('id',s.id,'title',s.title,'description',s.description,'lang',s.lang,'target_lang',s.target_lang,'cards',s.cards,'is_public',s.is_public,'mine',s.owner_id=who,'revision',s.revision,'source_id',s.source_id,'folder_id',case when s.owner_id=who then s.folder_id else null end,'author',(select coalesce(nullif(display_name,''),'Nauczyciel') from public.toowee_accounts where id=s.owner_id));
 end;$$;
 revoke all on function public.toowee_exercise_sets(text,jsonb) from public,anon;
 grant execute on function public.toowee_exercise_sets(text,jsonb) to authenticated;
