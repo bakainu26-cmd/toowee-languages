@@ -152,11 +152,11 @@
     if(!canPlay()||(window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.deliveryMode==='online'))return;resetGame();const folder=el('gameFolder').value;
     const seenWords=new Set(),seenTranslations=new Set(),normalize=s=>s.trim().normalize('NFKC').toLocaleLowerCase();
     const words=shuffle(((window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.words) || (window.filterLearningWords?window.filterLearningWords(activeWords()):activeWords())).filter(w=>!folder || w.folder_id===folder)).filter(w=>{
-      const term=normalize(w.word),meaning=normalize(w.translation);if(!term || !meaning || seenWords.has(term) || (seenTranslations.has(meaning)&&!w.quiz_options))return false;seenWords.add(term);seenTranslations.add(meaning);return true;
+      const term=normalize(w.word),meaning=normalize(w.translation);if(!term || (!meaning&&!(kind==='dice'&&w.question_format==='open')) || seenWords.has(term) || (seenTranslations.has(meaning)&&!w.quiz_options))return false;seenWords.add(term);seenTranslations.add(meaning);return true;
     });
     const endless=kind==='falling' && ['endless','survival'].includes(el('fallMode').value);
     const count=Number(el('gameCount').value);pairs=(endless||kind==='dice')?words:words.slice(0,[6,10,15,20,25].includes(count)?count:6);
-    if(pairs.length<(kind==='escape'?3:2)){pairs=[];status('Do gry potrzeba co najmniej '+(kind==='escape'?3:2)+' różnych słówek i tłumaczeń w wybranym zestawie i kategorii.');return;}
+    if(pairs.length<(kind==='dice'&&words.some(w=>w.question_format)?1:kind==='escape'?3:2)){pairs=[];status('Do gry potrzeba co najmniej '+(kind==='escape'?3:2)+' różnych słówek i tłumaczeń w wybranym zestawie i kategorii.');return;}
     worldRewardId=window.newWorldEventId?.();sessionOwner=account.userId;sessionLanguage=activeLanguage;startedAt=Date.now();
     window.openActivityFocus?.('games',names[kind],true,kind);
     status('Grasz: '+names[kind]+(endless?' · Endless. Pula: ':'. W tej grze: ')+pairs.length+' słówek'+(!endless && pairs.length<count?' (tyle jest dostępnych)':'')+'.');
