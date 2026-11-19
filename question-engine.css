@@ -1,0 +1,12 @@
+/* Shared question controls inherit the game's existing TooWee palette. */
+[data-question-mode]{min-width:0;max-width:100%;gap:12px}
+[data-question-mode] button{overflow-wrap:anywhere;white-space:normal}
+[data-question-mode=text],[data-question-mode=write]{display:block}
+[data-question-mode] form{display:flex;flex-direction:column;gap:12px;min-width:0;width:100%;margin:0}
+[data-question-mode] label{display:flex;flex-direction:column;gap:8px;text-align:left}
+[data-question-mode] input{box-sizing:border-box;width:100%;min-width:0;min-height:44px;font:inherit}
+body .sbh-prompt-dialog .sbh-answer-actions[data-question-mode]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-height:45dvh;overflow:auto;flex-shrink:1;padding-top:12px}
+body .sbh-prompt-dialog .sbh-answer-actions[data-question-mode=text]{grid-template-columns:minmax(0,1fr)}
+body .sbh-prompt-dialog .sbh-answer-actions[data-question-mode] button{width:100%;min-width:0;height:auto;min-height:48px;padding:10px 12px;font-size:17px;line-height:1.35}
+body .sbh-prompt-dialog .sbh-answer-actions[data-question-mode] input{font-size:20px;padding:10px}
+@media(max-width:400px){body .sbh-prompt-dialog .sbh-answer-actions[data-question-mode]{grid-template-columns:minmax(0,1fr)}}
