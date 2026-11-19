@@ -7,8 +7,8 @@ function run(firstSword,lives,mark){
  const life=()=>Array.from(d.querySelectorAll('#players .sbh-heart-icons'),x=>Number(x.dataset.count));
  const reveal=i=>{d.querySelectorAll('#board button')[i].click();const q=d.querySelector('dialog[open]');q.querySelector('.sbh-show-answer').click();q.querySelectorAll('.sbh-answer-actions button')[mark].click();const done=effect;done();return done};
  if(!firstSword){reveal(0);assert.deepEqual(life(),[lives+1,lives]);}
- const before=life(),done=reveal(2),expected=firstSword?[before[0],Math.max(0,before[1]-1)]:[Math.max(0,before[0]-1),before[1]];
- assert.deepEqual(life(),expected,'sword automatically removes the opponent heart');assert(!d.querySelector('.sbh-target-dialog'),'two players need no target confirmation');done();assert.deepEqual(life(),expected,'repeated callback cannot subtract twice');
+ const before=life(),done=reveal(2),expected=firstSword?[before[0]+1,Math.max(0,before[1]-1)]:[Math.max(0,before[0]-1),before[1]+1];
+ assert.deepEqual(life(),expected,'sword transfers one opponent heart to the finder');assert(!d.querySelector('.sbh-target-dialog'),'two players need no target confirmation');done();assert.deepEqual(life(),expected,'repeated callback cannot transfer twice');
  if(firstSword&&lives===1){assert(d.getElementById('question').textContent.includes('Nauczyciel'),'last heart ends game');assert(!d.querySelector('#board button:not(:disabled)'));}else{assert(d.querySelector('#board button:not(:disabled)'),'next turn stays playable');reveal(1);assert(life().every(x=>x>=0),'bomb cannot create negative lives');}
  w.close();return expected;
 }
