@@ -1,0 +1,43 @@
+name: Question format checks
+on:
+  pull_request:
+    paths:
+      - 'exercise-*'
+      - 'question-*'
+      - 'magic-dice*'
+      - 'sophie-live.js'
+      - 'collections.js'
+      - 'swords-bombs-hearts*'
+      - 'material-export.js'
+      - 'games.js'
+      - 'index.html'
+      - 'tests/question-*'
+      - '.github/workflows/question-formats.yml'
+permissions:
+  contents: read
+jobs:
+  formats:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned test dependencies
+        run: npm install --no-save --no-package-lock jsdom@26.1.0 @electric-sql/pglite@0.3.14 playwright@1.56.1
+      - name: Format, persistence, compatibility and online protocol checks
+        run: |
+          for file in tests/question-formats.test.cjs tests/question-formats-db.test.cjs tests/question-format-editor.test.cjs tests/question-format-games.test.cjs tests/question-online-db.test.cjs tests/question-game-matrix.test.cjs tests/exercise-sets-core.test.cjs tests/material-export-roundtrip.test.cjs tests/magic-dice-share.test.cjs tests/magic-dice.test.cjs tests/sbh-effects.test.cjs tests/sbh-sword.test.cjs; do
+            node "$file" || exit 1
+          done
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Real browser question controls
+        run: node tests/question-controls-viewport.test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: question-format-screenshots
+          path: test-artifacts/question-formats/
+          if-no-files-found: ignore
