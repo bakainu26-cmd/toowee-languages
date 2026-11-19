@@ -21,3 +21,15 @@
 #profileGamesPanel .magic-profile-icon{width:80px;height:80px;background:url('assets/game-icons/dice.webp') center/contain no-repeat}
 #profileGamesPanel .magic-profile-icon::before,#profileGamesPanel .magic-profile-icon::after{display:none}
 @media(max-width:480px){.cozy-game-choice::before,.game-types button[onclick*="TooweeSwordsBombsHearts"]::before{width:68px;height:68px}}
+
+/* A single card presentation for the catalog, generator and set picker. */
+body .toowee-game-card{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;min-width:0;padding:22px 18px;border:1px solid #e2d4e1;border-radius:23px 18px;background:#eee2ef;color:#512b4f;text-align:center;box-sizing:border-box;overflow-wrap:anywhere}
+body .toowee-game-card::before{display:none!important}
+body .toowee-game-card>.toowee-game-icon{display:block!important;width:100px!important;height:100px!important;flex:none;object-fit:contain;font-size:initial!important;background:none!important}
+body .toowee-game-card>.toowee-game-title{display:block!important;width:auto!important;height:auto!important;background:none!important;margin:0;font:700 21px/1.3 Georgia,serif;color:inherit}
+body .toowee-game-card>.toowee-game-requirements{margin:0;font:14px/1.5 system-ui,sans-serif;color:#765a75}
+body .toowee-game-card>.toowee-game-action{margin-top:auto;max-width:100%;min-height:44px}
+body .exercise-game-grid{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));align-items:stretch}
+body .exercise-game-grid>.toowee-game-card{padding:22px 18px;min-height:250px}
+body .teacher-game-directory[data-game-directory-view=list]>.toowee-game-card>.toowee-game-icon{width:64px!important;height:64px!important}
+@media(max-width:480px){body .toowee-game-card>.toowee-game-icon{width:80px!important;height:80px!important}}

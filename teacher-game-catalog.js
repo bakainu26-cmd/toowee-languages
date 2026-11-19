@@ -2,12 +2,13 @@
 (()=>{
  const el=id=>document.getElementById(id),panel=el('teacherPanel-games'),catalog=document.createElement('div');catalog.id='teacherGameCatalog';panel.append(catalog);
  const names={dice:'Magic Dice',collections:'Kolekcje Sophisi',sophie:'Saszetki Sophie',match:'Połącz w pary',memory:'Memory',quiz:'Wybierz tłumaczenie',write:'Wpisz słówko',escape:'Escape room',falling:'Spadające słówka',sbh:'Miecze, Bomby i Serduszka'};
+ for(const kind of Object.keys(names))if(window.TooweeGameCards?.config[kind])names[kind]=window.TooweeGameCards.config[kind].name;
  let language=null,version=0,selectedDeliveryMode=null,navigation={view:'catalog'},navigationBusy=false;const languageNames={Japanese:'Japoński',English:'Angielski',Spanish:'Hiszpański'};
  function text(tag,value){const n=document.createElement(tag);n.textContent=value;return n;}
  function button(label,fn){const b=text('button',label);b.type='button';b.className='alt';b.onclick=async()=>{b.disabled=true;try{await fn();}catch(e){catalog.append(text('p',e.message));}finally{b.disabled=false;navigationBusy=false;window.recordTeacherNavigation?.();}};return b;}
  const solo=el('games'),originalParent=solo.parentNode,originalNext=solo.nextSibling;
  function reset(){window.cleanupTeacherGameSetup?.();version++;navigationBusy=false;window.tooweeTeacherGameContext=null;if(solo.parentNode!==originalParent){originalParent.insertBefore(solo,originalNext);solo.hidden=true;}solo.querySelector('.game-types').hidden=false;el('gameFolder').parentElement.hidden=false;catalog.replaceChildren();}
- function gameGrid(select,source='catalog'){const grid=document.createElement('div');grid.className='game-types teacher-game-directory';grid.dataset.gameDirectorySource=source;for(const [kind,name] of Object.entries(names)){const card=button(name,()=>select(kind));card.classList.add('cozy-game-choice');card.dataset.teacherGameKind=kind;grid.append(card);}return grid;}
+ function gameGrid(select,source='catalog'){const grid=document.createElement('div');grid.className='game-types teacher-game-directory';grid.dataset.gameDirectorySource=source;for(const [kind,name] of Object.entries(names)){const card=button(name,()=>select(kind));card.classList.add('cozy-game-choice');card.dataset.teacherGameKind=kind;window.TooweeGameCards?.decorate(card,kind);grid.append(card);}return grid;}
  function listGames(){selectedDeliveryMode=null;reset();navigation={view:'catalog'};window.recordTeacherNavigation?.();catalog.append(text('h3','Wybierz grę'),gameGrid(pickModeBeforeMaterials));}
  async function pickModeBeforeMaterials(kind){const mode=await window.TooweeGameDelivery?.pick?.(kind,names[kind]);if(window.TooweeGameDelivery&&!mode)return;selectedDeliveryMode=mode||'classroom';listStudents(kind);}
 
