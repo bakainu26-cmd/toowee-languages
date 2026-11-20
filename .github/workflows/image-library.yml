@@ -1,0 +1,14 @@
+name: Image library checks
+on:
+  pull_request:
+    paths: ['image-library*', 'supabase/functions/toowee-images/**', 'tests/image-library*', '.github/workflows/image-library.yml']
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false jsdom@26.1.0 @electric-sql/pglite@0.3.14
+      - run: node tests/image-library-core.test.cjs && node tests/image-library-db.test.cjs && node tests/image-library-ui.test.cjs

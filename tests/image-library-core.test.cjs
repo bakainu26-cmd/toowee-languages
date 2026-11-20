@@ -1,0 +1,9 @@
+const assert=require('node:assert/strict');
+(async()=>{const m=await import('../supabase/functions/toowee-images/core.mjs');
+assert.deepEqual(m.searchInput({q:'  Apple   tree ',lang:'en',type:'photo',page:2}),{q:'Apple tree',lang:'en',type:'photo',page:2,key:'["apple tree","en","photo",2]'});
+for(const q of ['', 'x'.repeat(101)])assert.throws(()=>m.searchInput({q}));for(const page of [0,26,1.5,-1]){if(page===0)continue;assert.throws(()=>m.searchInput({q:'cat',page}));}
+for(const url of ['http://pixabay.com/a','https://pixabay.com.evil.test/a','https://cdn.pixabay.com@127.0.0.1/a','https://127.0.0.1/a','https://[::1]/a','file:///etc/passwd','https://pixabay.com:8443/a'])assert.throws(()=>m.pixabayUrl(url));
+assert.equal(m.pixabayUrl('https://cdn.pixabay.com/photo/a.jpg'),'https://cdn.pixabay.com/photo/a.jpg');
+assert.equal(m.imageMime(Uint8Array.from([255,216,255,0])),'image/jpeg');assert.throws(()=>m.imageMime(new TextEncoder().encode('<svg>bad</svg>')));assert.throws(()=>m.imageMime(new Uint8Array(m.MAX_BYTES+1)));
+const tooBig=new Response(new ReadableStream({start(c){c.enqueue(new Uint8Array(m.MAX_BYTES));c.enqueue(new Uint8Array(1));c.close();}}));await assert.rejects(m.boundedBytes(tooBig));assert.deepEqual([...await m.boundedBytes(new Response(new Uint8Array([1,2])))],[1,2]);
+const payload=m.cleanHits({totalHits:900,hits:[{id:1,previewURL:'https://cdn.pixabay.com/a.jpg',webformatURL:'https://pixabay.com/get/a.jpg',pageURL:'https://pixabay.com/photos/a',user:'Author'},{id:2,previewURL:'https://evil.test/a'}]});assert.equal(payload.total,500);assert.equal(payload.hits.length,1);assert(!('download' in m.publicHits(payload).hits[0]));console.log('PASS Pixabay input limits, cache keys, host/redirect allowlist, MIME signatures, bounded streaming and private download URLs');})();
