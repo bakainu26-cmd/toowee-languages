@@ -6,3 +6,10 @@ export function imageMime(bytes){if(bytes.length>MAX_BYTES||!bytes.length)throw 
 export async function boundedBytes(response){const reader=response.body?.getReader();if(!reader)throw new MediaError('Brak danych obrazu.');let size=0;const chunks=[];try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>MAX_BYTES)throw new MediaError('Obraz przekracza 5 MB.');chunks.push(value);}}finally{await reader.cancel();}const bytes=new Uint8Array(size);let offset=0;for(const b of chunks){bytes.set(b,offset);offset+=b.length;}return bytes;}
 export function cleanHits(payload){return {total:Math.min(500,Number(payload.totalHits)||0),hits:(payload.hits||[]).map(h=>{try{return {id:String(h.id),preview:pixabayUrl(h.previewURL),download:pixabayUrl(h.webformatURL),sourceUrl:pixabayUrl(h.pageURL),author:String(h.user||'').slice(0,200),tags:String(h.tags||'').slice(0,500),type:h.type};}catch{return null;}}).filter(Boolean)};}
 export function publicHits(payload){return {...payload,hits:payload.hits.map(({download,...hit})=>hit)};}
+export function providerFailure(status,body=''){
+ if(status===429)return new MediaError('Pixabay ogranicza teraz liczbę zapytań. Spróbuj ponownie za minutę.',429,'PROVIDER_LIMIT');
+ if(status===400&&/(?:invalid|missing|not valid)[\s\S]{0,60}(?:api.?key|\bkey\b)|(?:api.?key|\bkey\b)[\s\S]{0,60}(?:invalid|missing|not valid)/i.test(body))return new MediaError('Pixabay odrzucił zapisany klucz API. W Supabase → Edge Functions → Secrets zapisz PIXABAY_API_KEY jako sam klucz, bez opisu ani linku.',503,'PIXABAY_KEY_REJECTED');
+ if(status===401||status===403)return new MediaError('Pixabay odmówił dostępu (kod '+status+'). Sprawdź aktywność klucza API i dostęp aplikacji.',503,'PIXABAY_ACCESS_DENIED');
+ if(status===400)return new MediaError('Pixabay odrzucił zapytanie (kod 400). Zmień hasło wyszukiwania; jeśli błąd się powtarza, wymaga sprawdzenia konfiguracja API.',503,'PIXABAY_BAD_REQUEST');
+ return new MediaError('Nie udało się połączyć z Pixabay (kod '+status+'). Spróbuj później.',503,'PROVIDER_ERROR');
+}
