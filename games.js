@@ -20,7 +20,7 @@
     el('startGame').disabled=!canPlay();el('startGame').hidden=window.tooweeView==='teacher'&&window.tooweeTeacherGameContext?.deliveryMode==='online';
     const stop=el('teacherEndGameNow');if(stop){stop.hidden=!pairs.length||(!finished&&window.tooweeView!=='teacher');stop.disabled=finished?false:!inSession();stop.textContent=finished?'Wyjdź':'Zakończ';}
     const share=el('shareMagicDice');if(share){share.hidden=kind!=='dice'||window.tooweeView!=='teacher'||window.tooweeTeacherGameContext?.deliveryMode==='classroom';share.disabled=!canPlay();}
-    for(const id of ['gameCount','gameDirection','gameReading','fallSpeed','fallMode'])el(id).disabled=!canPlay();
+    for(const id of ['gameCount','gameDirection','gameImageSide','gameReading','fallSpeed','fallMode'])el(id).disabled=!canPlay();
     el('gameCount').disabled=!canPlay() || (kind==='falling' && ['endless','survival'].includes(el('fallMode').value));
     el('gameFolder').disabled=!canPlay() || Boolean(window.getLearningContext?.() || window.tooweeTeacherGameContext);
     el('nextGameQuestion').disabled=!inSession() || !answered;
@@ -56,6 +56,7 @@
   }
   function addLabel(button,word,side){
     button.textContent=side==='target' ? word.word : word.translation;
+    window.TooWeeTools?.renderForSide?.(button,word,side==='target'?'target':'translation');
     button.lang=side==='target' ? languageInfo[activeLanguage]?.code || 'en' : 'pl';
     if(side==='target' && activeLanguage==='Japanese' && word.reading && el('gameReading').checked){const reading=document.createElement('small');reading.textContent=word.reading;button.append(reading);}
   }
@@ -129,7 +130,7 @@
     for(const button of el('gameQuizOptions').children){button.disabled=true;button.classList.toggle('matched',button.dataset.id===word.id);button.classList.toggle('incorrect',button.dataset.id===chosenId&&!correct);}
     el('gameWriteAnswer').disabled=true;el('checkGameWrite').disabled=true;
     const answerText=el('gameDirection').value==='toTarget' ? word.word+(word.reading&&activeLanguage==='Japanese'?' ('+word.reading+')':'') : word.translation;
-    el('gameQuizFeedback').textContent=(correct?'✓ Dobrze! ':'✗ Tym razem nie. ')+'Poprawna odpowiedź: '+answerText;
+    el('gameQuizFeedback').textContent=(correct?'✓ Dobrze! ':'✗ Tym razem nie. ')+'Poprawna odpowiedź: '+answerText;window.TooWeeTools?.renderForSide?.(el('gameQuizFeedback'),word,el('gameDirection').value==='toTarget'?'target':'translation');
     el('gameScore').textContent='Odpowiedzi: '+(questionIndex+1)+' / '+questions.length+' · Punkty: '+score;
     if(questionIndex===questions.length-1)finish('Twój wynik: '+score+' / '+questions.length+' ('+Math.round(100*score/questions.length)+'%).');
     else {el('nextGameQuestion').hidden=false;el('nextGameQuestion').disabled=false;}
@@ -169,7 +170,7 @@
     else {el('gameQuiz').hidden=false;questions=shuffle(pairs);renderQuestion();}
   }
   for(const key of Object.keys(names))el('gameType-'+key).onclick=()=>{kind=key;resetGame();window.openActivityFocus?.('games',names[kind],false,kind);};
-  for(const id of ['gameFolder','gameCount','gameDirection','gameReading','fallSpeed','fallMode','magicDiceSize','magicDiceQuota'])el(id).onchange=resetGame;
+  for(const id of ['gameFolder','gameCount','gameDirection','gameImageSide','gameReading','fallSpeed','fallMode','magicDiceSize','magicDiceQuota'])el(id).onchange=resetGame;
   el('teacherEndGameNow').onclick=()=>{if(finished){window.openGamesLobby();return;}if(window.tooweeView!=='teacher'||!inSession())return;if(kind==='dice'){window.TooweeMagicDice.finish('Nauczyciel zakończył grę.');return;}if(kind==='falling'){window.TooweeFalling.finish();return;}if(kind==='escape'){window.TooweeEscape.finish();return;}if(hideTimer!==null){clearTimeout(hideTimer);hideTimer=null;}const summary=['match','memory'].includes(kind)?'Dopasowane pary: '+matched.size+' / '+pairs.length+' · Próby: '+attempts+' · Nietrafione próby: '+(attempts-matched.size):'Poprawne: '+score+' · Błędne: '+(attempts-score)+' · Odpowiedzi: '+attempts+' / '+questions.length;finish('Nauczyciel zakończył grę. '+summary+'.');};
   el('startGame').onclick=startGame;el('replayGame').onclick=startGame;
   el('nextGameQuestion').onclick=()=>{if(['quiz','write'].includes(kind) && inSession() && answered && questionIndex<questions.length-1){questionIndex++;renderQuestion();}};

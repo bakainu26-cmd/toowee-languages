@@ -45,7 +45,7 @@
     el('escapePuzzleTitle').textContent=config.icon+' '+config.name;
     el('escapeStory').textContent=config.story;
     el('escapePuzzleCount').textContent='Zagadka '+(state.indexes[index]+1)+' / '+state.groups[index].length;
-    el('escapePrompt').textContent=state.direction==='toTarget'?current.translation:label(current);
+    el('escapePrompt').textContent=state.direction==='toTarget'?current.translation:label(current);window.TooWeeTools?.renderForSide?.(el('escapePrompt'),current,state.direction==='toTarget'?'translation':'target');
     el('escapePrompt').lang=state.direction==='toTarget'?'pl':languageInfo[state.language]?.code||'en';
     el('escapePromptInstruction').textContent=config.mode==='write'?'Wpisz odpowiedź w wybranym języku.':'Wybierz tłumaczenie.';
     el('escapeWriteForm').hidden=config.mode!=='write';el('escapeOptions').hidden=config.mode==='write';el('escapeOptions').replaceChildren();
@@ -53,7 +53,7 @@
     el('escapeFeedback').textContent='';el('escapeNext').hidden=true;
     if(config.mode!=='write')for(const option of shuffle([current,...shuffle(state.words.filter(w=>w.id!==current.id)).slice(0,3)])){
       const button=document.createElement('button');button.type='button';button.className='escape-option';button.dataset.id=option.id;
-      button.textContent=state.direction==='toTarget'?label(option):option.translation;
+      button.textContent=state.direction==='toTarget'?label(option):option.translation;window.TooWeeTools?.renderForSide?.(button,option,state.direction==='toTarget'?'target':'translation');
       button.addEventListener('click',()=>choose(option.id));el('escapeOptions').append(button);
     }
     controls();

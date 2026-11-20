@@ -37,10 +37,10 @@
     if(!current())return;stop();state.feedback=false;state.roundEnd=false;el('fallRoundEnd').hidden=true;state.paused=Boolean(document.hidden);state.used=0;state.duration=duration();state.since=Date.now();
     el('fallFeedback').textContent='';el('fallNext').hidden=true;el('fallWord').classList.remove('fall-hit','fall-miss');
     const word=state.words[state.index],toTarget=state.direction==='toTarget';
-    el('fallWord').textContent=toTarget?word.translation:target(word);el('fallWord').lang=toTarget?'pl':languageInfo[state.language]?.code || 'en';
+    el('fallWord').textContent=toTarget?word.translation:target(word);window.TooWeeTools?.renderForSide?.(el('fallWord'),word,toTarget?'translation':'target');el('fallWord').lang=toTarget?'pl':languageInfo[state.language]?.code || 'en';
     el('fallAnswers').replaceChildren();
     const choices=shuffle([word,...shuffle(state.words.filter(w=>w.id!==word.id)).slice(0,3)]);
-    choices.forEach((option,i)=>{const button=document.createElement('button');button.type='button';button.className='fall-answer';button.dataset.id=option.id;button.textContent=(i+1)+'. '+(toTarget?target(option):option.translation);button.addEventListener('click',()=>choose(option.id));el('fallAnswers').append(button);});
+    choices.forEach((option,i)=>{const button=document.createElement('button');button.type='button';button.className='fall-answer';button.dataset.id=option.id;button.textContent=(i+1)+'. '+(toTarget?target(option):option.translation);window.TooWeeTools?.renderForSide?.(button,option,toTarget?'target':'translation');button.addEventListener('click',()=>choose(option.id));el('fallAnswers').append(button);});
     stats();draw();controls();el('fallSky').focus?.({preventScroll:true});if(!state.paused)frame=requestAnimationFrame(loop);
   }
   function finish(manual=false){

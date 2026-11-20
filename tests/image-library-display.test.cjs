@@ -1,0 +1,21 @@
+const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
+const read=f=>fs.readFileSync(__dirname+'/../'+f,'utf8');
+(async()=>{
+ const dom=new JSDOM(read('index.html'),{url:'https://example.test/',runScripts:'outside-only'}),w=dom.window,d=w.document;
+ w.TooWeeImageLibrary={attach(img,value){img.src=value;}};
+ w.eval(read('classroom-tools.js'));const tools=w.TooWeeTools,word={id:'cat',word:'猫',reading:'ねこ',translation:'kot',lang:'Japanese',image:'https://example.test/cat.webp'};
+ const table=d.createElement('table');table.innerHTML='<thead><tr><th>Słowo</th><th>Tłumaczenie</th></tr></thead><tbody><tr><td>猫</td><td>kot</td></tr><tr><td>犬</td><td>pies</td></tr></tbody>';d.body.append(table);
+ const cells=[...table.querySelectorAll('tbody tr')].map(r=>r.firstElementChild);
+ tools.renderImage(cells[0],word);tools.renderImage(cells[1],{word:'犬'});tools.renderImage(cells[0],word);
+ assert.equal(table.querySelectorAll('th').length,3);assert.equal(table.querySelectorAll('[data-image-column]').length,2);assert.equal(cells[0].querySelector('img'),null);assert(table.querySelector('.tw-vocab-thumbnail'));assert.equal(table.querySelectorAll('tbody tr')[1].children[1].textContent,'—');
+ const front=d.createElement('div'),back=d.createElement('div');back.hidden=true;front.append(back);d.body.append(front);
+ d.getElementById('studyImageSide').value='target';tools.renderForSide(back,word,'target','study');tools.renderForSide(front,word,'translation','study');assert(back.querySelector('img'),'rendering front must preserve the hidden answer image');assert.equal(front.querySelectorAll(':scope > img').length,0);assert(back.hidden);
+ d.getElementById('studyImageSide').value='translation';tools.renderForSide(back,word,'target','study');tools.renderForSide(front,word,'translation','study');assert(front.querySelector(':scope > img'));assert.equal(back.querySelector('img'),null);
+ // Exercise real game rendering: memory never reveals an image on a covered card.
+ w.eval(`var ready=true,saving=false,account={userId:'owner'},activeLanguage='Japanese',languageInfo={Japanese:{code:'ja'}};var words=${JSON.stringify([word,{...word,id:'dog',word:'犬',translation:'pies'}])};function activeWords(){return words}function activeFolders(){return []}function filterLearningWords(w){return w}function getLearningContext(){return null}function tab(){}`);
+ w.eval(read('games.js'));const click=id=>d.getElementById(id).click();d.getElementById('gameImageSide').value='target';click('gameType-memory');click('startGame');assert.equal(d.querySelectorAll('#gameMemoryBoard img').length,0);const memory=[...d.querySelectorAll('#gameMemoryBoard button')];memory[0].click();assert.equal(d.querySelectorAll('#gameMemoryBoard img').length,d.querySelector('#gameMemoryBoard button').textContent.includes('猫')||d.querySelector('#gameMemoryBoard button').textContent.includes('犬')?1:0);
+ click('gameType-write');d.getElementById('gameDirection').value='toTarget';d.getElementById('gameImageSide').value='target';click('startGame');assert.equal(d.querySelectorAll('#gameQuizPrompt img').length,0);d.getElementById('gameWriteAnswer').value='wrong';d.getElementById('gameWriteForm').dispatchEvent(new w.Event('submit',{cancelable:true}));assert(d.querySelector('#gameQuizFeedback img'),'answer-side image appears only after checking');
+ // Real material flashcard keeps the image on its selected language side through flips.
+ w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.eval(read('material-study.js'));await w.openMaterialStudy('set','s',async()=>({name:'Animals',lang:'Japanese',words:[word]}));d.getElementById('materialImageSide').value='translation';d.getElementById('materialImageSide').dispatchEvent(new w.Event('change'));let card=d.querySelector('.material-study-card');assert.equal(card.querySelector('img'),null);card.click();card=d.querySelector('.material-study-card');assert(card.querySelector('img'));assert(card.textContent.includes('kot'));card.click();assert.equal(card.querySelector('img'),null);
+ dom.window.close();console.log('PASS compact thumbnail column, missing images, hidden answer, memory, typed feedback and flashcard image sides');
+})().catch(e=>{console.error(e);process.exit(1)});
