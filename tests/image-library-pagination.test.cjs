@@ -1,0 +1,17 @@
+const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
+const tick=()=>new Promise(r=>setTimeout(r,15));
+(async()=>{
+ const dom=new JSDOM('<body>',{url:'https://example.test',runScripts:'outside-only'}),w=dom.window,d=w.document;
+ w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};
+ const delay=w.setTimeout.bind(w);w.setTimeout=(fn,ms)=>delay(fn,Math.min(ms,5));let calls=[],pending=null,failures=0,failureCode='REQUEST_FAILED';
+ const result=page=>({data:{hits:[{id:String(page),preview:'https://cdn.pixabay.com/'+page+'.jpg',tags:'page '+page}],total:80,cacheKey:'cache'+page}});
+ const client={functions:{async invoke(_,opts){calls.push(opts.body);if(failures-- >0)return {error:{context:{json:async()=>({error:'Połączenie przerwane',code:failureCode})}}};if(pending){const wait=pending;pending=null;await wait;}return result(opts.body.page)}}};
+ w.eval(fs.readFileSync(__dirname+'/../image-library.js','utf8'));w.dispatchEvent(new w.CustomEvent('toowee-account',{detail:{userId:'teacher',client}}));let selected=false;const pick=w.TooWeeImageLibrary.pick({query:'cat'}).then(x=>{selected=x});await tick();const dialog=d.querySelector('dialog'),form=dialog.querySelector('form'),pager=()=>dialog.querySelector('.tw-image-pager'),next=()=>[...pager().querySelectorAll('button')].find(b=>b.textContent==='Następne →');
+ assert.equal(dialog.dataset.dialogLayout,'viewport');form.dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert(dialog.open);assert.equal(calls.length,1);
+ let finish;pending=new Promise(r=>finish=r);next().click();next().click();await tick();assert.equal(calls.length,2,'double next cannot skip a page');assert(dialog.querySelector('.tw-image-grid img').src.endsWith('/1.jpg'),'old results remain while fetching');assert(dialog.open);finish();await tick();assert(dialog.querySelector('.tw-image-grid img').src.endsWith('/2.jpg'));assert.equal(selected,false);
+ [...pager().querySelectorAll('button')].find(b=>b.textContent==='← Poprzednie').click();await tick();assert.equal(calls.length,2,'back page uses session cache');assert(dialog.querySelector('.tw-image-grid img').src.endsWith('/1.jpg'));
+ next().click();await tick();failures=1;next().click();await tick();await tick();assert(dialog.querySelector('.tw-image-grid img').src.endsWith('/3.jpg'),'temporary failure retries once');assert.equal(calls.length,4);assert(dialog.open);
+ failures=2;next().click();await tick();await tick();assert(dialog.querySelector('.tw-image-grid img').src.endsWith('/3.jpg'),'failure keeps current page');assert(pager().querySelector('[data-retry]'));assert(dialog.open);assert.equal(calls.length,6,'retry bounded at two attempts');
+ pager().querySelector('[data-retry]').click();await tick();assert(dialog.querySelector('.tw-image-grid img').src.endsWith('/4.jpg'));
+ failureCode='PIXABAY_KEY_REJECTED';failures=1;form.querySelector('input').value='dog';const count=calls.length;form.dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.equal(calls.length,count+1,'configuration errors never retry automatically');assert(dialog.open);dialog.querySelector('header button').click();await pick;assert.equal(selected,null);w.close();console.log('PASS stable dialog, page navigation, click guard, cache, bounded retry, preserved results, explicit retry and configuration errors');
+})().catch(e=>{console.error(e);process.exit(1)});
