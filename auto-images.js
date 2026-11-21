@@ -2,7 +2,7 @@
 (()=>{
  const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
  let account=null,epoch=0,tail=Promise.resolve(),nextRequest=0;const cache=new Map(),jobs=new Set();
- const enabled=()=>window.tooweeTeacherPreferences?.auto_images!==false&&['teacher','admin'].includes(window.tooweeProfile?.role||window.tooweeView);
+ const enabled=()=>['teacher','admin'].includes(window.tooweeProfile?.role||window.tooweeView);
  const active=token=>token===epoch&&Boolean(account?.userId);
  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  const language=lang=>({Japanese:'ja',Polish:'pl',Spanish:'es',English:'en'})[lang]||'en';
