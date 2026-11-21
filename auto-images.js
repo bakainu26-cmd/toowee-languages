@@ -1,0 +1,31 @@
+'use strict';
+(()=>{
+ const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
+ let account=null,epoch=0,tail=Promise.resolve(),nextRequest=0;const cache=new Map(),jobs=new Set();
+ const enabled=()=>['teacher','admin'].includes(window.tooweeProfile?.role||window.tooweeView);
+ const active=token=>token===epoch&&Boolean(account?.userId);
+ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+ const language=lang=>({Japanese:'ja',Polish:'pl',Spanish:'es',English:'en'})[lang]||'en';
+ function toggle(host,value=window.tooweeTeacherPreferences?.auto_images!==false){const label=node('label',undefined,'tw-auto-image-switch'),input=node('input'),track=node('span',undefined,'tw-auto-image-track');input.type='checkbox';input.checked=value;input.setAttribute('role','switch');input.setAttribute('aria-label','Automatycznie dobieraj grafikę');input.addEventListener('change',()=>{input.dataset.autoTouched='true';});label.append(input,track,node('span','Automatycznie dobieraj grafikę'));host.append(label);return input;}
+ function find(word,lang,valid=()=>true){const token=epoch,q=String(word||'').normalize('NFKC').trim().slice(0,100);if(!q)return Promise.resolve(null);const key=JSON.stringify([account?.userId,q,lang]);if(cache.has(key))return cache.get(key);
+ const task=tail.catch(()=>{}).then(async()=>{if(!active(token)||!valid())return null;await sleep(Math.max(0,nextRequest-Date.now()));if(!active(token)||!valid())return null;nextRequest=Date.now()+5000;
+ const search=await window.TooWeeImageLibrary.api({action:'search',q,lang:language(lang),type:'all',page:1});if(!active(token)||!valid())return null;
+ const tokens=q.toLocaleLowerCase().split(/[\s,;()]+/u).filter(t=>t.length>1),rank=h=>tokens.filter(t=>String(h.tags||'').toLocaleLowerCase().includes(t)).length;const hit=[...search.hits].sort((a,b)=>rank(b)-rank(a))[0];if(!hit)return null;
+ const result=await window.TooWeeImageLibrary.api({action:'select',id:hit.id,cacheKey:search.cacheKey});if(!active(token)||!valid())return null;return result.asset;
+ });tail=task.catch(()=>{});cache.set(key,task);void task.then(asset=>{if(!asset&&cache.get(key)===task)cache.delete(key);},()=>{if(cache.get(key)===task)cache.delete(key);});return task;
+ }
+ async function assign(asset,params){const a=account,v=epoch;if(!a?.userId)throw Error('Zaloguj się.');const r=await a.client.rpc('toowee_auto_image_save',{p_asset:asset.id,...params});if(!active(v)||a!==account)throw Error('Konto zostało zmienione.');if(r.error)throw Error(r.error.message);return r.data;}
+ function batch(items,{title='Grafiki do materiału',setId=null,revision=null,onDone}={}){
+  const token=epoch,owner=account?.userId;if(!owner||!items.length||!enabled())return;let stopped=false;const box=node('details',undefined,'tw-auto-image-progress'),summary=node('summary','Dobieranie grafik · 0 / '+items.length),notice=node('p','Źródło: Pixabay. Materiał jest zapisany. Możesz pracować dalej; pozostaw tę kartę otwartą do końca dobierania.'),rows=node('div'),stop=node('button','Zatrzymaj');stop.type='button';stop.onclick=()=>{stopped=true;stop.disabled=true;summary.textContent='Zatrzymano dobieranie grafik';};box.append(summary,node('strong',title),notice,stop,rows);let tray=document.getElementById('tw-auto-image-jobs');if(!tray){tray=node('div');tray.id='tw-auto-image-jobs';document.body.append(tray);}tray.append(box);jobs.add(box);const valid=()=>active(token)&&enabled()&&!stopped&&box.isConnected;let count=0,saved=0;
+  void(async()=>{try{for(const item of items){if(!valid())break;const row=node('div',undefined,'tw-auto-image-row'),name=item.word||item.prompt;row.append(node('span',name));rows.append(row);if(item.auto_image===false||item.image||(!setId&&window.TooWeeTools?.image(item))){row.append(node('small','Zachowano istniejący obraz'));count++;continue;}
+    try{const asset=await find(name,item.lang,valid);if(!valid())break;if(!asset){row.append(node('small','Brak propozycji'));}else{const r=await assign(asset,setId?{p_set:setId,p_card:item.id,p_revision:revision}:{p_word:item.id});if(!valid())break;if(r.conflict){notice.textContent='Zestaw został zmieniony. Zatrzymano dobieranie, aby zachować Twoje poprawki.';stopped=true;break;}if(r.revision)revision=r.revision;if(r.saved){saved++;const image=node('img');image.alt='Propozycja: '+name;window.TooWeeImageLibrary.attach(image,r.image);row.append(image,node('small','Pixabay'));}else row.append(node('small','Zachowano Twoje ustawienia'));}}
+    catch(e){row.append(node('small',e.message||'Nie udało się dobrać grafiki'));notice.textContent='Materiał jest zapisany. Część obrazów wymaga ponownej próby.';if(/limit|za dużo|minut|niedostęp|konfigur|klucz|połączy|odmówił/i.test(e.message||'')){stopped=true;break;}}
+    count++;summary.textContent='Dobieranie grafik · '+count+' / '+items.length;
+   }
+   if(active(token)){await window.TooWeeTools?.loadMetadata();window.dispatchEvent(new CustomEvent('toowee-auto-images-updated',{detail:{setId,owner}}));await onDone?.();if(!stopped){summary.textContent='Grafiki: dobrano '+saved+' · sprawdzono '+count+' / '+items.length;notice.textContent='Obrazy możesz zmienić lub usunąć w edycji materiału.';}stop.textContent=stopped?'Ponów pozostałe':'Zamknij';stop.disabled=false;stop.onclick=()=>{box.remove();jobs.delete(box);if(stopped&&active(token))batch(items.slice(count),{title,setId,revision,onDone});};}
+  }catch(e){if(active(token))notice.textContent=e.message;}})();return {cancel(){stopped=true;}};
+ }
+ window.TooWeeAutoImages={enabled,toggle,find,batch,words:(items,options={})=>batch(items,options)};
+ window.addEventListener('toowee-profile',e=>{for(const input of document.querySelectorAll('.tw-auto-image-switch>input'))if(!input.dataset.autoTouched)input.checked=e.detail.preferences?.auto_images!==false;});
+ window.addEventListener('toowee-account',e=>{for(const input of document.querySelectorAll('.tw-auto-image-switch>input')){delete input.dataset.autoTouched;input.checked=true;}account=e.detail;epoch++;cache.clear();nextRequest=0;tail=Promise.resolve();for(const job of jobs)job.remove();jobs.clear();document.getElementById('tw-auto-image-jobs')?.remove();});
+})();
