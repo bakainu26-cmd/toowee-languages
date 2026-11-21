@@ -1,4 +1,5 @@
 import {request} from 'node:https';
+import {Buffer} from 'node:buffer';
 import {lookup} from 'node:dns/promises';
 const resolve4=async host=>(await lookup(host,{all:true,family:4})).map(item=>item.address);
 import {MediaError,MAX_BYTES,imageMime} from './core.mjs';
