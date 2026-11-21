@@ -3,6 +3,7 @@
   const el=id=>document.getElementById(id);
   let preview={rows:[],errors:[],duplicates:0},loading=false,importBusy=false,generation=0;const previewEdits=new Map();
   const canImport=()=>ready && !saving && Boolean(activeLanguage) && Boolean(account?.userId);
+  const autoImages=window.TooWeeAutoImages?.toggle(el('saveImport').parentElement);
   const settingIds=['importDelimiter','importCustomDelimiter','importRecordDelimiter','importCustomRecord','importLayout','importFolder','importSkipDuplicates'];
   function status(text,error=false) {el('importStatus').textContent=text;el('importStatus').style.color=error ? '#a12743' : '';}
   function updateImportControls() {
@@ -79,12 +80,12 @@
     const current=generation,owner=account.userId,language=activeLanguage,folder=el('importFolder').value || null;
     if(window.tooweeView==='student'&&!folder){status('Wybierz zestaw do importu.',true);return;}
     if(folder && !activeFolders().some(f=>f.id===folder)){status('Wybierz zestaw należący do aktualnego języka.',true);return;}
-    const payload=preview.rows.map(({word,reading,translation,example})=>({word,reading,translation,...(example ? {example} : {}),lang:language,folder_id:folder,owner_id:owner}));
+    const knownIds=new Set(library.words.map(w=>w.id));const payload=preview.rows.map(({word,reading,translation,example})=>({word,reading,translation,...(example ? {example} : {}),lang:language,folder_id:folder,owner_id:owner}));
     importBusy=true;updateImportControls();status('Zapisywanie '+payload.length+' słówek…');
     const ok=await writeLibrary(async snapshot=>{if(!folder){const id=await window.ensureLooseWordList(snapshot,language);for(const row of payload)row.folder_id=id;}if(account?.userId!==owner||activeLanguage!==language)throw Error('Konto lub język zostały zmienione.');return snapshot.client.from('vocabulary_words').insert(payload);},'Zaimportowano '+payload.length+' słówek.');
     if(current!==generation || account?.userId!==owner || activeLanguage!==language) return;
     importBusy=false;
-    if(ok) {previewEdits.clear();el('importText').value='';el('importFile').value='';refreshPreview();status('Gotowe! Zaimportowano '+payload.length+' słówek do języka '+languageInfo[language].name+'. Znajdziesz je na liście słówek i w fiszkach.');if(window.tooweeView==='student'&&folder)window.openStudentVocabularySet?.(folder);}
+    if(ok) {if(autoImages?.checked&&window.TooWeeAutoImages?.enabled())window.TooWeeAutoImages.words(library.words.filter(w=>!knownIds.has(w.id)&&w.lang===language),{title:'Grafiki do zaimportowanych słówek'});previewEdits.clear();el('importText').value='';el('importFile').value='';refreshPreview();status('Gotowe! Zaimportowano '+payload.length+' słówek do języka '+languageInfo[language].name+'. Znajdziesz je na liście słówek i w fiszkach.');if(window.tooweeView==='student'&&folder)window.openStudentVocabularySet?.(folder);}
     else {status('Import nie został potwierdzony. '+el('libraryStatus').textContent,true);updateImportControls();}
   };
   window.openVocabularyImport=target=>{

@@ -1,7 +1,7 @@
 name: Image library checks
 on:
   pull_request:
-    paths: ['image-library*', 'supabase/functions/toowee-images/**', 'tests/image-library*', 'tests/image-material-access*', 'classroom-tools.js', 'games.js', 'study.js', 'material-study.js', 'falling.js', 'escape.js', 'magic-dice.js', 'swords-bombs-hearts*', 'teacher-game-catalog.js', 'exercise-sets.js', 'assigned-exercises.js', 'index.html', '.github/workflows/image-library.yml']
+    paths: ['auto-images*', 'tests/auto-images*', 'teacher-list-editor.js', 'teacher-settings.js', 'accounts.js', 'imports.js', 'group-vocabulary.js', 'exercise-sets-core.js', 'image-library*', 'supabase/functions/toowee-images/**', 'tests/image-library*', 'tests/image-material-access*', 'classroom-tools.js', 'games.js', 'study.js', 'material-study.js', 'falling.js', 'escape.js', 'magic-dice.js', 'swords-bombs-hearts*', 'teacher-game-catalog.js', 'exercise-sets.js', 'assigned-exercises.js', 'index.html', '.github/workflows/image-library.yml']
 jobs:
   images:
     runs-on: ubuntu-latest
@@ -11,4 +11,4 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save --package-lock=false jsdom@26.1.0 @electric-sql/pglite@0.3.14
-      - run: node tests/image-library-direct-paste.test.cjs && node tests/image-library-paste.test.cjs && node tests/image-library-pagination.test.cjs && node tests/image-library-display.test.cjs && node tests/sbh-unified-setup.test.cjs && node tests/learning.test.cjs && node tests/games-enter-next.test.cjs && node tests/image-library-core.test.cjs && node tests/image-library-db.test.cjs && node tests/image-library-ui.test.cjs && node tests/image-material-access.test.cjs && node tests/image-library-word-editor.test.cjs
+      - run: node tests/auto-images-import.test.cjs && node tests/auto-images-db.test.cjs && node tests/auto-images-ui.test.cjs && node tests/image-library-direct-paste.test.cjs && node tests/image-library-paste.test.cjs && node tests/image-library-pagination.test.cjs && node tests/image-library-display.test.cjs && node tests/sbh-unified-setup.test.cjs && node tests/learning.test.cjs && node tests/games-enter-next.test.cjs && node tests/image-library-core.test.cjs && node tests/image-library-db.test.cjs && node tests/image-library-ui.test.cjs && node tests/image-material-access.test.cjs && node tests/image-library-word-editor.test.cjs
