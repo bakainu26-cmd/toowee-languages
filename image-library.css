@@ -17,3 +17,6 @@ td.tw-image-column{width:76px;min-width:76px;text-align:center;vertical-align:mi
 body:not([data-portal-mode=teacher]) .tw-auto-image-switch{display:none!important}
 
 #tw-auto-image-jobs{position:fixed;bottom:14px;right:16px;z-index:1000;width:min(420px,94vw);max-height:55dvh;overflow:auto}#tw-auto-image-jobs>.tw-auto-image-progress{position:relative;bottom:auto;right:auto;max-width:none;max-height:none;overflow:visible;margin:6px 0}
+
+/* Keep switch geometry despite editor grid and generic span rules. */
+label.tw-auto-image-switch{display:flex!important;flex-direction:row!important;justify-content:flex-start!important;align-items:center!important;text-align:left!important}label.tw-auto-image-switch>span.tw-auto-image-track{display:block!important;box-sizing:border-box!important;flex:0 0 52px!important;width:52px!important;min-width:52px!important;max-width:52px!important;height:28px!important;min-height:28px!important;max-height:28px!important;padding:0!important;margin:0!important;border-radius:8px!important}label.tw-auto-image-switch>.tw-auto-image-track:after{width:20px;height:20px;border-radius:5px;left:3px;top:3px}label.tw-auto-image-switch>input:checked+.tw-auto-image-track:after{transform:translateX(24px)}
