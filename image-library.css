@@ -22,3 +22,15 @@ body:not([data-portal-mode=teacher]) .tw-auto-image-switch{display:none!importan
 label.tw-auto-image-switch{display:flex!important;flex-direction:row!important;justify-content:flex-start!important;align-items:center!important;text-align:left!important}label.tw-auto-image-switch>span.tw-auto-image-track{display:block!important;box-sizing:border-box!important;flex:0 0 52px!important;width:52px!important;min-width:52px!important;max-width:52px!important;height:28px!important;min-height:28px!important;max-height:28px!important;padding:0!important;margin:0!important;border-radius:8px!important}label.tw-auto-image-switch>.tw-auto-image-track:after{width:20px;height:20px;border-radius:5px;left:3px;top:3px}label.tw-auto-image-switch>input:checked+.tw-auto-image-track:after{transform:translateX(24px)}
 
 .teacher-list-image-review{display:flex;align-items:center;gap:12px;margin:8px 0}.teacher-list-image-review:has(span:empty):has(img[hidden]){display:none}.teacher-list-image-review img{width:72px!important;height:64px!important;object-fit:contain;border-radius:8px}.teacher-list-image-review span{font-size:14px;color:#614164}.teacher-list-image-actions{padding:12px;border:1px solid #dfcee6;border-radius:12px;background:#f5edf6}.teacher-list-image-actions p{margin:8px 0;font-size:14px}
+
+/* Contain scrolling in the active modal, including nested image selection. */
+dialog[open]{overscroll-behavior:contain}.tw-image-library>.tw-image-content,.teacher-list-editor>form{overscroll-behavior:contain;touch-action:pan-y}
+.teacher-list-editor .teacher-list-word-fields{grid-template-columns:repeat(4,minmax(0,1fr)) 150px}
+.teacher-list-image-cell{display:flex;flex-direction:column;gap:8px;min-width:0;border-left:1px solid #e1d2e5;padding-left:12px}
+.teacher-list-image-cell .teacher-list-image-review{display:flex;flex-direction:column;align-items:flex-start;margin:0}
+.teacher-list-image-cell .teacher-list-image-review img{width:100%!important;max-width:120px;height:76px!important}
+.teacher-list-image-cell .teacher-list-image-review span:empty{display:none}
+.teacher-list-image-cell .teacher-list-image-empty{font-size:13px;color:#806d83;min-height:60px;display:flex;align-items:center}
+.teacher-list-image-cell [hidden]{display:none!important}.teacher-list-image-cell button{font-size:12px;padding:7px}
+@media(max-width:1000px){.teacher-list-editor .teacher-list-word-fields{grid-template-columns:repeat(2,minmax(0,1fr)) 130px}.teacher-list-image-cell{grid-column:3;grid-row:1/3}}
+@media(max-width:600px){.teacher-list-editor .teacher-list-word-fields{grid-template-columns:1fr}.teacher-list-image-cell{grid-column:1;grid-row:auto;border-left:0;border-top:1px solid #e1d2e5;padding:10px 0}}
