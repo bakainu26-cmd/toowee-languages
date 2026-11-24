@@ -138,3 +138,19 @@ body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button{min
 @media(max-width:600px){.toowee-clear-setup .toowee-setup-heading{gap:12px}.toowee-duration-choices{gap:7px}.toowee-clear-setup .toowee-duration-choices button{padding:12px 6px!important;min-height:118px}.toowee-duration-choices strong{font-size:15px}.toowee-duration-choices small{font-size:13px}.toowee-clear-setup .toowee-setup-actions{flex-direction:column}}
 
 .toowee-clear-setup .toowee-setup-footer>div:first-child{display:none}.toowee-start-summary{display:block;text-align:center;font-size:14px;color:#806d83}
+
+/* Match TooWee's cream panels, serif headings and illustrated game cards. */
+.toowee-clear-setup{color:#63335f;background:#fffaf4;border:1px solid #e2d2e7;border-radius:24px;padding:28px;box-sizing:border-box;box-shadow:0 6px 20px #7754740b}
+.toowee-clear-setup .toowee-setup-heading h3{font-family:Georgia,serif;color:#512b4f}
+.toowee-clear-setup .toowee-setup-heading img{background:#f1e6f4;border:1px solid #e0cce8;box-sizing:border-box}
+.toowee-clear-setup .toowee-materials>h4,.toowee-clear-setup .toowee-duration h4,.toowee-clear-setup .toowee-advanced>summary{font-family:Georgia,serif;color:#63335f}
+.toowee-clear-setup .toowee-material-selected{background:#f0e6f3;border:1px solid #e1cce8}
+.toowee-clear-setup .toowee-duration-choices button{background:#f5edf7!important;border-color:#ddc8e5!important;box-shadow:0 3px 8px #7754740a;transition:background .15s,border-color .15s}
+.toowee-clear-setup .toowee-duration-choices button[aria-pressed=true]{background:#e9d9ef!important;border-color:#b28abd!important}
+.toowee-duration-choices button img{width:52px;height:46px;object-fit:contain}
+.toowee-clear-setup .toowee-duration-choices strong{font-family:Georgia,serif;color:#63335f}
+.toowee-clear-setup .toowee-setup-actions button{background:#805680!important;color:#fffaf4!important;border:1px solid #805680!important}
+.toowee-clear-setup .toowee-setup-actions button:hover{background:#704770!important}
+.toowee-clear-setup .toowee-material-selected button{background:#e8daee;color:#63335f;border:1px solid #d8bfdf;border-radius:12px}
+.toowee-clear-setup .toowee-advanced{border-color:#e4d5e9}
+@media(max-width:600px){.toowee-clear-setup{padding:18px;border-radius:20px}}
