@@ -107,3 +107,34 @@ body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button{min
 #collectionsDialog .collection-config:not(:has(.toowee-form-setup))>button{grid-column:1/-1;min-height:54px}
 #collectionsDialog .collection-config input{box-sizing:border-box;width:100%;min-height:50px;font-size:18px}
 @media(max-width:700px){#collectionsDialog .toowee-setup-columns,#collectionsDialog .collection-config:not(:has(.toowee-form-setup)){grid-template-columns:minmax(0,1fr)}.activity-game-icon{width:44px;height:44px}}
+
+/* Progressive setup: materials, duration, advanced options and one action area. */
+.toowee-clear-setup{max-width:980px;margin:12px auto 24px}
+.toowee-clear-setup .toowee-setup-heading{border-bottom:1px solid #e3d8e7;padding-bottom:24px;margin-bottom:24px}
+.toowee-clear-setup .toowee-setup-heading img{width:76px;height:76px;background:#eee2f2;border-radius:22px;padding:8px}
+.toowee-clear-setup .toowee-setup-heading h3{font:700 clamp(24px,3vw,34px) Arial,sans-serif}
+.toowee-clear-setup .toowee-setup-heading p{font-size:18px}
+.toowee-clear-setup .toowee-setup-columns{display:block}
+.toowee-clear-setup .toowee-materials{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+.toowee-clear-setup .toowee-materials>h4{font:700 20px Arial,sans-serif;margin:0 0 12px}
+.toowee-clear-setup .toowee-materials>h4:before{display:none}
+.toowee-clear-setup .toowee-material-selected{background:#efe5f3;border:0;padding:22px;border-radius:18px;min-height:84px}
+.toowee-clear-setup .toowee-material-selected strong{font-size:18px!important;line-height:1.5}
+.toowee-source-options{margin:10px 0;color:#806d83;font-size:14px}.toowee-source-options>summary{cursor:pointer}
+.toowee-clear-setup .toowee-material-fields{margin:12px 0}
+.toowee-duration{margin:28px 0}.toowee-duration h4{font:700 20px Arial,sans-serif;margin:0 0 16px}
+.toowee-duration-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.toowee-clear-setup .toowee-duration-choices button{display:flex;flex-direction:column;align-items:center;gap:10px;min-height:132px;width:100%;border:1px solid #dfd5e4!important;border-radius:18px!important;background:#f5f1f6!important;color:#614164!important;padding:18px!important}
+.toowee-duration-choices button>span{font-size:28px;color:#a983b9}.toowee-duration-choices strong{font-size:18px}.toowee-duration-choices small{font-size:15px}
+.toowee-clear-setup .toowee-duration-choices button[aria-pressed=true]{background:#eadcf0!important;border:2px solid #b18abd!important}
+.toowee-advanced{border-top:1px solid #eadfee;padding:18px 0 0}.toowee-advanced>summary{cursor:pointer;font-size:20px;font-weight:700;padding:8px 0}
+.toowee-clear-setup .toowee-advanced .toowee-setup-game,.toowee-clear-setup .toowee-form-settings{margin-top:16px!important;box-shadow:none!important}
+.toowee-advanced-brief{font-size:15px;line-height:1.6;color:#806d83;margin:12px 0 24px}
+.toowee-clear-setup .toowee-setup-footer{border-top:1px solid #e3d8e7;background:transparent;box-shadow:none;padding:20px 0 0;margin-top:0;position:static;display:flex;flex-direction:column;gap:12px}
+.toowee-clear-setup .toowee-setup-actions{width:100%;display:flex;gap:12px}
+.toowee-clear-setup .toowee-setup-actions button{flex:1;min-height:62px;border-radius:16px!important;font-size:18px!important}
+.toowee-multi-option{display:flex;align-items:center;gap:10px;min-width:0}.toowee-multi-option>input{flex:none;width:20px!important;height:20px!important;min-height:0!important;accent-color:#a983b9}.toowee-multi-option>button{flex:1}
+.toowee-clear-setup [hidden]{display:none!important}
+@media(max-width:600px){.toowee-clear-setup .toowee-setup-heading{gap:12px}.toowee-duration-choices{gap:7px}.toowee-clear-setup .toowee-duration-choices button{padding:12px 6px!important;min-height:118px}.toowee-duration-choices strong{font-size:15px}.toowee-duration-choices small{font-size:13px}.toowee-clear-setup .toowee-setup-actions{flex-direction:column}}
+
+.toowee-clear-setup .toowee-setup-footer>div:first-child{display:none}.toowee-start-summary{display:block;text-align:center;font-size:14px;color:#806d83}

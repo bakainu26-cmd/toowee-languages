@@ -46,10 +46,14 @@ jobs:
         run: node tests/collections-round-flow.test.cjs
       - name: Online Dice final-result synchronization and retry
         run: node tests/magic-dice-final-sync.test.cjs
+      - name: Clear game setup and shared form regression
+        run: node tests/clear-game-setup.test.cjs && node tests/shared-live-setup.test.cjs && node tests/sbh-unified-setup.test.cjs
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Shared viewport geometry and screenshots
         run: node tests/game-ui-viewport.test.cjs
+      - name: Clear game setup at desktop and mobile sizes
+        run: node tests/clear-game-setup-viewport.test.cjs
       - name: Vocabulary editor columns and nested scroll lock
         run: node tests/image-editor-layout.test.cjs
       - uses: actions/upload-artifact@v4
