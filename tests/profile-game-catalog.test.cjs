@@ -34,13 +34,16 @@ for(const kind of expected){special=null;w.openTeacherGameCatalog('Japanese');d.
  assert(!d.querySelector('.teacher-source-picker'),kind+' must skip separate material page');
  const state=w.captureTeacherGameNavigation();assert.equal(state.context.directSource,'language',kind);assert.equal(state.context.lang,'Japanese');
  if(['sophie','collections'].includes(kind)){assert.equal(special.directSource,'language');continue;}
- const root=d.querySelector('.toowee-clear-setup');assert(root,kind+' direct configuration');assert.deepEqual([...root.querySelectorAll('.toowee-source-mode-tabs button')].map(x=>x.textContent),['Język','Uczeń','Zestaw']);
+ const root=d.querySelector('.toowee-clear-setup');assert(root,kind+' direct configuration');assert.deepEqual([...root.querySelectorAll('.toowee-source-mode-tabs button')].map(x=>x.textContent),['Język','Uczeń']);
  if(kind==='dice'){assert.equal(state.context.deliveryMode,'online');assert.equal(root.querySelector('.toowee-setup-actions button:first-child').hidden,true);}
 }
 w.openTeacherGameCatalog('Japanese');d.querySelector('#teacherGameCatalog [data-teacher-game-kind="dice"]').click();await pause();
 let root=d.querySelector('.toowee-clear-setup');root.querySelector('[data-source="student"]').click();let select=root.querySelector('.toowee-source-mode-pane select');select.value='p1';select.dispatchEvent(new w.Event('change'));await pause();
 assert.equal(w.tooweeTeacherGameContext.profile_id,'p1');assert.equal(w.captureTeacherGameNavigation().context.directSource,'student');
-root=d.querySelector('.toowee-clear-setup');root.querySelector('[data-source="set"]').click();await pause();root=d.querySelector('.toowee-clear-setup');assert.equal(w.captureTeacherGameNavigation().context.directSource,'set');assert.equal(w.tooweeTeacherGameContext.profile_id,undefined);assert.equal(root.querySelector('.toowee-material-browser').hidden,false);
+root=d.querySelector('.toowee-clear-setup');assert(!root.querySelector('[data-source="set"]'));assert(root.querySelector('.toowee-quick-scope button[data-scope-index="2"]'),'vocabulary lists remain available');
 root.querySelector('[data-source="language"]').click();await pause();assert.equal(w.captureTeacherGameNavigation().context.directSource,'language');assert(!d.querySelector('.teacher-source-picker'));
+// An exercise set is launched from its library and stays locked to the original pool.
+await w.openTeacherExerciseGame('dice',{name:'Zestaw ćwiczeń',lang:'Japanese',exerciseSet:true,exercise_set_id:'ex-1',folders:[],sets:[],words});
+root=d.querySelector('.toowee-clear-setup');assert(root);assert.equal(root.dataset.fixedSource,'true');assert(!root.querySelector('.toowee-source-mode-tabs'));assert(!root.querySelector('.toowee-quick-scope'));assert(root.querySelector('.toowee-material-selected button').hidden);assert.equal(w.tooweeTeacherGameContext.exercise_set_id,'ex-1');assert.equal(w.tooweeTeacherGameContext.words.length,4);
 assert.deepEqual(errors,[]);
 w.close();console.log('PASS all ten profile games share catalog and launch with selected pupil and Japanese, without reselection');})().catch(e=>{console.error(e);process.exit(1)});

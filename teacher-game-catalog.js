@@ -12,11 +12,10 @@
  function listGames(){selectedDeliveryMode=null;reset();navigation={view:'catalog'};window.recordTeacherNavigation?.();catalog.append(text('h3','Wybierz grę'),gameGrid(pickModeBeforeMaterials));}
  async function pickModeBeforeMaterials(kind){const mode=await window.TooweeGameDelivery?.pick?.(kind,names[kind]);if(window.TooweeGameDelivery&&!mode)return;selectedDeliveryMode=mode||'classroom';const l=language||window.tooweeTeacherLanguage||(typeof activeLanguage!=='undefined'?activeLanguage:null)||'Japanese';await window.selectTeacherGameSetupSource(kind,{lang:languageNames[l]?l:'Japanese',deliveryMode:selectedDeliveryMode},'language');}
  window.selectTeacherGameSetupSource=async(kind,current,source,selection={})=>{
-  const token=++version;navigationBusy=true;const l=selection.lang||current.lang||'Japanese',id=source==='student'?selection.id:null;
+  const token=++version;navigationBusy=true;source=source==='student'?'student':'language';const l=selection.lang||current.lang||'Japanese',id=source==='student'?selection.id:null;
   try{
    let ctx;
-   if(source==='exercise'){ctx=await window.getTeacherExerciseGameContext(selection.id,kind);}
-   else if(id){ctx=await window.getStudentGameMaterials(id,l);const pupil=(window.tooweeStudentProfiles||[]).find(p=>p.id===id);ctx={...ctx,profile_id:id,name:[pupil?.first_name,pupil?.last_name].filter(Boolean).join(' ')};}
+   if(id){ctx=await window.getStudentGameMaterials(id,l);const pupil=(window.tooweeStudentProfiles||[]).find(p=>p.id===id);ctx={...ctx,profile_id:id,name:[pupil?.first_name,pupil?.last_name].filter(Boolean).join(' ')};}
    else ctx=await window.getTeacherGameMaterials(l);
    if(token!==version||window.tooweeView!=='teacher')return;
    language=ctx.lang||l;ctx={...ctx,lang:language,directSource:source,deliveryMode:current.deliveryMode,source_name:ctx.source_name||ctx.name};

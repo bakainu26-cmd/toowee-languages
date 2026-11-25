@@ -224,7 +224,7 @@ body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button{min
 .toowee-clear-setup .toowee-duration>label input{width:100%;box-sizing:border-box}
 
 /* Source selection is part of preparation, never a separate catalog screen. */
-.toowee-clear-setup .toowee-source-mode-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0 0 10px}
+.toowee-clear-setup .toowee-source-mode-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:0 0 10px}
 .toowee-clear-setup .toowee-source-mode-tabs button{min-height:42px;padding:8px 10px;border:1px solid #d6adcf!important;border-radius:12px!important;background:#fffaf7!important;color:#512050!important;font:650 16px system-ui,sans-serif!important}
 .toowee-clear-setup .toowee-source-mode-tabs button[aria-pressed=true]{background:linear-gradient(135deg,#a46ba0,#855281)!important;color:white!important;border-color:#93558f!important}
 .toowee-clear-setup .toowee-source-mode-pane{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
