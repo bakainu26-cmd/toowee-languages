@@ -169,7 +169,7 @@
     else if(kind==='memory'){el('gameMemory').hidden=false;deck=shuffle(pairs.flatMap(word=>[{word,side:'target'},{word,side:'polish'}]));renderMemory();el('gameScore').textContent='Pary: 0 / '+pairs.length;}
     else {el('gameQuiz').hidden=false;questions=shuffle(pairs);renderQuestion();}
   }
-  for(const key of Object.keys(names))el('gameType-'+key).onclick=()=>{kind=key;resetGame();window.openActivityFocus?.('games',names[kind],false,kind);};
+  for(const key of Object.keys(names))el('gameType-'+key).onclick=()=>{kind=key;resetGame();if(!(window.tooweeView==='teacher'&&window.tooweeTeacherGameContext))window.openActivityFocus?.('games',names[kind],false,kind);};
   for(const id of ['gameFolder','gameCount','gameDirection','gameImageSide','gameReading','fallSpeed','fallMode','magicDiceSize','magicDiceQuota'])el(id).onchange=resetGame;
   el('teacherEndGameNow').onclick=()=>{if(finished){window.openGamesLobby();return;}if(window.tooweeView!=='teacher'||!inSession())return;if(kind==='dice'){window.TooweeMagicDice.finish('Nauczyciel zakończył grę.');return;}if(kind==='falling'){window.TooweeFalling.finish();return;}if(kind==='escape'){window.TooweeEscape.finish();return;}if(hideTimer!==null){clearTimeout(hideTimer);hideTimer=null;}const summary=['match','memory'].includes(kind)?'Dopasowane pary: '+matched.size+' / '+pairs.length+' · Próby: '+attempts+' · Nietrafione próby: '+(attempts-matched.size):'Poprawne: '+score+' · Błędne: '+(attempts-score)+' · Odpowiedzi: '+attempts+' / '+questions.length;finish('Nauczyciel zakończył grę. '+summary+'.');};
   el('startGame').onclick=startGame;el('replayGame').onclick=startGame;

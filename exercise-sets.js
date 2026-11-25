@@ -109,6 +109,15 @@
  play.append(feedback);const controls=node('div',undefined,'exercise-toolbar');if(st.kind==='board')controls.append(button('← Plansza',()=>{st.active=false;renderPractice();}));else{const prev=button('← Poprzednia',()=>{if(st.index){st.index--;st.flipped=false;st.checked=false;renderPractice();}});prev.disabled=st.index===0;controls.append(prev,button('Następna →',advance));}play.append(controls);}
  function advance(){if(!study||study.finished)return;if(study.index>=study.set.cards.length-1){finishPractice();return;}study.index++;study.flipped=false;study.checked=false;renderPractice();}
  play.addEventListener('keydown',e=>{if(!study||study.finished||e.repeat||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;if(e.key==='ArrowRight'){e.preventDefault();advance();}else if(e.key==='ArrowLeft'&&study.kind!=='board'){e.preventDefault();if(study.index){study.index--;study.flipped=false;study.checked=false;renderPractice();}}else if(e.key===' '&&e.target.tagName!=='BUTTON'&&['flashcards','board'].includes(study.kind)){e.preventDefault();study.flipped=!study.flipped;renderPractice();}else if(study.kind==='quiz'&&/^[1-4]$/.test(e.key)){e.preventDefault();play.querySelectorAll('.exercise-quiz button')[Number(e.key)-1]?.click();}});
+ // Reuse the exact authored question format in the already selected game.
+ window.getTeacherExerciseGameContext=async(id,kind)=>{
+  const serial=request,set=await rpc('get',{id});
+  if(serial!==request||window.tooweeView!=='teacher')throw Error('Konto lub widok zostały zmienione.');
+  if(set.mine===false)throw Error('Najpierw zapisz kopię zestawu w swoich materiałach.');
+  const inferred=core.inferFormat(set.cards),format=set.format||inferred.format;
+  if(set.format_review||(!set.format&&inferred.review)||!core.compatibility(set.cards,format)[kind])throw Error('Ten zestaw nie jest zgodny z wybraną grą. Wybierz inny zestaw.');
+  return {name:set.title,source_name:set.title,lang:set.lang,exercise_set_id:set.id,exerciseSet:true,folders:[],sets:[],words:set.cards.map(c=>({id:c.id,word:c.prompt,translation:c.answer||'',reading:c.reading,image:c.image,lang:set.lang,translation_lang:answerLanguage(set),quiz_options:c.wrong,question_format:format}))};
+ };
  window.searchTeacherExerciseSets=async query=>{const r=await rpc('list',{scope:'mine',lang:'',query,page:0});return r.sets||[];};window.openTeacherExerciseSetById=openSetGame;window.openTeacherExerciseGenerator=id=>openSetGame(id,true);
  async function openSetGame(id,generate=false){
   const serial=request,set=await rpc('get',{id});

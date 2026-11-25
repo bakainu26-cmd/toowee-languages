@@ -26,4 +26,21 @@ assert.deepEqual(errors,[]);assert.deepEqual(modeCalls,expected);assert(material
 // Directly opening one list must not include another list from the same pupil/language.
 w.getStudentGameMaterials=async()=>({...ctx(),sets:[...ctx().sets,{id:'other-jp',name:'Inna lista',lang:'Japanese'}],words:[...ctx().words,{id:'excluded',folder_id:'other-jp',lang:'Japanese',word:'秘密',translation:'sekret'}]});
 for(const kind of ['write','sophie','collections']){await w.openTeacherListGameCatalog('p1','jp-set','Japanese');assert.equal(d.querySelectorAll('[data-game-directory-source="list"] [data-teacher-game-kind]').length,10);d.querySelector('[data-game-directory-source="list"] [data-teacher-game-kind="'+kind+'"]').click();await pause();const scoped=w.captureTeacherGameNavigation().context;assert.equal(scoped.list_id,'jp-set');assert.equal(scoped.sets.length,1);assert.deepEqual(Array.from(scoped.words,x=>x.id).sort(),words.map(x=>x.id).sort());if(kind==='write')assert.equal(w.tooweeTeacherGameContext.words.length,4);else assert.equal(special.words.length,4);}
+// The general game directory must open configuration immediately after mode selection.
+w.eval(read('clear-game-setup.js'));
+w.getTeacherGameMaterials=async l=>({name:l,lang:l,folders:[],sets:[{id:'jp-set',lang:'Japanese',name:'JP'}],words:words.filter(x=>x.lang===l)});
+w.TooweeGameDelivery.pick=async kind=>['dice','sophie','collections'].includes(kind)?'online':'classroom';
+for(const kind of expected){special=null;w.openTeacherGameCatalog('Japanese');d.querySelector('#teacherGameCatalog [data-teacher-game-kind="'+kind+'"]').click();await pause();
+ assert(!d.querySelector('.teacher-source-picker'),kind+' must skip separate material page');
+ const state=w.captureTeacherGameNavigation();assert.equal(state.context.directSource,'language',kind);assert.equal(state.context.lang,'Japanese');
+ if(['sophie','collections'].includes(kind)){assert.equal(special.directSource,'language');continue;}
+ const root=d.querySelector('.toowee-clear-setup');assert(root,kind+' direct configuration');assert.deepEqual([...root.querySelectorAll('.toowee-source-mode-tabs button')].map(x=>x.textContent),['Język','Uczeń','Zestaw']);
+ if(kind==='dice'){assert.equal(state.context.deliveryMode,'online');assert.equal(root.querySelector('.toowee-setup-actions button:first-child').hidden,true);}
+}
+w.openTeacherGameCatalog('Japanese');d.querySelector('#teacherGameCatalog [data-teacher-game-kind="dice"]').click();await pause();
+let root=d.querySelector('.toowee-clear-setup');root.querySelector('[data-source="student"]').click();let select=root.querySelector('.toowee-source-mode-pane select');select.value='p1';select.dispatchEvent(new w.Event('change'));await pause();
+assert.equal(w.tooweeTeacherGameContext.profile_id,'p1');assert.equal(w.captureTeacherGameNavigation().context.directSource,'student');
+root=d.querySelector('.toowee-clear-setup');root.querySelector('[data-source="set"]').click();await pause();root=d.querySelector('.toowee-clear-setup');assert.equal(w.captureTeacherGameNavigation().context.directSource,'set');assert.equal(w.tooweeTeacherGameContext.profile_id,undefined);assert.equal(root.querySelector('.toowee-material-browser').hidden,false);
+root.querySelector('[data-source="language"]').click();await pause();assert.equal(w.captureTeacherGameNavigation().context.directSource,'language');assert(!d.querySelector('.teacher-source-picker'));
+assert.deepEqual(errors,[]);
 w.close();console.log('PASS all ten profile games share catalog and launch with selected pupil and Japanese, without reselection');})().catch(e=>{console.error(e);process.exit(1)});
