@@ -154,3 +154,11 @@ body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button{min
 .toowee-clear-setup .toowee-material-selected button{background:#e8daee;color:#63335f;border:1px solid #d8bfdf;border-radius:12px}
 .toowee-clear-setup .toowee-advanced{border-color:#e4d5e9}
 @media(max-width:600px){.toowee-clear-setup{padding:18px;border-radius:20px}}
+
+.toowee-duration-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.toowee-clear-setup .toowee-duration-modes button{min-height:70px;background:#f5edf7!important;color:#63335f!important;border:1px solid #ddc8e5!important;border-radius:16px!important;font:700 19px Georgia,serif!important}
+.toowee-clear-setup .toowee-duration-modes button[aria-pressed=true]{background:#e9d9ef!important;border:2px solid #b28abd!important}
+.toowee-duration-field{margin-top:16px;padding:18px;background:#f6eff8;border:1px solid #e2d2e7;border-radius:16px}
+.toowee-duration-field label{display:block;font-weight:600;margin-bottom:8px}
+.toowee-duration-field input{box-sizing:border-box;width:100%;max-width:240px;min-height:46px;padding:10px 14px;border:1px solid #d4bfd8;border-radius:12px;background:#fffdf8;color:#63335f;font:18px system-ui}
+.toowee-duration-field small{display:block;color:#806d83;margin-top:6px;font-size:13px}
