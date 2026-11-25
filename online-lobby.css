@@ -47,3 +47,9 @@
 #sophieJoinConfig input{width:100%;box-sizing:border-box;min-height:52px;padding:12px 16px;font-size:19px}
 #sophieJoinForm button{min-height:52px;font-size:18px}
 @media(max-width:650px){#sophieOnlineLobby .tw-online-header{min-height:0}#sophieOnlineLobby .tw-online-logo{width:48px;height:48px}#sophieOnlineLobby .tw-online-body{grid-template-columns:1fr;grid-template-rows:minmax(160px,1fr) minmax(110px,.8fr)}#sophieOnlineLobby .tw-online-footer{gap:8px;padding:10px}#sophieOnlineLobby h3{font-size:22px}#sophieOnlineLobby .tw-online-code{margin:10px 0;padding:8px}#sophieOnlineLobby .tw-online-note{display:none}}
+
+/* Same cream, plum and watercolor lavender as the preparation screen. */
+.tw-online.tw-game-ui{border-color:#d6adcf;background:radial-gradient(ellipse at 0% 100%,#e3cbeb,transparent 27%),radial-gradient(ellipse at 100% 100%,#e8d4ee,transparent 28%),#fff9f3}
+.tw-online.tw-game-ui .tw-online-card{border-color:#d6adcf;background:#fffaf4;border-radius:22px;box-shadow:0 3px 0 #d7b3cd44}
+.tw-online.tw-game-ui .tw-online-header h2,.tw-online.tw-game-ui .tw-online-card h3{font-family:system-ui,sans-serif;font-weight:800;color:#512050}
+.tw-online.tw-game-ui .tw-online-start{background:linear-gradient(180deg,#9c538a,#65295f);border-color:#b67ead;color:#fff;border-radius:18px;box-shadow:0 3px 0 #541b50}
