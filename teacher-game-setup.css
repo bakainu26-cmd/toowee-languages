@@ -222,3 +222,18 @@ body[data-portal-mode=teacher] #teacherControls .toowee-material-tabs button{min
 .toowee-clear-setup.tw-game-setup .toowee-setup-footer{position:static!important;box-shadow:none!important}
 .toowee-clear-setup .toowee-duration>label{display:block;margin-top:10px}
 .toowee-clear-setup .toowee-duration>label input{width:100%;box-sizing:border-box}
+
+/* Source selection is part of preparation, never a separate catalog screen. */
+.toowee-clear-setup .toowee-source-mode-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0 0 10px}
+.toowee-clear-setup .toowee-source-mode-tabs button{min-height:42px;padding:8px 10px;border:1px solid #d6adcf!important;border-radius:12px!important;background:#fffaf7!important;color:#512050!important;font:650 16px system-ui,sans-serif!important}
+.toowee-clear-setup .toowee-source-mode-tabs button[aria-pressed=true]{background:linear-gradient(135deg,#a46ba0,#855281)!important;color:white!important;border-color:#93558f!important}
+.toowee-clear-setup .toowee-source-mode-pane{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.toowee-clear-setup .toowee-source-mode-pane label{font-weight:650;min-width:0;display:grid;gap:4px}
+.toowee-clear-setup .toowee-source-mode-pane select{box-sizing:border-box;width:100%;min-width:0;min-height:40px;border:1px solid #d6adcf;border-radius:10px;background:#fffdf8;color:#512050;padding:6px 10px}
+.toowee-clear-setup .toowee-source-mode-note{margin:6px 0;color:#805680;font-size:13px}
+.toowee-clear-setup .toowee-source-mode-note:empty{display:none}
+
+/* The preparation screen occupies the viewport, independently of the old teacher panel. */
+#teacherGameCatalog .toowee-clear-setup{position:fixed;inset:0;z-index:95;max-width:none;width:100%;height:100dvh;overflow:auto;align-content:start;margin:0;border-radius:0;padding:clamp(12px,2vw,28px)}
+#teacherGameCatalog .toowee-clear-setup:has(#games.activity-playing){z-index:89}
+#teacherGameCatalog .toowee-clear-setup #magicDiceShareResult:not([hidden]){width:100%;max-width:780px;margin:auto;overflow-wrap:anywhere}
